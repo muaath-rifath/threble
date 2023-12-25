@@ -1,28 +1,28 @@
-import Topbar from '@/components/shared/Topbar'
-import '../globals.css'
-import type { Metadata } from 'next'
-import { Inter } from 'next/font/google'
-import LeftSidebar from '@/components/shared/LeftSidebar'
-import RightSidebar from '@/components/shared/RightSidebar'
-import Bottombar from '@/components/shared/Bottombar'
+import Topbar from "@/components/shared/Topbar";
+import "../globals.css";
+import type { Metadata } from "next";
+import { Inter } from "next/font/google";
+import LeftSidebar from "@/components/shared/LeftSidebar";
+import RightSidebar from "@/components/shared/RightSidebar";
+import Bottombar from "@/components/shared/Bottombar";
 
-const inter = Inter({ subsets: ['latin'] })
+const inter = Inter({ subsets: ["latin"] });
 
 export const metadata = {
-  title: 'Threble',
-  description: 'A social network for developers',
-}
+  title: "Threble",
+  description: "A social network for developers",
+};
 
 export default function RootLayout({
   children,
 }: {
-  children: React.ReactNode
+  children: React.ReactNode;
 }) {
   return (
     <html lang="en">
       <body className={inter.className}>
         <Topbar />
-        <main className='flex flex-row'>
+        <main className="flex flex-row">
           <LeftSidebar />
           <section className="main-container">
             <div className="w-full max-w-4xl">{children}</div>
@@ -30,7 +30,7 @@ export default function RootLayout({
           <RightSidebar />
         </main>
         <Bottombar />
-        </body>
+      </body>
     </html>
-  )
+  );
 }
