@@ -1,3 +1,28 @@
+export const topbarLinks = [
+  {
+    imgURL: "/assets/explore.svg",
+    route: "/explore",
+    label: "Explore",
+  },
+  
+  {
+    imgURL: "/assets/bookmark.svg",
+    route: "/bookmarks",
+    label: "Bookmarks",
+  },
+];
+export const topbarNav = [
+  {
+  imgURL:"/assets/dm.svg",
+  route: "messages",
+  label: "Messages",
+},
+{
+  imgURL:"/assets/bell.svg",
+  route: "notification",
+  label: "Notification",
+},
+];
 export const sidebarLinks = [
     {
       imgURL: "/assets/home.svg",
@@ -70,8 +95,10 @@ export const sidebarLinks = [
     { value: "members", label: "Members", icon: "/assets/members.svg" },
     { value: "requests", label: "Requests", icon: "/assets/request.svg" },
   ];
+  
   export const userProfile = {
     imgURL: "/assets/user.svg",
     route: "/profile",
     label: "Profile",
-  }
+  };
+  

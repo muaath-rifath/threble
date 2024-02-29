@@ -73,7 +73,9 @@
   .bottombar_link {
     @apply relative flex flex-col items-center gap-2 rounded-lg p-2 sm:flex-1 sm:px-2 sm:py-2.5;
   }
-
+  .topbar_link {
+    @apply relative flex   items-center gap-2 rounded-lg p-2 sm:flex-1 sm:px-2 sm:py-2.5;
+  }
   .leftsidebar {
     @apply sticky left-0 top-0 z-20 flex h-screen w-fit flex-col justify-between overflow-auto dark:bg-dark-1 bg-light-2 pb-5 pt-28 max-md:hidden;
   }
