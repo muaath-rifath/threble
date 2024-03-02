@@ -2,7 +2,7 @@
 import Link from "next/link"
 import Image from "next/image"
 import { usePathname, useRouter } from "next/navigation"
-import ThemeToggle from "@components/ThemeToggle";
+import ThemeToggle from "@/components/ThemeToggle";
 import { useState, useEffect } from 'react';
 import { signIn, signOut, useSession, getProviders } from 'next-auth/react';
 import { userProfile, topbarLinks, topbarNav } from '@/constants/'

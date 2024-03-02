@@ -1,14 +1,34 @@
-import NextAuth, { NextAuthOptions, User, Session, Account } from "next-auth";
+import NextAuth from "next-auth";
 import GitHubProvider from "next-auth/providers/github";
 import GoogleProvider from "next-auth/providers/google";
 import { PrismaAdapter } from "@next-auth/prisma-adapter";
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient } from "@prisma/client";
 
-// Create a PrismaClient instance
-const prisma = new PrismaClient();
+// Create a new instance of PrismaClient
+const prisma = new PrismaClient({
+  datasources: {
+    db: {
+      url: process.env.DATABASE_URL,
+    },
+  },
+});
 
-// Define the options for NextAuth
-const options: NextAuthOptions = {
+// Use prisma instance to interact with your database
+async function main() {
+  const allUsers = await prisma.user.findMany();
+  console.log(allUsers);
+}
+
+main()
+  .catch(e => {
+    throw e
+  })
+  .finally(async () => {
+    await prisma.$disconnect()
+  });
+
+
+export default NextAuth({
   providers: [
     GitHubProvider({
       clientId: process.env.GITHUB_ID as string,
@@ -25,7 +45,7 @@ const options: NextAuthOptions = {
     strategy: 'jwt',
   },
   jwt: {
-    secret: process.env.JWT_SECRET as string,
+    secret: process.env.JWT_SECRET,
   },
   pages: {
     signIn: '/auth/signin',
@@ -34,12 +54,25 @@ const options: NextAuthOptions = {
     verifyRequest: '/auth/verify-request',
   },
   callbacks: {
-    async session({ session, user }: { session: Session; user: User }) {
+    async signIn({ user, account, profile }) {
+      const { email } = user;
+      let dbUser = await prisma.user.findUnique({ where: { email } });
+
+      if (!dbUser) {
+        dbUser = await prisma.user.create({
+          data: {
+            name: user.name,
+            email: user.email,
+            image: user.image,
+          },
+        });
+      }
+
+      return true;
+    },
+    async session({ session, user }) {
       // Add your session logic here
       return session;
     },
   },
-};
-
-// Export the configuration
-export default NextAuth(options);
+});
