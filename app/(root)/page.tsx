@@ -1,7 +1,10 @@
-export default function Home() {
+// app/(root)/page.tsx
+
+import { Suspense } from 'react';
+
+export default function HomePage() {
   return (
-    <>
-      <h1 className="head-text text-left">Home</h1>
-    </>
-  )
+    <Suspense fallback={<div>Loading...</div>}>
+    </Suspense>
+  );
 }

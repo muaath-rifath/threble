@@ -8,107 +8,206 @@ datasource db {
 }
 
 model User {
-  id            Int      @id @default(autoincrement())
-  name          String
-  username      String   @unique 
-  email         String   @unique
-  image         String?
-  posts         Post[]
-  messages      Message[]
-  groupMembers  GroupMember[]
-  communityMembers CommunityMember[]
-  files       File[]
-  reactions   Reaction[]
+  id                 String            @id @default(cuid())
+  name               String?
+  email              String            @unique
+  username           String?           @unique
+  password           String?
+  image              String?
+  role               Role              @default(USER)
+  createdAt          DateTime          @default(now())
+  updatedAt          DateTime          @updatedAt
+  preferences        Json?
+  settings           Json?
+  activities         Activity[]
+  comments           Comment[]
+  createdCommunities Community[]       @relation("CommunityCreator")
+  communities        CommunityMember[]
+  connectedTo        Connection[]      @relation("Connections")
+  connections        Connection[]
+  following          Follow[]          @relation("Follower")
+  followers          Follow[]          @relation("Following")
+  posts              Post[]
+  reactions          Reaction[]
+  profile            UserProfile?
+  accounts           Account[]
+  sessions           Session[]
+
+  @@index([email, username])
 }
 
-model File {
-  id        Int      @id @default(autoincrement())
-  url       String
-  userId    Int
-  user      User     @relation(fields: [userId], references: [id])
-  postId    Int?
-  post      Post?    @relation(fields: [postId], references: [id])
-  messageId Int?
-  message   Message? @relation(fields: [messageId], references: [id])
-  createdAt DateTime @default(now())
+model Account {
+  id                 String  @id @default(cuid())
+  userId             String
+  type               String
+  provider           String
+  providerAccountId  String
+  refresh_token      String? @db.Text
+  access_token       String? @db.Text
+  expires_at         Int?
+  token_type         String?
+  scope              String?
+  id_token           String? @db.Text
+  session_state      String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+model UserProfile {
+  id        String    @id @default(cuid())
+  userId    String    @unique
+  bio       String?
+  avatar    String?
+  location  String?
+  website   String?
+  birthDate DateTime?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
 }
 
 
-enum ReactionType {
-  LIKE
-  LOVE
-  HAHA
-  WOW
-  SAD
-  ANGRY
-}
-
-model Reaction {
-  id            Int           @id @default(autoincrement())
-  type          ReactionType
-  userId        Int
-  user          User          @relation(fields: [userId], references: [id])
-  postId        Int?
-  post          Post?         @relation(fields: [postId], references: [id])
-  messageId     Int?
-  message       Message?      @relation(fields: [messageId], references: [id])
-  createdAt     DateTime      @default(now())
-}
 model Post {
-  id            Int      @id @default(autoincrement())
-  content       String
-  authorId      Int
-  author        User     @relation(fields: [authorId], references: [id])
-  communityId   Int?
-  community     Community? @relation(fields: [communityId], references: [id])
-  files         File[]
-  reactions     Reaction[]
+  id               String     @id @default(cuid())
+  content          String
+  authorId         String
+  communityId      String?
+  createdAt        DateTime   @default(now())
+  updatedAt        DateTime   @updatedAt
+  mediaAttachments String[]
+  visibility       String     @default("public")
+  comments         Comment[]
+  author           User       @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  community        Community? @relation(fields: [communityId], references: [id])
+  reactions        Reaction[]
+
+  @@index([authorId, createdAt])
+  @@index([communityId, createdAt])
 }
 
-model Message {
-  id            Int      @id @default(autoincrement())
-  content       String
-  senderId      Int
-  sender        User     @relation(fields: [senderId], references: [id])
-  groupId       Int?
-  group         Group?   @relation(fields: [groupId], references: [id])
-  files         File[]
-  reactions     Reaction[]
+model Comment {
+  id        String     @id @default(cuid())
+  content   String
+  authorId  String
+  postId    String
+  parentId  String?
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+  author    User       @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  parent    Comment?   @relation("CommentReplies", fields: [parentId], references: [id])
+  replies   Comment[]  @relation("CommentReplies")
+  post      Post       @relation(fields: [postId], references: [id], onDelete: Cascade)
+  reactions Reaction[]
+
+  @@index([authorId, createdAt])
+  @@index([postId, createdAt])
+  @@index([parentId])
 }
 
-model Group {
-  id            Int      @id @default(autoincrement())
-  name          String
-  messages      Message[]
-  members       GroupMember[]
-}
-
-enum Role {
-  ADMIN
-  MODERATOR
-  MEMBER
-}
-model GroupMember {
-  userId        Int
-  user          User     @relation(fields: [userId], references: [id])
-  groupId       Int
-  group         Group    @relation(fields: [groupId], references: [id])
-  role          Role     @default(MEMBER)
-  @@id([userId, groupId])
-}
 model Community {
-  id            Int      @id @default(autoincrement())
-  name          String
-  isPrivate     Boolean
-  posts         Post[]
-  members       CommunityMember[]
+  id          String            @id @default(cuid())
+  name        String            @unique
+  description String?
+  creatorId   String
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
+  creator     User              @relation("CommunityCreator", fields: [creatorId], references: [id])
+  members     CommunityMember[]
+  posts       Post[]
+
+  @@index([name])
+  @@index([creatorId])
 }
 
 model CommunityMember {
-  userId        Int
-  user          User     @relation(fields: [userId], references: [id])
-  communityId   Int
-  community     Community @relation(fields: [communityId], references: [id])
-  role          Role     @default(MEMBER)
-  @@id([userId, communityId])
+  id          String    @id @default(cuid())
+  userId      String
+  communityId String
+  role        String    @default("member")
+  joinedAt    DateTime  @default(now())
+  community   Community @relation(fields: [communityId], references: [id], onDelete: Cascade)
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, communityId])
+  @@index([communityId, userId])
+}
+
+model Reaction {
+  id        String   @id @default(cuid())
+  type      String
+  userId    String
+  postId    String?
+  commentId String?
+  createdAt DateTime @default(now())
+  comment   Comment? @relation(fields: [commentId], references: [id], onDelete: Cascade)
+  post      Post?    @relation(fields: [postId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, postId, commentId])
+  @@index([userId, type])
+  @@index([postId, type])
+  @@index([commentId, type])
+}
+
+model Activity {
+  id        String   @id @default(cuid())
+  type      String
+  userId    String
+  targetId  String?
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, type, createdAt])
+}
+
+model Follow {
+  id          String   @id @default(cuid())
+  followerId  String
+  followingId String
+  createdAt   DateTime @default(now())
+  follower    User     @relation("Follower", fields: [followerId], references: [id], onDelete: Cascade)
+  following   User     @relation("Following", fields: [followingId], references: [id], onDelete: Cascade)
+
+  @@unique([followerId, followingId])
+  @@index([followerId])
+  @@index([followingId])
+}
+
+model Connection {
+  id              String   @id @default(cuid())
+  userId          String
+  connectedUserId String
+  createdAt       DateTime @default(now())
+  connectedUser   User     @relation("Connections", fields: [connectedUserId], references: [id], onDelete: Cascade)
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, connectedUserId])
+  @@index([userId])
+  @@index([connectedUserId])
+}
+
+enum Role {
+  USER
+  MODERATOR
+  ADMIN
 }
