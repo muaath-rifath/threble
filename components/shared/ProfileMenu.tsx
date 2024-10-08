@@ -27,7 +27,7 @@ const Header = () => {
               email: session.user.email || '',
               image: session.user.image || undefined,
             }}
-            onEditProfile={handleEditProfile}
+            onProfile={handleEditProfile}
             onSettings={handleSettings}
             onLogout={handleLogout}
           />

@@ -21,6 +21,14 @@ declare module "next-auth" {
     hasProfile?: boolean
   }
 }
+interface ProfileData {
+  // ... existing fields
+  coverImage?: string;
+  profile?: {
+    // ... existing fields
+    coverImage?: string;
+  };
+}
 
 declare module "next-auth/jwt" {
   interface JWT {

@@ -1,6 +1,8 @@
-import React from 'react';
+import React, { useState } from 'react';
+import { useTheme } from "next-themes";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
+import { useRouter } from "next/navigation";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -10,7 +12,12 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { User, Settings, Edit, LogOut } from 'lucide-react';
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
+import { User, Settings, LogOut, Moon, Sun, Monitor, Palette, ChevronRight, ChevronDown } from 'lucide-react';
 
 interface ProfileDropdownProps {
   user: {
@@ -18,19 +25,34 @@ interface ProfileDropdownProps {
     email: string;
     image?: string;
   };
-  onEditProfile: () => void;
   onSettings: () => void;
   onLogout: () => void;
 }
 
 const ProfileDropdown: React.FC<ProfileDropdownProps> = ({
   user,
-  onEditProfile,
   onSettings,
   onLogout,
 }) => {
+  const { theme, setTheme } = useTheme();
+  const [isThemeOpen, setIsThemeOpen] = useState(false);
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const handleThemeToggle = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsThemeOpen(!isThemeOpen);
+  };
+  const handleThemeChange = (newTheme: string) => {
+    setTheme(newTheme);
+    setIsThemeOpen(false);
+  };
+  const router = useRouter();
+  const onProfile = () => {
+    
+    router.push('/profile');
+  };
   return (
-    <DropdownMenu>
+    <DropdownMenu open={isDropdownOpen} onOpenChange={setIsDropdownOpen}>
       <DropdownMenuTrigger asChild>
         <Button variant="ghost" className="relative h-8 w-8 rounded-full">
           <Avatar className="h-8 w-8">
@@ -41,7 +63,7 @@ const ProfileDropdown: React.FC<ProfileDropdownProps> = ({
           </Avatar>
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent className="w-56 dark:bg-glassmorphism-dark backdrop-blur-md border" align="end" forceMount>
+      <DropdownMenuContent className="w-56 dark:bg-dark-1 backdrop-blur-lg border" align="end">
         <DropdownMenuLabel className="font-normal">
           <div className="flex flex-col space-y-1">
             <p className="text-sm font-medium leading-none">{user.name}</p>
@@ -52,14 +74,41 @@ const ProfileDropdown: React.FC<ProfileDropdownProps> = ({
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
         <DropdownMenuGroup>
-          <DropdownMenuItem onClick={onEditProfile}>
-            <Edit className="mr-2 h-4 w-4" />
-            <span>Edit Profile</span>
+          <DropdownMenuItem onClick={onProfile}>
+            <User className="mr-2 h-4 w-4" />
+            <span>Profile</span>
           </DropdownMenuItem>
           <DropdownMenuItem onClick={onSettings}>
             <Settings className="mr-2 h-4 w-4" />
             <span>Settings</span>
           </DropdownMenuItem>
+          <Collapsible open={isThemeOpen} onOpenChange={setIsThemeOpen}>
+            <CollapsibleTrigger asChild>
+              <DropdownMenuItem onClick={handleThemeToggle}>
+                <Palette className="mr-2 h-4 w-4" />
+                <span>Theme</span>
+                {isThemeOpen ? (
+                  <ChevronDown className="ml-auto h-4 w-4" />
+                ) : (
+                  <ChevronRight className="ml-auto h-4 w-4" />
+                )}
+              </DropdownMenuItem>
+            </CollapsibleTrigger>
+            <CollapsibleContent className="px-2 py-1">
+              <DropdownMenuItem onClick={() => handleThemeChange('light')}>
+                <Sun className="mr-2 h-4 w-4" />
+                <span>Light</span>
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => handleThemeChange('dark')}>
+                <Moon className="mr-2 h-4 w-4" />
+                <span>Dark</span>
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => handleThemeChange('system')}>
+                <Monitor className="mr-2 h-4 w-4" />
+                <span>System</span>
+              </DropdownMenuItem>
+            </CollapsibleContent>
+          </Collapsible>
         </DropdownMenuGroup>
         <DropdownMenuSeparator />
         <DropdownMenuItem onClick={onLogout}>

@@ -3,7 +3,6 @@ import Link from "next/link"
 import Image from "next/image"
 import { usePathname, useRouter } from "next/navigation"
 import { topbarNav } from '@/constants/'
-import { ModeToggle } from "../ui/mode-toggle";
 import ProfileMenu from "./ProfileMenu";
 function Topbar() {
 
@@ -15,7 +14,6 @@ function Topbar() {
             </Link>
 
             <div className="flex flex-right gap-4 items-center">
-                <ModeToggle />
                 {topbarNav.map((link) => {
                     return (
                         <div className="flex w-10" key={link.label}>

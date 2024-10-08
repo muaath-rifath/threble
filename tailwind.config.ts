@@ -13,6 +13,7 @@ const config: Config = {
       colors: {
         'light-1': 'hsl(0,0%,100%)',
         'light-2': 'hsl(0,0%,93.3%)',
+        'light-5': 'rgba(255,255,255)',
         'light-3': 'hsl(240,10.5%,55.9%)',
         'light-4': 'hsl(240,11.9%,42.2%)',
         'dark-1': 'hsl(0,0%,0%)',
@@ -22,7 +23,7 @@ const config: Config = {
         'primary-500': 'hsl(252.3,95.7%,67.8%)',
         'secondary-500': 'hsl(41.7,100%,56.1%)',
         'glassmorphism': 'rgba(255, 255, 255, 0.50)',
-        'glassmorphism-dark': 'rgba(28, 28, 30, 0.60)',
+        'glassmorphism-dark': 'hsl(220, 13%, 5%,0.7)', //hsl()
       },
       fontSize: {
         'heading1-bold': ['36px', { lineHeight: '140%', fontWeight: '700' }],

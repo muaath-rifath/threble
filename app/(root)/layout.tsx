@@ -9,7 +9,7 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <>
+    <body>
       <Topbar />
       <main className="flex flex-row">
         <LeftSidebar />
@@ -19,6 +19,6 @@ export default function RootLayout({
         <RightSidebar />
       </main>
       <Bottombar />
-    </>
+    </body>
   )
 }
