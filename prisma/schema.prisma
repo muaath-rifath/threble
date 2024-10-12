@@ -88,7 +88,6 @@ model UserProfile {
   @@index([userId])
 }
 
-
 model Post {
   id               String     @id @default(cuid())
   content          String
@@ -158,19 +157,18 @@ model Reaction {
   id        String   @id @default(cuid())
   type      String
   userId    String
-  postId    String?
+  postId    String
   commentId String?
   createdAt DateTime @default(now())
   comment   Comment? @relation(fields: [commentId], references: [id], onDelete: Cascade)
-  post      Post?    @relation(fields: [postId], references: [id], onDelete: Cascade)
+  post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  @@unique([userId, postId, commentId])
+  @@unique([userId, postId])
   @@index([userId, type])
   @@index([postId, type])
   @@index([commentId, type])
 }
-
 model Activity {
   id        String   @id @default(cuid())
   type      String

@@ -41,7 +41,7 @@ export const sidebarLinks = [
     },
     {
       imgURL: "/assets/create.svg",
-      route: "/create-post",
+      route: "/post",
       label: "Post",
     },
     {
@@ -69,7 +69,7 @@ export const sidebarLinks = [
     },
     {
       imgURL: "/assets/create.svg",
-      route: "/create-post",
+      route: "/post",
       label: "Post",
     },
     {
