@@ -1,6 +1,4 @@
-you're giving markdown in a markdown. provide me withe entire raw Readme.md code in one single code block
 
-```markdown
 # Threble
 
 A modern, open-source social media platform built for the tech community, licensed under GPL v3.
