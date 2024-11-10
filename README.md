@@ -1,5 +1,3 @@
-complete it. provide me with full code
-
 # Threble
 
 A modern, open-source social media platform built for the tech community, licensed under GPL v3.
