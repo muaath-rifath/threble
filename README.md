@@ -27,17 +27,14 @@ A modern, open-source social media platform built for the tech community, licens
 Launch the development server:
 ```bash
 npm run dev
-```
+
 # or
-```bash
 yarn dev
-```
+
 # or
-```bash
 pnpm dev
-```
+
 # or
-```bash
 bun dev
 ```
 
