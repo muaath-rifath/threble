@@ -1,3 +1,4 @@
+complete it. provide me with full code
 
 # Threble
 
@@ -25,7 +26,6 @@ A modern, open-source social media platform built for the tech community, licens
 
 Launch the development server:
 
-```bash
 npm run dev
 # or
 yarn dev
@@ -33,7 +33,6 @@ yarn dev
 pnpm dev
 # or
 bun dev
-```
 
 Visit http://localhost:3000 to view the application.
 
@@ -59,6 +58,19 @@ DATABASE_URL=your_database_url
 
 Edit `app/page.tsx` to modify the main page. Changes will be reflected automatically.
 
+## Upcoming Features
+
+- Video Calling
+- Stories/Status Feature
+- Real-time Messaging
+- Custom Photo Feed
+- Post Management (Create, Delete)
+- User Interactions (Like, Comment)
+- Profile Customization
+- Dark Mode Support
+- Search Functionality
+- Notification System
+
 ## Resources
 
 - Next.js Documentation
@@ -67,5 +79,68 @@ Edit `app/page.tsx` to modify the main page. Changes will be reflected automatic
 
 ## Deployment
 
-Deploy easily using Vercel, the platform from Next.js creators. Refer to the Next.js deployment documentation for detailed instructions.```
+Deploy easily using Vercel, the platform from Next.js creators. Refer to the Next.js deployment documentation for detailed instructions.
+
+## Authentication Flow
+
+Leverages NextAuth with Prisma, it authentication provides:
+
+- **OAuth Integration**: Google, GitHub, and Azure AD login
+- **Database Sync**: Direct PostgreSQL integration via Prisma (No need for model (schema) for this)
+- **Session Handling**: Automatic JWT management
+- **Route Protection**: Built-in NextAuth middleware
+- **Type Safety**: Full TypeScript support
+
+For setup instructions, check `/docs/auth.md`.
+
+## Contributing
+
+Contributions are welcome! Please follow these steps:
+
+1. Fork the repository
+2. Create a new branch: `git checkout -b feature-name`
+3. Make your changes
+4. Run tests: `npm run test`
+5. Commit your changes: `git commit -m 'Add feature'`
+6. Push to the branch: `git push origin feature-name`
+7. Submit a pull request
+
+## Code of Conduct
+
+Please note that this project is released with a Contributor Code of Conduct. By participating in this project you agree to abide by its terms.
+
+## License
+
+This project is licensed under the GNU General Public License v3.0 - see the [LICENSE](LICENSE) file for details.
+
+## Support
+
+If you need help or have questions:
+- Open an issue
+- Join our Discord community
+- Check the documentation
+- Email support: support@threble.com
+
+
+## Scripts
+
+```bash
+# Install dependencies
+npm install
+
+# Run development server
+npm run dev
+
+# Build for production
+npm run build
+
+# Start production server
+npm start
+
+# Run tests
+npm test
+
+# Run linting
+npm run lint
+```
 
