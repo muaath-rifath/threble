@@ -25,14 +25,21 @@ A modern, open-source social media platform built for the tech community, licens
 ## Quick Start
 
 Launch the development server:
-
+```bash
 npm run dev
+```
 # or
+```bash
 yarn dev
+```
 # or
+```bash
 pnpm dev
+```
 # or
+```bash
 bun dev
+```
 
 Visit http://localhost:3000 to view the application.
 
