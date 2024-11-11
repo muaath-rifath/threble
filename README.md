@@ -62,14 +62,9 @@ Edit `app/page.tsx` to modify the main page. Changes will be reflected automatic
 
 ## Upcoming Features
 
-- Video Calling
 - Stories/Status Feature
-- Real-time Messaging
 - Custom Photo Feed
-- Post Management (Create, Delete)
-- User Interactions (Like, Comment)
-- Profile Customization
-- Dark Mode Support
+- Direct Message
 - Search Functionality
 - Notification System
 
@@ -119,10 +114,7 @@ This project is licensed under the GNU General Public License v3.0 - see the [LI
 
 If you need help or have questions:
 - Open an issue
-- Join our Discord community
-- Check the documentation
-- Email support: support@threble.com
-
+- Email support: 
 
 ## Scripts
 
