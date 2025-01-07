@@ -14,7 +14,7 @@ model User {
   username           String?           @unique
   password           String?
   image              String?
-  coverImage         String?           // New field
+  coverImage         String?
   role               Role              @default(USER)
   createdAt          DateTime          @default(now())
   updatedAt          DateTime          @updatedAt
@@ -77,7 +77,7 @@ model UserProfile {
   userId     String    @unique
   bio        String?
   avatar     String?
-  coverImage String?   // New field
+  coverImage String?
   location   String?
   website    String?
   birthDate  DateTime?
@@ -101,6 +101,9 @@ model Post {
   author           User       @relation(fields: [authorId], references: [id], onDelete: Cascade)
   community        Community? @relation(fields: [communityId], references: [id])
   reactions        Reaction[]
+  parentId         String?
+  parent           Post?       @relation("PostReplies", fields: [parentId], references: [id], onDelete: Cascade)
+  replies          Post[]      @relation("PostReplies")
 
   @@index([authorId, createdAt])
   @@index([communityId, createdAt])
