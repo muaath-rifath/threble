@@ -47,10 +47,10 @@ const ProfileDropdown: React.FC<ProfileDropdownProps> = ({
     setIsThemeOpen(false);
   };
   const router = useRouter();
-  const onProfile = () => {
     
-    router.push('/profile');
-  };
+ const onProfile = () => {
+       router.push('/profile');
+    };
   return (
     <DropdownMenu open={isDropdownOpen} onOpenChange={setIsDropdownOpen}>
       <DropdownMenuTrigger asChild>
@@ -74,10 +74,10 @@ const ProfileDropdown: React.FC<ProfileDropdownProps> = ({
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
         <DropdownMenuGroup>
-          <DropdownMenuItem onClick={onProfile}>
-            <User className="mr-2 h-4 w-4" />
-            <span>Profile</span>
-          </DropdownMenuItem>
+            <DropdownMenuItem onClick={onProfile}>
+                <User className="mr-2 h-4 w-4" />
+                <span>Profile</span>
+            </DropdownMenuItem>
           <DropdownMenuItem onClick={onSettings}>
             <Settings className="mr-2 h-4 w-4" />
             <span>Settings</span>

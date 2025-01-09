@@ -4,12 +4,8 @@ import ProfileDropdown from './ProfileDropdown';
 const Header = () => {
   const { data: session } = useSession();
 
-  const handleEditProfile = () => {
-    // Handle edit profile action
-  };
-
   const handleSettings = () => {
-    // Handle settings action
+    // Handle edit profile action (settings in the dropdown menu acts as edit profile)
   };
 
   const handleLogout = () => {
@@ -27,7 +23,6 @@ const Header = () => {
               email: session.user.email || '',
               image: session.user.image || undefined,
             }}
-            onProfile={handleEditProfile}
             onSettings={handleSettings}
             onLogout={handleLogout}
           />
