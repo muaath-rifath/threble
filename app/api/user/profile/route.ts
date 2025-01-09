@@ -2,23 +2,35 @@ import { NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth/next'
 import { authOptions } from '@/app/api/auth/[...nextauth]/options'
 import prisma from '@/lib/prisma'
+import { uploadFileToBlobStorage } from '@/lib/azure-storage'
+
 
 export async function PUT(req: Request) {
-  const session = await getServerSession(authOptions)
+    const session = await getServerSession(authOptions)
 
-  if (!session) {
-    return NextResponse.json({ error: 'Not authenticated' }, { status: 401 })
-  }
+    if (!session) {
+        return NextResponse.json({ error: 'Not authenticated' }, { status: 401 })
+    }
 
-  const body = await req.json()
-  const { name, bio, image, coverImage } = body
+  const formData = await req.formData();
+  const name = formData.get('name') as string;
+  const bio = formData.get('bio') as string;
+  const coverImage = formData.get('coverImage') as string;
+  const email = formData.get('email') as string;
+
+  let imageUrl = null;
+  const imageFile = formData.get('image') as File | null;
 
   try {
+        if (imageFile) {
+            imageUrl = await uploadFileToBlobStorage(imageFile);
+        }
+
     const updatedUser = await prisma.user.update({
       where: { id: session.user.id },
       data: {
         name,
-        image,
+        image: imageUrl || undefined,
         coverImage,
         profile: {
           upsert: {
@@ -59,8 +71,9 @@ export async function GET(req: Request) {
     // Combine user and profile data
     const profileData = {
       ...user,
-      bio: user.profile?.bio,
+        bio: user.profile?.bio,
       coverImage: user.coverImage,
+        image: user.image,
     }
 
     return NextResponse.json(profileData)

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth/next'
 import { authOptions } from '@/app/api/auth/[...nextauth]/options'
 import prisma from '@/lib/prisma'
+import { uploadFileToBlobStorage } from '@/lib/azure-storage'
 
 // Handle GET requests
 export async function GET(req: NextRequest) {
@@ -74,10 +75,21 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ error: 'Not authenticated' }, { status: 401 })
     }
 
-    const body = await req.json()
-    const { content, mediaAttachments, visibility, communityId, parentId } = body
+    const formData = await req.formData()
+    const content = formData.get('content') as string;
+    const visibility = formData.get('visibility') as string;
+    const communityId = formData.get('communityId') as string | null;
+    const parentId = formData.get('parentId') as string | null;
+    const mediaAttachments: string[] = []
 
     try {
+        const files = formData.getAll('mediaAttachments') as File[]
+
+        for(const file of files){
+            const imageUrl = await uploadFileToBlobStorage(file);
+                mediaAttachments.push(imageUrl)
+        }
+
         const newPost = await prisma.post.create({
             data: {
                 content,
@@ -104,7 +116,7 @@ export async function POST(req: NextRequest) {
             },
         })
 
-        return NextResponse.json(newPost, { status: 201 })
+    return NextResponse.json(newPost, { status: 201 })
     } catch (error) {
         console.error('Error creating post:', error)
         return NextResponse.json({ error: 'Failed to create post' }, { status: 500 })
