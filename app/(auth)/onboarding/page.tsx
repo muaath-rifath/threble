@@ -11,11 +11,12 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
+import { FileUpload } from '@/components/ui/file-upload' // Importing the file upload component
+
 
 const onboardingSchema = z.object({
   username: z.string().min(3, 'Username must be at least 3 characters'),
   bio: z.string().max(160, 'Bio must be 160 characters or less').optional(),
-  avatar: z.string().url('Invalid URL').optional(),
   location: z.string().max(100, 'Location must be 100 characters or less').optional(),
   website: z.string().url('Invalid URL').optional(),
   birthDate: z.string().optional().refine((date) => !date || !isNaN(Date.parse(date)), {
@@ -29,6 +30,7 @@ export default function OnboardingPage() {
   const [error, setError] = useState<string | null>(null)
   const router = useRouter()
   const { data: session, status, update } = useSession()
+    const [profileFile, setProfileFile] = useState<File[]>([]);
 
   useEffect(() => {
     if (status === 'unauthenticated') {
@@ -42,17 +44,31 @@ export default function OnboardingPage() {
     register,
     handleSubmit,
     formState: { errors, isSubmitting },
+      setValue,
   } = useForm<OnboardingInput>({
     resolver: zodResolver(onboardingSchema),
   })
 
-  const onSubmit = async (data: OnboardingInput) => {
+    const onSubmit = async (data: OnboardingInput) => {
     try {
-      const response = await fetch('/api/user/onboarding', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...data, userId: session?.user.id }),
-      })
+        const formData = new FormData()
+        formData.append('username', data.username);
+        formData.append('bio', data.bio || "");
+        formData.append('location', data.location || "");
+        formData.append('website', data.website || "");
+       
+      if (data.birthDate) {
+           formData.append('birthDate', data.birthDate);
+        }
+
+        if (profileFile.length > 0) {
+           formData.append('image', profileFile[0]);
+        }
+
+        const response = await fetch('/api/user/onboarding', {
+            method: 'POST',
+             body: formData,
+        })
 
       if (response.ok) {
         await update({ ...session, user: { ...session?.user, hasProfile: true } })
@@ -97,13 +113,10 @@ export default function OnboardingPage() {
                 <p className="text-sm text-red-500">{errors.bio.message}</p>
               )}
             </div>
-            <div className="grid gap-2">
-              <Label htmlFor="avatar">Avatar URL</Label>
-              <Input id="avatar" type="url" {...register('avatar')} />
-              {errors.avatar && (
-                <p className="text-sm text-red-500">{errors.avatar.message}</p>
-              )}
-            </div>
+                <div className="grid gap-2">
+                    <Label htmlFor="profile">Profile Image</Label>
+                    <FileUpload  onChange={(files) => setProfileFile(files)} />
+                </div>
             <div className="grid gap-2">
               <Label htmlFor="location">Location</Label>
               <Input id="location" {...register('location')} />

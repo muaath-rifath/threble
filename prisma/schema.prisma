@@ -76,7 +76,6 @@ model UserProfile {
   id         String    @id @default(cuid())
   userId     String    @unique
   bio        String?
-  avatar     String?
   coverImage String?
   location   String?
   website    String?
