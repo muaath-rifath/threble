@@ -4,6 +4,7 @@ import './globals.css'
 import { Inter } from 'next/font/google'
 import { ThemeProvider } from "@/components/theme-provider"
 import { Source_Sans_3, Source_Serif_4 } from 'next/font/google'
+import { Toaster } from "@/components/ui/toaster"
 
 const sourceSansPro = Source_Sans_3({
   subsets: ['latin'],
@@ -34,6 +35,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
             disableTransitionOnChange
           >
             {children}
+            <Toaster />
           </ThemeProvider>
         </Providers>
       </body>

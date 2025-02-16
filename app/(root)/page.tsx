@@ -72,16 +72,19 @@ export default function HomePage() {
     const onSubmitPost = async (values: z.infer<typeof postFormSchema>) => {
         setIsSubmitting(true)
         try {
+            const formData = new FormData();
+            formData.append('content', values.content);
+            formData.append('visibility', 'public');
+
             const response = await fetch('/api/posts', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify(values),
-            })
+                method: 'POST',
+                body: formData,
+            });
 
             if (response.ok) {
-              toast({ title: "Post created", description: "Your post has been successfully created." })
-              postForm.reset()
-              fetchPosts()
+                toast({ title: "Post created", description: "Your post has been successfully created." })
+                postForm.reset()
+                fetchPosts()
             } else {
                 throw new Error('Failed to create post')
             }
@@ -300,7 +303,16 @@ export default function HomePage() {
                     </CardHeader>
                     {post.parentId && post.parent &&(
                         <CardContent className="pl-14 italic text-sm text-slate-600 dark:text-slate-400 pb-2">
-                             Replying to <span className='font-medium text-slate-900 dark:text-slate-100'>@{post.parent.author.name}</span>
+                            Replied to{' '}
+                            <button
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    router.push(`/post/${post.parentId}`);
+                                }}
+                                className="font-medium text-blue-600 dark:text-blue-400 hover:underline"
+                            >
+                                @{post.parent.author.name}
+                            </button>
                         </CardContent>
                     )}
                     <CardContent className="pt-2" onClick={(e) => handlePostClick(e, post.id)}>

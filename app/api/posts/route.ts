@@ -20,16 +20,15 @@ export async function GET(req: NextRequest) {
         const posts = await prisma.post.findMany({
             where: {
                 OR: [
-                    { authorId: session.user.id, parentId: null },
+                    { authorId: session.user.id },
                     {
                         author: {
                             followers: {
                                 some: { followerId: session.user.id },
                             },
                         },
-                         parentId: null
                     },
-                    { visibility: 'public', parentId: null},
+                    { visibility: 'public' },
                 ],
             },
             orderBy: { createdAt: 'desc' },
@@ -41,10 +40,28 @@ export async function GET(req: NextRequest) {
                 _count: {
                     select: { replies: true },
                 },
-                parent:{
-                    include:{
+                parent: {
+                    include: {
                         author: {
                             select: { name: true, image: true },
+                        }
+                    }
+                },
+                replies: {
+                    include: {
+                        author: {
+                            select: { name: true, image: true },
+                        },
+                        parent: {
+                            include: {
+                                author: {
+                                    select: { name: true, image: true },
+                                }
+                            }
+                        },
+                        reactions: true,
+                        _count: {
+                            select: { replies: true },
                         }
                     }
                 }
@@ -75,29 +92,32 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ error: 'Not authenticated' }, { status: 401 })
     }
 
-    const formData = await req.formData()
-    const content = formData.get('content') as string;
-    const visibility = formData.get('visibility') as string;
-    const communityId = formData.get('communityId') as string | null;
-    const parentId = formData.get('parentId') as string | null;
-    const mediaAttachments: string[] = []
-
     try {
-        const files = formData.getAll('mediaAttachments') as File[]
+        const formData = await req.formData()
+        const content = formData.get('content') as string
+        const visibility = formData.get('visibility') as string
+        const parentId = formData.get('parentId') as string | null
+        const communityId = formData.get('communityId') as string | null
+        const mediaFiles = formData.getAll('mediaAttachments') as File[]
+        const mediaAttachments: string[] = []
 
-        for(const file of files){
-            const imageUrl = await uploadFileToBlobStorage(file);
+        // Handle media uploads if any
+        if (mediaFiles.length > 0) {
+            for (const file of mediaFiles) {
+                const imageUrl = await uploadFileToBlobStorage(file)
                 mediaAttachments.push(imageUrl)
+            }
         }
 
+        // Create the post/reply
         const newPost = await prisma.post.create({
             data: {
                 content,
                 authorId: session.user.id,
-                mediaAttachments,
                 visibility,
+                parentId,
                 communityId,
-                parentId
+                mediaAttachments
             },
             include: {
                 author: {
@@ -106,8 +126,12 @@ export async function POST(req: NextRequest) {
                         image: true,
                     },
                 },
-                parent:{
-                    include:{
+                reactions: true,
+                _count: {
+                    select: { replies: true },
+                },
+                parent: {
+                    include: {
                         author: {
                             select: { name: true, image: true },
                         }
@@ -116,7 +140,7 @@ export async function POST(req: NextRequest) {
             },
         })
 
-    return NextResponse.json(newPost, { status: 201 })
+        return NextResponse.json(newPost, { status: 201 })
     } catch (error) {
         console.error('Error creating post:', error)
         return NextResponse.json({ error: 'Failed to create post' }, { status: 500 })
