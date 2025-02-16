@@ -1,93 +1,80 @@
-import { BlobServiceClient, StorageSharedKeyCredential, generateBlobSASQueryParameters, BlobSASPermissions, SASProtocol } from '@azure/storage-blob';
+import { BlobServiceClient, StorageSharedKeyCredential, generateBlobSASQueryParameters, BlobSASPermissions, SASProtocol, ContainerClient } from '@azure/storage-blob';
 import { randomUUID } from 'crypto';
 
-const connectionString = process.env.AZURE_STORAGE_CONNECTION_STRING!;
-const containerName = process.env.AZURE_STORAGE_CONTAINER_NAME!;
-const accountName = process.env.AZURE_STORAGE_ACCOUNT_NAME!;
-const accountKey = process.env.AZURE_STORAGE_ACCOUNT_KEY!;
+interface StorageClients {
+    blobServiceClient: BlobServiceClient;
+    containerClient: ContainerClient;
+    sharedKeyCredential: StorageSharedKeyCredential;
+    containerName: string;
+}
 
-const sharedKeyCredential = new StorageSharedKeyCredential(accountName, accountKey);
-const blobServiceClient = BlobServiceClient.fromConnectionString(connectionString);
-const containerClient = blobServiceClient.getContainerClient(containerName);
+let storageClients: StorageClients | null = null;
 
-// Set up CORS for the container
-async function setupContainerCORS() {
+// Get Azure Storage clients
+export function getStorageClients(): StorageClients | null {
+    // Return cached instance if available
+    if (storageClients) {
+        return storageClients;
+    }
+
+    // Skip during build or if not in a Node.js environment
+    if (typeof window !== 'undefined' || process.env.NEXT_PHASE === 'phase-production-build') {
+        return null;
+    }
+
     try {
-        const service = blobServiceClient;
-        await service.setProperties({
-            cors: [{
-                allowedOrigins: 'http://localhost:3000',  // Update this to match your domain
-                allowedMethods: 'GET,HEAD,PUT,POST,DELETE',
-                allowedHeaders: 'content-type,x-ms-*',
-                exposedHeaders: 'x-ms-*',
-                maxAgeInSeconds: 3600,
-            }]
-        });
-        console.log('CORS rules have been set successfully');
-    } catch (error) {
-        console.error('Error setting CORS rules:', error);
-        if (error instanceof Error) {
-            console.error('Error details:', error.message);
+        const accountName = process.env.AZURE_STORAGE_ACCOUNT_NAME;
+        const accountKey = process.env.AZURE_STORAGE_ACCOUNT_KEY;
+        const containerName = process.env.AZURE_STORAGE_CONTAINER_NAME;
+        const connectionString = process.env.AZURE_STORAGE_CONNECTION_STRING;
+
+        if (!accountName || !accountKey || !containerName || !connectionString) {
+            throw new Error('Missing required Azure Storage configuration');
         }
+
+        const sharedKeyCredential = new StorageSharedKeyCredential(accountName, accountKey);
+        const blobServiceClient = BlobServiceClient.fromConnectionString(connectionString);
+        const containerClient = blobServiceClient.getContainerClient(containerName);
+
+        // Cache the instance
+        storageClients = { blobServiceClient, containerClient, sharedKeyCredential, containerName };
+        return storageClients;
+    } catch (error) {
+        console.error('Failed to initialize Azure Storage:', error);
+        return null;
     }
 }
 
-// Initialize CORS settings
-setupContainerCORS().catch(console.error);
+// Only initialize CORS when explicitly called
+export async function setupContainerCORS(): Promise<void> {
+    const clients = getStorageClients();
+    if (!clients) return;
 
-// Generate SAS token for container-level access
-function generateContainerSasToken() {
-    const startsOn = new Date();
-    const expiresOn = new Date(startsOn);
-    expiresOn.setHours(startsOn.getHours() + 1);
-
-    const sasOptions = {
-        containerName,
-        permissions: BlobSASPermissions.parse('r'),
-        startsOn,
-        expiresOn,
-        protocol: SASProtocol.Https
-    };
-
-    return generateBlobSASQueryParameters(
-        sasOptions,
-        sharedKeyCredential
-    ).toString();
-}
-
-// Generate SAS token for specific blob
-function generateBlobSasToken(blobPath: string) {
-    const blobClient = containerClient.getBlobClient(blobPath);
-    const startsOn = new Date();
-    const expiresOn = new Date(startsOn);
-    expiresOn.setMinutes(startsOn.getMinutes() + 30); // 30 minutes expiry
-
-    const permissions = new BlobSASPermissions();
-    permissions.read = true;
-
-    const sasOptions = {
-        containerName,
-        blobName: blobPath,
-        permissions,
-        startsOn,
-        expiresOn,
-        protocol: SASProtocol.Https
-    };
-
-    const sasToken = generateBlobSASQueryParameters(
-        sasOptions,
-        sharedKeyCredential
-    ).toString();
-
-    return sasToken;
+    try {
+        await clients.blobServiceClient.setProperties({
+            cors: [{
+                allowedOrigins: '*',
+                allowedMethods: 'GET,HEAD,PUT,POST,DELETE',
+                allowedHeaders: '*',
+                exposedHeaders: '*',
+                maxAgeInSeconds: 3600,
+            }]
+        });
+        console.log('CORS rules set successfully');
+    } catch (error) {
+        console.error('Error setting CORS rules:', error);
+    }
 }
 
 export async function uploadFileToBlobStorage(file: File, userId: string): Promise<string> {
+    const clients = getStorageClients();
+    if (!clients) throw new Error('Storage not initialized');
+
     try {
         const extension = file.name.split('.').pop() || '';
         const fileName = `${randomUUID()}.${extension}`;
         const blobPath = `users/${userId}/temp/${fileName}`;
-        const blockBlobClient = containerClient.getBlockBlobClient(blobPath);
+        const blockBlobClient = clients.containerClient.getBlockBlobClient(blobPath);
         
         const options = {
             blobHTTPHeaders: {
@@ -107,11 +94,14 @@ export async function uploadFileToBlobStorage(file: File, userId: string): Promi
 }
 
 export async function deleteFileFromBlobStorage(url: string): Promise<void> {
+    const clients = getStorageClients();
+    if (!clients) throw new Error('Storage not initialized');
+
     try {
         const blobPath = url.replace('/api/media/', '');
-        if (!blobPath) throw new Error('Invalid blob URL');
+        if (!blobPath) throw new Error('Invalid blob path');
         
-        const blockBlobClient = containerClient.getBlockBlobClient(blobPath);
+        const blockBlobClient = clients.containerClient.getBlockBlobClient(blobPath);
         await blockBlobClient.delete();
     } catch (error) {
         console.error('Error deleting from blob storage:', error);
@@ -120,27 +110,42 @@ export async function deleteFileFromBlobStorage(url: string): Promise<void> {
 }
 
 export async function moveFile(sourceUrl: string, userId: string, postId: string): Promise<string> {
+    const clients = getStorageClients();
+    if (!clients) throw new Error('Storage not initialized');
+
     try {
         const sourcePath = sourceUrl.replace('/api/media/', '');
         const fileName = sourcePath.split('/').pop() || '';
-        const newPath = `users/${userId}/posts/${postId}/${fileName}`;
+        const destinationPath = `users/${userId}/posts/${postId}/${fileName}`;
         
-        const sourceBlob = containerClient.getBlockBlobClient(sourcePath);
-        const destinationBlob = containerClient.getBlockBlobClient(newPath);
+        const sourceBlob = clients.containerClient.getBlockBlobClient(sourcePath);
+        const destinationBlob = clients.containerClient.getBlockBlobClient(destinationPath);
 
-        // Generate SAS token for source blob
-        const sasToken = generateContainerSasToken();
+        // Generate SAS token for source blob to allow copy operation
+        const startsOn = new Date();
+        const expiresOn = new Date(startsOn);
+        expiresOn.setMinutes(startsOn.getMinutes() + 5); // 5 minutes is enough for copy
+
+        const sasToken = generateBlobSASQueryParameters({
+            containerName: clients.containerName,
+            blobName: sourcePath,
+            permissions: BlobSASPermissions.parse("r"),
+            startsOn,
+            expiresOn,
+            protocol: SASProtocol.Https
+        }, clients.sharedKeyCredential).toString();
+
+        // Create source URL with SAS token
         const sourceBlobUrlWithSas = `${sourceBlob.url}?${sasToken}`;
 
         // Copy the blob to new location
-        const response = await destinationBlob.beginCopyFromURL(sourceBlobUrlWithSas);
-        await response.pollUntilDone();
+        const copyResponse = await destinationBlob.beginCopyFromURL(sourceBlobUrlWithSas);
+        await copyResponse.pollUntilDone();
 
         // Delete the original blob
         await sourceBlob.delete();
 
-        // Return the new URL through our app domain
-        return `/api/media/${newPath}`;
+        return `/api/media/${destinationPath}`;
     } catch (error) {
         console.error('Error moving file:', error);
         throw new Error('Failed to move file');

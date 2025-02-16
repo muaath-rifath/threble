@@ -1,19 +1,11 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest } from 'next/server';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/app/api/auth/[...nextauth]/options';
-import { BlobServiceClient, StorageSharedKeyCredential, generateBlobSASQueryParameters, BlobSASPermissions, SASProtocol } from '@azure/storage-blob';
+import { getStorageClients } from '@/lib/azure-storage';
+import { BlobSASPermissions, SASProtocol, generateBlobSASQueryParameters } from '@azure/storage-blob';
 import prisma from '@/lib/prisma';
 
-const accountName = process.env.AZURE_STORAGE_ACCOUNT_NAME!;
-const accountKey = process.env.AZURE_STORAGE_ACCOUNT_KEY!;
-const containerName = process.env.AZURE_STORAGE_CONTAINER_NAME!;
-
-const sharedKeyCredential = new StorageSharedKeyCredential(accountName, accountKey);
-const blobServiceClient = BlobServiceClient.fromConnectionString(
-    process.env.AZURE_STORAGE_CONNECTION_STRING!
-);
-const containerClient = blobServiceClient.getContainerClient(containerName);
-
+// Check access permission for the requested blob
 async function checkAccess(path: string[], session: any) {
     // Extract post ID from the URL path (users/[userId]/posts/[postId]/[filename])
     const postId = path[3]; // Index 3 because path is split: ['users', userId, 'posts', postId, filename]
@@ -62,6 +54,13 @@ export async function GET(
             return new Response('Unauthorized', { status: 401 });
         }
 
+        const storageClients = getStorageClients();
+        if (!storageClients) {
+            return new Response('Storage configuration not available', { status: 503 });
+        }
+
+        const { containerClient, sharedKeyCredential, containerName } = storageClients;
+
         const hasAccess = await checkAccess(params.path, session);
         if (!hasAccess) {
             return new Response('Forbidden', { status: 403 });
@@ -77,32 +76,40 @@ export async function GET(
                 return new Response('Not Found', { status: 404 });
             }
 
-            // Generate SAS token for this specific request
+            // Get blob properties for content type
+            const properties = await blockBlobClient.getProperties();
+            
+            // Generate SAS token with short expiry
             const startsOn = new Date();
             const expiresOn = new Date(startsOn);
-            expiresOn.setMinutes(startsOn.getMinutes() + 15); // 15 minutes expiry
+            expiresOn.setMinutes(startsOn.getMinutes() + 5); // 5 minutes expiry
 
-            const permissions = new BlobSASPermissions();
-            permissions.read = true;
-            
             const sasToken = generateBlobSASQueryParameters({
                 containerName,
                 blobName: blobPath,
-                permissions,
+                permissions: BlobSASPermissions.parse("r"), // Read-only permission
                 startsOn,
                 expiresOn,
                 protocol: SASProtocol.Https
             }, sharedKeyCredential).toString();
 
-            // Get blob properties for content type
-            const properties = await blockBlobClient.getProperties();
-            
             // Create URL with SAS token
             const blobUrl = `${blockBlobClient.url}?${sasToken}`;
 
-            // Redirect to the signed URL
-            return Response.redirect(blobUrl, 302);
-
+            // Return redirect response with proper headers
+            return new Response(null, {
+                status: 302,
+                headers: new Headers({
+                    'Location': blobUrl,
+                    'Content-Type': properties.contentType || 'application/octet-stream',
+                    'Cache-Control': 'private, no-cache',
+                    'Access-Control-Allow-Origin': req.headers.get('origin') || '*',
+                    'Access-Control-Allow-Methods': 'GET',
+                    'Access-Control-Allow-Credentials': 'true',
+                    'Access-Control-Allow-Headers': '*',
+                    'Access-Control-Expose-Headers': '*'
+                })
+            });
         } catch (error) {
             console.error('Error accessing blob:', error);
             return new Response('Internal Server Error', { status: 500 });

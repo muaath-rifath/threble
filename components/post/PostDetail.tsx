@@ -104,25 +104,15 @@ function MediaContent({ mediaAttachments, className = "" }: MediaContentProps) {
             setErrorStates(prev => ({ ...prev, [url]: false }));
             setLoadingStates(prev => ({ ...prev, [url]: true }));
 
-            console.log('Fetching media from:', url); // Debug log
-
             const response = await fetch(url, {
-                credentials: 'include',
-                headers: {
-                    'Accept': 'image/*, video/*, audio/*'
-                }
+                credentials: 'include'
             });
 
-            console.log('Response status:', response.status); // Debug log
-            console.log('Response headers:', Object.fromEntries(response.headers.entries())); // Debug log
-
             if (!response.ok) {
-                console.error('Response not OK:', response.statusText);
                 throw new Error(`Failed to load media: ${response.statusText}`);
             }
 
             const blob = await response.blob();
-            console.log('Blob type:', blob.type); // Debug log
             const objectUrl = URL.createObjectURL(blob);
             
             setMediaUrls(prev => ({ ...prev, [url]: objectUrl }));
@@ -142,7 +132,7 @@ function MediaContent({ mediaAttachments, className = "" }: MediaContentProps) {
                 const isVideo = url.toLowerCase().match(/\.(mp4|webm|ogg)($|\?)/i);
                 const isAudio = url.toLowerCase().match(/\.(mp3|wav)($|\?)/i);
 
-                // Use cached blob URL if available, otherwise fetch new one
+                // Use cached blob URL if available, otherwise use the API route URL
                 const mediaUrl = mediaUrls[url] || url;
 
                 if (isImage) {
@@ -160,8 +150,7 @@ function MediaContent({ mediaAttachments, className = "" }: MediaContentProps) {
                                     loadingStates[url] === false ? 'opacity-100' : 'opacity-0'
                                 }`}
                                 onLoad={() => handleImageLoad(url)}
-                                onError={(e: React.SyntheticEvent<HTMLImageElement, Event>) => {
-                                    console.error('Image load error:', e);
+                                onError={() => {
                                     if (!mediaUrls[url]) {
                                         fetchMedia(url);
                                     } else {
@@ -463,6 +452,8 @@ export default function PostDetail({ initialPost, session }: PostDetailProps) {
                             className="hidden"
                             onChange={handleFileChange}
                             multiple
+                            title="Upload media attachments"
+                            aria-label="Upload media attachments"
                         />
                         <div className="flex justify-between items-center">
                             <div className="flex space-x-4">

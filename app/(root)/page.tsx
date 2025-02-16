@@ -84,6 +84,7 @@ export default function HomePage() {
             const response = await fetch('/api/posts', {
                 method: 'POST',
                 body: formData,
+                credentials: 'include'
             })
 
             if (response.ok) {
@@ -236,6 +237,8 @@ export default function HomePage() {
                                 className="hidden"
                                 onChange={handleFileChange}
                                 multiple
+                                title="Upload media files"
+                                aria-label="Upload media files"
                             />
                             <CardFooter className="flex justify-between items-center">
                                 <div className="flex space-x-4">
@@ -310,11 +313,39 @@ export default function HomePage() {
 
                                     if (isImage) {
                                         return (
-                                            <div key={index} className="relative aspect-square">
+                                            <div key={index} className="relative aspect-square bg-slate-100 dark:bg-slate-800 rounded-lg overflow-hidden">
                                                 <img
                                                     src={url}
                                                     alt={`Media ${index + 1}`}
                                                     className="rounded-lg object-cover w-full h-full"
+                                                    onError={(e) => {
+                                                        const img = e.currentTarget;
+                                                        if (!img.getAttribute('data-retried')) {
+                                                            img.setAttribute('data-retried', 'true');
+                                                            // Always use the media API route which handles authentication and SAS tokens
+                                                            fetch(url, { 
+                                                                credentials: 'include',
+                                                                headers: {
+                                                                    'Accept': 'image/*'
+                                                                }
+                                                            })
+                                                            .then(response => {
+                                                                if (!response.ok) throw new Error('Failed to load image');
+                                                                if (response.redirected) {
+                                                                    // If we get a redirect response, use the redirect URL
+                                                                    img.src = response.url;
+                                                                } else {
+                                                                    return response.blob();
+                                                                }
+                                                            })
+                                                            .then(blob => {
+                                                                if (blob) {
+                                                                    img.src = URL.createObjectURL(blob);
+                                                                }
+                                                            })
+                                                            .catch(console.error);
+                                                        }
+                                                    }}
                                                 />
                                             </div>
                                         )
@@ -322,10 +353,38 @@ export default function HomePage() {
 
                                     if (isVideo) {
                                         return (
-                                            <div key={index} className="relative aspect-video">
+                                            <div key={index} className="relative aspect-video bg-slate-100 dark:bg-slate-800 rounded-lg overflow-hidden">
                                                 <video
                                                     controls
                                                     className="rounded-lg w-full h-full"
+                                                    onError={(e) => {
+                                                        const video = e.currentTarget;
+                                                        if (!video.getAttribute('data-retried')) {
+                                                            video.setAttribute('data-retried', 'true');
+                                                            // Always use the media API route which handles authentication and SAS tokens
+                                                            fetch(url, { 
+                                                                credentials: 'include',
+                                                                headers: {
+                                                                    'Accept': 'video/*'
+                                                                }
+                                                            })
+                                                            .then(response => {
+                                                                if (!response.ok) throw new Error('Failed to load video');
+                                                                if (response.redirected) {
+                                                                    // If we get a redirect response, use the redirect URL
+                                                                    video.src = response.url;
+                                                                } else {
+                                                                    return response.blob();
+                                                                }
+                                                            })
+                                                            .then(blob => {
+                                                                if (blob) {
+                                                                    video.src = URL.createObjectURL(blob);
+                                                                }
+                                                            })
+                                                            .catch(console.error);
+                                                        }
+                                                    }}
                                                 >
                                                     <source src={url} type="video/mp4" />
                                                     Your browser does not support the video tag.
