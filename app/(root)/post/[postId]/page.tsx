@@ -41,6 +41,8 @@ export default function PostDetailPage({ params }: { params: { postId: string } 
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [post, setPost] = useState<Post | null>(null);
   const [replies, setReplies] = useState<Post[]>([])
+  const [shareOption, setShareOption] = useState<string>('');
+  const [showShareDialog, setShowShareDialog] = useState<boolean>(false);
 
   const replyForm = useForm<z.infer<typeof replyFormSchema>>({
       resolver: zodResolver(replyFormSchema),
@@ -133,14 +135,67 @@ export default function PostDetailPage({ params }: { params: { postId: string } 
       }
   };
 
-  // Define the handleShare function
-  const handleShare = (postId: string) => {
-      // Implement sharing functionality here
-      console.log(`Sharing post ${postId}`)
-      toast({ title: "Share", description: "Sharing functionality not implemented yet." })
-  }
+  const handleShare = async (postId: string) => {
+    try {
+        const postUrl = `${window.location.origin}/post/${postId}`;
+        
+        if (navigator.share) {
+            await navigator.share({
+                title: 'Share this post',
+                text: 'Check out this post on Threble',
+                url: postUrl
+            });
+        } else {
+            const shareWindow = async (url: string) => {
+                const width = 600;
+                const height = 400;
+                const left = window.innerWidth / 2 - width / 2;
+                const top = window.innerHeight / 2 - height / 2;
+                window.open(
+                    url,
+                    'share',
+                    `width=${width},height=${height},left=${left},top=${top}`
+                );
+            };
 
-  // Define the handleReplyClick function
+            const encodedUrl = encodeURIComponent(postUrl);
+            const text = encodeURIComponent('Check out this post on Threble');
+
+            switch (shareOption) {
+                case 'whatsapp':
+                    await shareWindow(`https://api.whatsapp.com/send?text=${text}%20${encodedUrl}`);
+                    break;
+                case 'facebook':
+                    await shareWindow(`https://www.facebook.com/sharer/sharer.php?u=${encodedUrl}`);
+                    break;
+                case 'twitter':
+                    await shareWindow(`https://twitter.com/intent/tweet?text=${text}&url=${encodedUrl}`);
+                    break;
+                case 'linkedin':
+                    await shareWindow(`https://www.linkedin.com/sharing/share-offsite/?url=${encodedUrl}`);
+                    break;
+                case 'telegram':
+                    await shareWindow(`https://t.me/share/url?url=${encodedUrl}&text=${text}`);
+                    break;
+                case 'copy':
+                    await navigator.clipboard.writeText(postUrl);
+                    toast({
+                        title: "Link Copied",
+                        description: "Post link has been copied to clipboard.",
+                    });
+                    break;
+            }
+        }
+    } catch (error) {
+        console.error('Error sharing:', error);
+        toast({
+            title: "Error",
+            description: "Failed to share post.",
+            variant: "destructive",
+        });
+    }
+};
+
   const handleReplyClick = (postId: string) => {
       router.push(`/post/${postId}`);
   };
@@ -181,10 +236,89 @@ export default function PostDetailPage({ params }: { params: { postId: string } 
                     <MessageSquare className="mr-2 h-4 w-4" />
                     Replies ({post._count.replies})
                 </Button>
-                <Button variant="ghost" onClick={() => handleShare(post.id)}>
-                    <Share2 className="mr-2 h-4 w-4" />
-                    Share
-                </Button>
+                <div className="relative">
+                    <Button 
+                        variant="ghost" 
+                        onClick={() => setShowShareDialog(!showShareDialog)}
+                        className="flex items-center space-x-2"
+                    >
+                        <Share2 className="h-4 w-4" />
+                        <span>Share</span>
+                    </Button>
+                    {showShareDialog && (
+                        <Card className="absolute bottom-full right-0 mb-2 p-2 z-50 min-w-[200px]">
+                            <div className="flex flex-col space-y-2">
+                                <Button 
+                                    variant="ghost" 
+                                    className="justify-start"
+                                    onClick={() => {
+                                        setShareOption('whatsapp');
+                                        handleShare(post.id);
+                                        setShowShareDialog(false);
+                                    }}
+                                >
+                                    Share on WhatsApp
+                                </Button>
+                                <Button 
+                                    variant="ghost" 
+                                    className="justify-start"
+                                    onClick={() => {
+                                        setShareOption('facebook');
+                                        handleShare(post.id);
+                                        setShowShareDialog(false);
+                                    }}
+                                >
+                                    Share on Facebook
+                                </Button>
+                                <Button 
+                                    variant="ghost" 
+                                    className="justify-start"
+                                    onClick={() => {
+                                        setShareOption('twitter');
+                                        handleShare(post.id);
+                                        setShowShareDialog(false);
+                                    }}
+                                >
+                                    Share on X (Twitter)
+                                </Button>
+                                <Button 
+                                    variant="ghost" 
+                                    className="justify-start"
+                                    onClick={() => {
+                                        setShareOption('linkedin');
+                                        handleShare(post.id);
+                                        setShowShareDialog(false);
+                                    }}
+                                >
+                                    Share on LinkedIn
+                                </Button>
+                                <Button 
+                                    variant="ghost" 
+                                    className="justify-start"
+                                    onClick={() => {
+                                        setShareOption('telegram');
+                                        handleShare(post.id);
+                                        setShowShareDialog(false);
+                                    }}
+                                >
+                                    Share on Telegram
+                                </Button>
+                                <Separator />
+                                <Button 
+                                    variant="ghost" 
+                                    className="justify-start"
+                                    onClick={() => {
+                                        setShareOption('copy');
+                                        handleShare(post.id);
+                                        setShowShareDialog(false);
+                                    }}
+                                >
+                                    Copy Link
+                                </Button>
+                            </div>
+                        </Card>
+                    )}
+                </div>
             </CardFooter>
 
             {/* Reply Form */}

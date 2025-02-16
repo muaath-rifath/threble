@@ -10,29 +10,34 @@ export async function POST(req: NextRequest, { params }: { params: { postId: str
     return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
   }
 
-  const { type } = await req.json();
-  const { postId } = params;
-
   try {
-    const reaction = await prisma.reaction.upsert({
+    const { type } = await req.json();
+    const postId = params.postId;
+
+    const existingReaction = await prisma.reaction.findFirst({
       where: {
-        userId_postId: {
-          userId: session.user.id,
-          postId: postId,
-        },
-      },
-      update: { type },
-      create: {
-        type,
+        postId,
         userId: session.user.id,
-        postId: postId,
+        type,
+      },
+    });
+
+    if (existingReaction) {
+      return NextResponse.json({ error: 'Reaction already exists' }, { status: 400 });
+    }
+
+    const reaction = await prisma.reaction.create({
+      data: {
+        type,
+        postId,
+        userId: session.user.id,
       },
     });
 
     return NextResponse.json(reaction);
   } catch (error) {
-    console.error('Error creating/updating reaction:', error);
-    return NextResponse.json({ error: 'Failed to create/update reaction' }, { status: 500 });
+    console.error('Error creating reaction:', error);
+    return NextResponse.json({ error: 'Failed to create reaction' }, { status: 500 });
   }
 }
 
@@ -43,19 +48,19 @@ export async function DELETE(req: NextRequest, { params }: { params: { postId: s
     return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
   }
 
-  const { postId } = params;
-
   try {
-    await prisma.reaction.delete({
+    const { type } = await req.json();
+    const postId = params.postId;
+
+    await prisma.reaction.deleteMany({
       where: {
-        userId_postId: {
-          userId: session.user.id,
-          postId: postId,
-        },
+        postId,
+        userId: session.user.id,
+        type,
       },
     });
 
-    return NextResponse.json({ message: 'Reaction deleted successfully' });
+    return NextResponse.json({ success: true });
   } catch (error) {
     console.error('Error deleting reaction:', error);
     return NextResponse.json({ error: 'Failed to delete reaction' }, { status: 500 });

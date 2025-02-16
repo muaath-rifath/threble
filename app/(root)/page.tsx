@@ -43,6 +43,8 @@ export default function HomePage() {
     const [isSubmitting, setIsSubmitting] = useState(false)
     const [posts, setPosts] = useState<Post[]>([])
     const [activeReplyId, setActiveReplyId] = useState<string | null>(null);
+    const [shareOption, setShareOption] = useState<string>('');
+    const [showShareDialog, setShowShareDialog] = useState<string | null>(null);
 
     const postForm = useForm<z.infer<typeof postFormSchema>>({
         resolver: zodResolver(postFormSchema),
@@ -97,8 +99,12 @@ export default function HomePage() {
 
     const handleReaction = async (postId: string, type: string) => {
         try {
+            const method = posts.find(p => p.id === postId)?.reactions.some(r => r.userId === session?.user.id && r.type === type)
+                ? 'DELETE'
+                : 'POST';
+
             const response = await fetch(`/api/posts/${postId}/reactions`, {
-                method: 'POST',
+                method,
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ type }),
             });
@@ -106,23 +112,88 @@ export default function HomePage() {
             if (response.ok) {
                 fetchPosts();
             } else {
-                throw new Error('Failed to add reaction');
+                throw new Error('Failed to update reaction');
             }
         } catch (error) {
-            console.error('Error adding reaction:', error);
+            console.error('Error updating reaction:', error);
             toast({
                 title: "Error",
-                description: "Failed to add reaction. Please try again.",
+                description: "Failed to update reaction. Please try again.",
                 variant: "destructive",
             });
         }
     };
 
-    const handleShare = (postId: string) => {
-        console.log(`Sharing post ${postId}`)
-        toast({ title: "Share", description: "Sharing functionality not implemented yet." })
-    }
+    const handleShare = async (postId: string) => {
+        try {
+            const postUrl = `${window.location.origin}/post/${postId}`;
+            
+            // Use Web Share API if available (mainly for mobile)
+            if (navigator.share) {
+                await navigator.share({
+                    title: 'Share this post',
+                    text: 'Check out this post on Threble',
+                    url: postUrl
+                });
+            } else {
+                // Show sharing options dialog
+                const shareWindow = async (url: string) => {
+                    const width = 600;
+                    const height = 400;
+                    const left = window.innerWidth / 2 - width / 2;
+                    const top = window.innerHeight / 2 - height / 2;
+                    window.open(
+                        url,
+                        'share',
+                        `width=${width},height=${height},left=${left},top=${top}`
+                    );
+                };
 
+                const encodedUrl = encodeURIComponent(postUrl);
+                const text = encodeURIComponent('Check out this post on Threble');
+
+                switch (shareOption) {
+                    case 'whatsapp':
+                        await shareWindow(`https://api.whatsapp.com/send?text=${text}%20${encodedUrl}`);
+                        break;
+                    case 'facebook':
+                        await shareWindow(`https://www.facebook.com/sharer/sharer.php?u=${encodedUrl}`);
+                        break;
+                    case 'twitter':
+                        await shareWindow(`https://twitter.com/intent/tweet?text=${text}&url=${encodedUrl}`);
+                        break;
+                    case 'linkedin':
+                        await shareWindow(`https://www.linkedin.com/sharing/share-offsite/?url=${encodedUrl}`);
+                        break;
+                    case 'telegram':
+                        await shareWindow(`https://t.me/share/url?url=${encodedUrl}&text=${text}`);
+                        break;
+                    case 'copy':
+                        await navigator.clipboard.writeText(postUrl);
+                        toast({
+                            title: "Link Copied",
+                            description: "Post link has been copied to clipboard.",
+                        });
+                        break;
+                }
+            }
+        } catch (error) {
+            console.error('Error sharing:', error);
+            toast({
+                title: "Error",
+                description: "Failed to share post.",
+                variant: "destructive",
+            });
+        }
+    };
+
+    const handlePostClick = (e: React.MouseEvent, postId: string) => {
+        // Don't navigate if clicking on buttons or interactive elements
+        if ((e.target as HTMLElement).closest('button')) {
+            return;
+        }
+        router.push(`/post/${postId}`);
+    };
 
     const handleReplyClick = (postId: string) => {
         router.push(`/post/${postId}`); // Navigate to specific post page
@@ -134,18 +205,18 @@ export default function HomePage() {
     }
 
     return (
-        <div className="max-w-2xl mx-auto mt-8">
+        <div className="max-w-2xl mx-auto py-6 px-4">
             {/* Create Post Section */}
-            <Card>
-                <CardHeader>
+            <Card className="mb-8 border-none bg-white dark:bg-slate-900 shadow-sm">
+                <CardHeader className="pb-3">
                     <div className="flex items-center space-x-4">
-                        <Avatar>
+                        <Avatar className="h-10 w-10">
                             <AvatarImage src={session.user.image || undefined} />
                             <AvatarFallback>{session.user.name?.charAt(0)}</AvatarFallback>
                         </Avatar>
                         <div>
-                            <p className="font-semibold">{session.user.name}</p>
-                            <p className="text-sm text-gray-500">Public</p>
+                            <p className="font-semibold text-slate-900 dark:text-slate-100">{session.user.name}</p>
+                            <p className="text-sm text-slate-500 dark:text-slate-400">Public</p>
                         </div>
                     </div>
                 </CardHeader>
@@ -160,35 +231,48 @@ export default function HomePage() {
                                         <FormControl>
                                             <Textarea
                                                 placeholder="What's on your mind?"
-                                                className="min-h-[100px] resize-none"
+                                                className="min-h-[100px] resize-none border-none bg-slate-50 dark:bg-slate-800 focus-visible:ring-1 focus-visible:ring-slate-300 dark:focus-visible:ring-slate-700"
                                                 {...field}
                                             />
                                         </FormControl>
                                     </FormItem>
                                 )}
                             />
-                            <CardFooter className="flex justify-between items-center">
-                                <div className="flex space-x-4">
-                                    <Button variant="ghost" className="text-green-500">
+                            <div className="flex justify-between items-center mt-4 pt-4 border-t border-slate-100 dark:border-slate-800">
+                                <div className="flex space-x-2">
+                                    <Button 
+                                        type="button" 
+                                        variant="ghost" 
+                                        className="text-emerald-600 dark:text-emerald-400 hover:text-emerald-700 hover:bg-emerald-50 dark:hover:bg-emerald-950"
+                                    >
                                         <Image className="mr-2 h-4 w-4" />
                                         Photo
                                     </Button>
-                                    <Button variant="ghost" className="text-blue-500">
+                                    <Button 
+                                        type="button" 
+                                        variant="ghost" 
+                                        className="text-blue-600 dark:text-blue-400 hover:text-blue-700 hover:bg-blue-50 dark:hover:bg-blue-950"
+                                    >
                                         <Video className="mr-2 h-4 w-4" />
                                         Video
                                     </Button>
-                                    <Button variant="ghost" className="text-yellow-500">
+                                    <Button 
+                                        type="button" 
+                                        variant="ghost" 
+                                        className="text-amber-600 dark:text-amber-400 hover:text-amber-700 hover:bg-amber-50 dark:hover:bg-amber-950"
+                                    >
                                         <Smile className="mr-2 h-4 w-4" />
-                                        Feeling/Activity
+                                        Mood
                                     </Button>
                                 </div>
                                 <Button
                                     type="submit"
                                     disabled={isSubmitting}
+                                    className="bg-blue-600 hover:bg-blue-700 text-white dark:bg-blue-600 dark:hover:bg-blue-700"
                                 >
-                                    Post
+                                    {isSubmitting ? 'Posting...' : 'Post'}
                                 </Button>
-                            </CardFooter>
+                            </div>
                         </form>
                     </Form>
                 </CardContent>
@@ -198,47 +282,147 @@ export default function HomePage() {
 
             {/* Posts List */}
             {posts.map((post) => (
-                <Card key={post.id} className="mb-8">
-                    <CardHeader>
+                <Card 
+                    key={post.id} 
+                    className="mb-6 border-none bg-white dark:bg-slate-900 shadow-sm"
+                >
+                    <CardHeader className="pb-3">
                         <div className="flex items-center space-x-4">
-                            <Avatar>
+                            <Avatar className="h-10 w-10">
                                 <AvatarImage src={post.author.image || undefined} />
                                 <AvatarFallback>{post.author.name.charAt(0)}</AvatarFallback>
                             </Avatar>
                             <div>
-                                <p className="font-semibold">{post.author.name}</p>
-                                <p className="text-sm text-gray-500">{new Date(post.createdAt).toLocaleString()}</p>
+                                <p className="font-semibold text-slate-900 dark:text-slate-100">{post.author.name}</p>
+                                <p className="text-sm text-slate-500 dark:text-slate-400">{new Date(post.createdAt).toLocaleString()}</p>
                             </div>
                         </div>
                     </CardHeader>
                     {post.parentId && post.parent &&(
-                        <CardContent className="pl-14 italic text-sm text-gray-600">
-                             Replying to <span className='font-medium text-black'>@{post.parent.author.name}</span>
+                        <CardContent className="pl-14 italic text-sm text-slate-600 dark:text-slate-400 pb-2">
+                             Replying to <span className='font-medium text-slate-900 dark:text-slate-100'>@{post.parent.author.name}</span>
                         </CardContent>
                     )}
-                    <CardContent>
-                        <p>{post.content}</p>
+                    <CardContent className="pt-2" onClick={(e) => handlePostClick(e, post.id)}>
+                        <p className="text-slate-800 dark:text-slate-200">{post.content}</p>
                     </CardContent>
-                    <CardFooter className="flex justify-between">
+                    <CardFooter className="flex justify-between border-t border-slate-100 dark:border-slate-800 mt-4 pt-4">
                         <Button
                             variant="ghost"
-                            onClick={() => handleReaction(post.id, 'LIKE')}
-                            className={post.reactions.some(r => r.userId === session.user.id && r.type === 'LIKE') ? 'text-blue-500' : ''}
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                handleReaction(post.id, 'LIKE');
+                            }}
+                            className={post.reactions.some(r => r.userId === session.user.id && r.type === 'LIKE') 
+                                ? 'text-blue-600 dark:text-blue-400 hover:text-blue-700 hover:bg-blue-50 dark:hover:bg-blue-950' 
+                                : 'text-slate-600 dark:text-slate-400 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-950'}
                         >
                             <ThumbsUp className="mr-2 h-4 w-4" />
-                            Like ({post.reactions.filter(r => r.type === 'LIKE').length})
+                            {post.reactions.filter(r => r.type === 'LIKE').length}
                         </Button>
                         <Button
                             variant="ghost"
-                            onClick={() => handleReplyClick(post.id)}
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                handleReplyClick(post.id);
+                            }}
+                            className="text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100"
                         >
                             <MessageSquare className="mr-2 h-4 w-4" />
-                            Replies ({post._count.replies})
+                            {post._count.replies}
                         </Button>
-                        <Button variant="ghost" onClick={() => handleShare(post.id)}>
-                            <Share2 className="mr-2 h-4 w-4" />
-                            Share
-                        </Button>
+                        <div className="relative">
+                            <Button 
+                                variant="ghost" 
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    setShowShareDialog(showShareDialog === post.id ? null : post.id);
+                                }}
+                                className="text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100"
+                            >
+                                <Share2 className="mr-2 h-4 w-4" />
+                                Share
+                            </Button>
+                            {showShareDialog === post.id && (
+                                <Card className="absolute bottom-full right-0 mb-2 p-2 z-50 min-w-[200px] border border-slate-200 dark:border-slate-700 shadow-lg">
+                                    <div className="flex flex-col space-y-1">
+                                        <Button 
+                                            variant="ghost" 
+                                            className="justify-start text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800"
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                setShareOption('whatsapp');
+                                                handleShare(post.id);
+                                                setShowShareDialog(null);
+                                            }}
+                                        >
+                                            Share on WhatsApp
+                                        </Button>
+                                        <Button 
+                                            variant="ghost" 
+                                            className="justify-start text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800"
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                setShareOption('facebook');
+                                                handleShare(post.id);
+                                                setShowShareDialog(null);
+                                            }}
+                                        >
+                                            Share on Facebook
+                                        </Button>
+                                        <Button 
+                                            variant="ghost" 
+                                            className="justify-start text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800"
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                setShareOption('twitter');
+                                                handleShare(post.id);
+                                                setShowShareDialog(null);
+                                            }}
+                                        >
+                                            Share on X (Twitter)
+                                        </Button>
+                                        <Button 
+                                            variant="ghost" 
+                                            className="justify-start text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800"
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                setShareOption('linkedin');
+                                                handleShare(post.id);
+                                                setShowShareDialog(null);
+                                            }}
+                                        >
+                                            Share on LinkedIn
+                                        </Button>
+                                        <Button 
+                                            variant="ghost" 
+                                            className="justify-start text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800"
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                setShareOption('telegram');
+                                                handleShare(post.id);
+                                                setShowShareDialog(null);
+                                            }}
+                                        >
+                                            Share on Telegram
+                                        </Button>
+                                        <Separator className="my-1" />
+                                        <Button 
+                                            variant="ghost" 
+                                            className="justify-start text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800"
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                setShareOption('copy');
+                                                handleShare(post.id);
+                                                setShowShareDialog(null);
+                                            }}
+                                        >
+                                            Copy Link
+                                        </Button>
+                                    </div>
+                                </Card>
+                            )}
+                        </div>
                     </CardFooter>
                 </Card>
             ))}
