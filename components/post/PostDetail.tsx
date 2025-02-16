@@ -15,6 +15,7 @@ import { ThumbsUp, MessageSquare, Share2 } from 'lucide-react'
 import { useToast } from "@/hooks/use-toast"
 import { Session } from 'next-auth'
 import type { Post, Prisma } from '@prisma/client'
+import { FileUpload } from "@/components/ui/file-upload"
 
 const replyFormSchema = z.object({
     content: z.string().min(1, "Reply cannot be empty"),
@@ -68,6 +69,67 @@ interface PostDetailProps {
     session: Session;
 }
 
+interface MediaContentProps {
+    mediaAttachments: string[];
+    className?: string;
+}
+
+function MediaContent({ mediaAttachments, className = "" }: MediaContentProps) {
+    if (!mediaAttachments?.length) return null;
+
+    return (
+        <div className={`mt-4 grid grid-cols-2 gap-2 ${className}`}>
+            {mediaAttachments.map((url, index) => {
+                const isImage = url.match(/\.(jpg|jpeg|png|gif|webp)$/i);
+                const isVideo = url.match(/\.(mp4|webm|ogg)$/i);
+                const isAudio = url.match(/\.(mp3|wav|ogg)$/i);
+
+                if (isImage) {
+                    return (
+                        <div key={index} className="relative aspect-square">
+                            <img
+                                src={url}
+                                alt={`Media ${index + 1}`}
+                                className="rounded-lg object-cover w-full h-full"
+                            />
+                        </div>
+                    );
+                }
+
+                if (isVideo) {
+                    return (
+                        <div key={index} className="relative aspect-video">
+                            <video
+                                controls
+                                className="rounded-lg w-full h-full"
+                            >
+                                <source src={url} type="video/mp4" />
+                                Your browser does not support the video tag.
+                            </video>
+                        </div>
+                    );
+                }
+
+                if (isAudio) {
+                    return (
+                        <div key={index} className="col-span-2">
+                            <audio
+                                controls
+                                className="w-full"
+                            >
+                                <source src={url} type="audio/mpeg" />
+                                Your browser does not support the audio tag.
+                            </audio>
+                        </div>
+                    );
+                }
+
+                return null;
+            })}
+        </div>
+    );
+}
+
 export default function PostDetail({ initialPost, session }: PostDetailProps) {
     const router = useRouter()
     const { toast } = useToast()
@@ -75,6 +137,7 @@ export default function PostDetail({ initialPost, session }: PostDetailProps) {
     const [post, setPost] = useState(initialPost)
     const [shareOption, setShareOption] = useState<string>('')
     const [showShareDialog, setShowShareDialog] = useState<boolean>(false)
+    const [mediaFiles, setMediaFiles] = useState<File[]>([])
 
     const replyForm = useForm<z.infer<typeof replyFormSchema>>({
         resolver: zodResolver(replyFormSchema),
@@ -128,6 +191,11 @@ export default function PostDetail({ initialPost, session }: PostDetailProps) {
             formData.append('visibility', 'public')
             formData.append('parentId', post.id)
 
+            // Add media files if present
+            mediaFiles.forEach(file => {
+                formData.append('mediaAttachments', file);
+            });
+
             const response = await fetch('/api/posts', {
                 method: 'POST',
                 body: formData,
@@ -139,6 +207,7 @@ export default function PostDetail({ initialPost, session }: PostDetailProps) {
                     description: "Your reply has been successfully posted." 
                 })
                 replyForm.reset()
+                setMediaFiles([])
                 fetchPost()
             }
         } catch (error) {
@@ -180,6 +249,7 @@ export default function PostDetail({ initialPost, session }: PostDetailProps) {
                 )}
                 <CardContent className="pt-2">
                     <p className="text-slate-800 dark:text-slate-200">{post.content}</p>
+                    <MediaContent mediaAttachments={post.mediaAttachments} />
                 </CardContent>
                 <CardFooter className="flex justify-between border-t border-slate-100 dark:border-slate-800 mt-4 pt-4">
                     <Button
@@ -197,7 +267,7 @@ export default function PostDetail({ initialPost, session }: PostDetailProps) {
 
             <CardContent className="mt-4 mb-8">
                 <Form {...replyForm}>
-                    <form onSubmit={replyForm.handleSubmit(onSubmitReply)} className="flex flex-col space-y-2">
+                    <form onSubmit={replyForm.handleSubmit(onSubmitReply)} className="flex flex-col space-y-4">
                         <FormField
                             control={replyForm.control}
                             name="content"
@@ -212,6 +282,14 @@ export default function PostDetail({ initialPost, session }: PostDetailProps) {
                                     </FormControl>
                                 </FormItem>
                             )}
+                        />
+                        <FileUpload
+                            multiple
+                            accept="image/*,video/*,audio/*"
+                            onChange={setMediaFiles}
+                            maxSize={20}
+                            maxFiles={4}
+                            label="Add Photos/Videos to Reply"
                         />
                         <Button 
                             type="submit" 
@@ -259,6 +337,7 @@ export default function PostDetail({ initialPost, session }: PostDetailProps) {
                         )}
                         <CardContent className="pt-2">
                             <p className="text-slate-800 dark:text-slate-200">{reply.content}</p>
+                            <MediaContent mediaAttachments={reply.mediaAttachments} />
                         </CardContent>
                         <CardFooter className="flex justify-between border-t border-slate-100 dark:border-slate-800 mt-4 pt-4">
                             <Button

@@ -14,7 +14,7 @@ import { Form, FormControl, FormField, FormItem } from "@/components/ui/form"
 import { Separator } from "@/components/ui/separator"
 import { Image, Video, Smile, ThumbsUp, MessageSquare, Share2 } from 'lucide-react'
 import { useToast } from "@/hooks/use-toast"
-
+import { FileUpload } from "@/components/ui/file-upload"
 
 const postFormSchema = z.object({
     content: z.string().min(1, "Post content cannot be empty"),
@@ -34,6 +34,7 @@ interface Post {
     };
     parentId: string | null;
     parent: Post | null;
+    mediaAttachments?: string[];
 }
 
 export default function HomePage() {
@@ -45,6 +46,7 @@ export default function HomePage() {
     const [activeReplyId, setActiveReplyId] = useState<string | null>(null);
     const [shareOption, setShareOption] = useState<string>('');
     const [showShareDialog, setShowShareDialog] = useState<string | null>(null);
+    const [mediaFiles, setMediaFiles] = useState<File[]>([]);
 
     const postForm = useForm<z.infer<typeof postFormSchema>>({
         resolver: zodResolver(postFormSchema),
@@ -76,6 +78,11 @@ export default function HomePage() {
             formData.append('content', values.content);
             formData.append('visibility', 'public');
 
+            // Append each media file to the form data
+            mediaFiles.forEach(file => {
+                formData.append('mediaAttachments', file);
+            });
+
             const response = await fetch('/api/posts', {
                 method: 'POST',
                 body: formData,
@@ -84,6 +91,7 @@ export default function HomePage() {
             if (response.ok) {
                 toast({ title: "Post created", description: "Your post has been successfully created." })
                 postForm.reset()
+                setMediaFiles([]) // Reset media files
                 fetchPosts()
             } else {
                 throw new Error('Failed to create post')
@@ -241,6 +249,16 @@ export default function HomePage() {
                                     </FormItem>
                                 )}
                             />
+                            <div className="mt-4">
+                                <FileUpload
+                                    multiple
+                                    accept="image/*,video/*,audio/*"
+                                    onChange={setMediaFiles}
+                                    maxSize={20} // 20MB
+                                    maxFiles={4}
+                                    label="Add Photos/Videos"
+                                />
+                            </div>
                             <div className="flex justify-between items-center mt-4 pt-4 border-t border-slate-100 dark:border-slate-800">
                                 <div className="flex space-x-2">
                                     <Button 
@@ -317,6 +335,58 @@ export default function HomePage() {
                     )}
                     <CardContent className="pt-2" onClick={(e) => handlePostClick(e, post.id)}>
                         <p className="text-slate-800 dark:text-slate-200">{post.content}</p>
+                        
+                        {post.mediaAttachments && post.mediaAttachments.length > 0 && (
+                            <div className="mt-4 grid grid-cols-2 gap-2">
+                                {post.mediaAttachments.map((url, index) => {
+                                    const isImage = url.match(/\.(jpg|jpeg|png|gif|webp)$/i);
+                                    const isVideo = url.match(/\.(mp4|webm|ogg)$/i);
+                                    const isAudio = url.match(/\.(mp3|wav|ogg)$/i);
+
+                                    if (isImage) {
+                                        return (
+                                            <div key={index} className="relative aspect-square">
+                                                <img
+                                                    src={url}
+                                                    alt={`Media ${index + 1}`}
+                                                    className="rounded-lg object-cover w-full h-full"
+                                                />
+                                            </div>
+                                        );
+                                    }
+
+                                    if (isVideo) {
+                                        return (
+                                            <div key={index} className="relative aspect-video">
+                                                <video
+                                                    controls
+                                                    className="rounded-lg w-full h-full"
+                                                >
+                                                    <source src={url} type="video/mp4" />
+                                                    Your browser does not support the video tag.
+                                                </video>
+                                            </div>
+                                        );
+                                    }
+
+                                    if (isAudio) {
+                                        return (
+                                            <div key={index} className="col-span-2">
+                                                <audio
+                                                    controls
+                                                    className="w-full"
+                                                >
+                                                    <source src={url} type="audio/mpeg" />
+                                                    Your browser does not support the audio tag.
+                                                </audio>
+                                            </div>
+                                        );
+                                    }
+
+                                    return null;
+                                })}
+                            </div>
+                        )}
                     </CardContent>
                     <CardFooter className="flex justify-between border-t border-slate-100 dark:border-slate-800 mt-4 pt-4">
                         <Button

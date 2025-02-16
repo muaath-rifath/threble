@@ -1,41 +1,47 @@
-import { BlobServiceClient, StorageSharedKeyCredential, BlockBlobClient } from '@azure/storage-blob';
+import { BlobServiceClient } from '@azure/storage-blob';
 
-const connectionString = process.env.AZURE_STORAGE_CONNECTION_STRING;
-const containerName = process.env.AZURE_STORAGE_CONTAINER_NAME;
+const connectionString = process.env.AZURE_STORAGE_CONNECTION_STRING!;
+const containerName = process.env.AZURE_STORAGE_CONTAINER_NAME!;
 
-if (!connectionString) {
-  throw new Error('Azure Storage connection string is not defined in the environment variables.');
-}
+const blobServiceClient = BlobServiceClient.fromConnectionString(connectionString);
+const containerClient = blobServiceClient.getContainerClient(containerName);
 
-if (!containerName) {
-     throw new Error('Azure Storage container name is not defined in the environment variables.');
-}
-
-const getBlobServiceClient = () => {
-     return BlobServiceClient.fromConnectionString(connectionString);
-}
-
-export const uploadFileToBlobStorage = async (file: File): Promise<string> => {
-  const blobServiceClient = getBlobServiceClient();
-
-  const containerClient = blobServiceClient.getContainerClient(containerName);
-
-    const blobName = `${Date.now()}-${file.name}`
-
-    const blockBlobClient: BlockBlobClient = containerClient.getBlockBlobClient(blobName)
-
+export async function uploadFileToBlobStorage(file: File): Promise<string> {
     try {
-         const arrayBuffer = await file.arrayBuffer();
-        const buffer = Buffer.from(arrayBuffer);
-
-        await blockBlobClient.upload(buffer, buffer.length, {
-                blobHTTPHeaders: { blobContentType: file.type },
-            });
+        const fileName = `${Date.now()}-${file.name}`;
+        const blockBlobClient = containerClient.getBlockBlobClient(fileName);
         
-         return  blockBlobClient.url;
+        // Set content type based on file type
+        const options = {
+            blobHTTPHeaders: {
+                blobContentType: file.type
+            }
+        };
 
+        // Convert File to ArrayBuffer
+        const arrayBuffer = await file.arrayBuffer();
+        
+        // Upload the file
+        await blockBlobClient.uploadData(arrayBuffer, options);
+        
+        // Return the URL of the uploaded file
+        return blockBlobClient.url;
     } catch (error) {
-         console.error('Error uploading file to Azure Blob Storage:', error)
-        throw new Error('Failed to upload file to Azure Blob Storage');
+        console.error('Error uploading to blob storage:', error);
+        throw new Error('Failed to upload file');
     }
-};
+}
+
+export async function deleteFileFromBlobStorage(url: string): Promise<void> {
+    try {
+        // Extract blob name from URL
+        const blobName = url.split('/').pop();
+        if (!blobName) throw new Error('Invalid blob URL');
+        
+        const blockBlobClient = containerClient.getBlockBlobClient(blobName);
+        await blockBlobClient.delete();
+    } catch (error) {
+        console.error('Error deleting from blob storage:', error);
+        throw new Error('Failed to delete file');
+    }
+}
