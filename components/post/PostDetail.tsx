@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
@@ -11,7 +11,7 @@ import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
 import { Form, FormControl, FormField, FormItem } from "@/components/ui/form"
 import { Separator } from "@/components/ui/separator"
-import { ThumbsUp, MessageSquare, Share2 } from 'lucide-react'
+import { Image, Video, ThumbsUp, MessageSquare, Share2, X } from 'lucide-react'
 import { useToast } from "@/hooks/use-toast"
 import { Session } from 'next-auth'
 import type { Post, Prisma } from '@prisma/client'
@@ -75,37 +75,143 @@ interface MediaContentProps {
 }
 
 function MediaContent({ mediaAttachments, className = "" }: MediaContentProps) {
+    const [loadingStates, setLoadingStates] = useState<{ [key: string]: boolean }>({});
+    const [errorStates, setErrorStates] = useState<{ [key: string]: boolean }>({});
+    const [mediaUrls, setMediaUrls] = useState<{ [key: string]: string }>({});
+
+    useEffect(() => {
+        // Reset states when media attachments change
+        setLoadingStates({});
+        setErrorStates({});
+        setMediaUrls({});
+    }, [mediaAttachments]);
+
     if (!mediaAttachments?.length) return null;
+
+    const handleImageLoad = (url: string) => {
+        setLoadingStates(prev => ({ ...prev, [url]: false }));
+        setErrorStates(prev => ({ ...prev, [url]: false }));
+    };
+
+    const handleImageError = (url: string) => {
+        console.error(`Failed to load media: ${url}`);
+        setLoadingStates(prev => ({ ...prev, [url]: false }));
+        setErrorStates(prev => ({ ...prev, [url]: true }));
+    };
+
+    const fetchMedia = async (url: string) => {
+        try {
+            setErrorStates(prev => ({ ...prev, [url]: false }));
+            setLoadingStates(prev => ({ ...prev, [url]: true }));
+
+            console.log('Fetching media from:', url); // Debug log
+
+            const response = await fetch(url, {
+                credentials: 'include',
+                headers: {
+                    'Accept': 'image/*, video/*, audio/*'
+                }
+            });
+
+            console.log('Response status:', response.status); // Debug log
+            console.log('Response headers:', Object.fromEntries(response.headers.entries())); // Debug log
+
+            if (!response.ok) {
+                console.error('Response not OK:', response.statusText);
+                throw new Error(`Failed to load media: ${response.statusText}`);
+            }
+
+            const blob = await response.blob();
+            console.log('Blob type:', blob.type); // Debug log
+            const objectUrl = URL.createObjectURL(blob);
+            
+            setMediaUrls(prev => ({ ...prev, [url]: objectUrl }));
+            handleImageLoad(url);
+            return objectUrl;
+        } catch (error) {
+            console.error('Fetch error:', error);
+            handleImageError(url);
+            return url;
+        }
+    };
 
     return (
         <div className={`mt-4 grid grid-cols-2 gap-2 ${className}`}>
             {mediaAttachments.map((url, index) => {
-                const isImage = url.match(/\.(jpg|jpeg|png|gif|webp)$/i);
-                const isVideo = url.match(/\.(mp4|webm|ogg)$/i);
-                const isAudio = url.match(/\.(mp3|wav|ogg)$/i);
+                const isImage = url.toLowerCase().match(/\.(jpg|jpeg|png|gif|webp)($|\?)/i);
+                const isVideo = url.toLowerCase().match(/\.(mp4|webm|ogg)($|\?)/i);
+                const isAudio = url.toLowerCase().match(/\.(mp3|wav)($|\?)/i);
+
+                // Use cached blob URL if available, otherwise fetch new one
+                const mediaUrl = mediaUrls[url] || url;
 
                 if (isImage) {
                     return (
-                        <div key={index} className="relative aspect-square">
+                        <div key={index} className="relative aspect-square bg-slate-100 dark:bg-slate-800 rounded-lg overflow-hidden">
+                            {loadingStates[url] !== false && (
+                                <div className="absolute inset-0 flex items-center justify-center">
+                                    <div className="w-6 h-6 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+                                </div>
+                            )}
                             <img
-                                src={url}
+                                src={mediaUrl}
                                 alt={`Media ${index + 1}`}
-                                className="rounded-lg object-cover w-full h-full"
+                                className={`rounded-lg object-cover w-full h-full transition-opacity duration-200 ${
+                                    loadingStates[url] === false ? 'opacity-100' : 'opacity-0'
+                                }`}
+                                onLoad={() => handleImageLoad(url)}
+                                onError={(e: React.SyntheticEvent<HTMLImageElement, Event>) => {
+                                    console.error('Image load error:', e);
+                                    if (!mediaUrls[url]) {
+                                        fetchMedia(url);
+                                    } else {
+                                        handleImageError(url);
+                                    }
+                                }}
                             />
+                            {errorStates[url] && (
+                                <div className="absolute inset-0 flex flex-col items-center justify-center text-sm text-red-500 bg-slate-100 dark:bg-slate-800 bg-opacity-90">
+                                    <span>Failed to load media</span>
+                                    <button 
+                                        onClick={() => fetchMedia(url)}
+                                        className="mt-2 text-blue-500 hover:underline"
+                                    >
+                                        Retry
+                                    </button>
+                                </div>
+                            )}
                         </div>
                     );
                 }
 
                 if (isVideo) {
                     return (
-                        <div key={index} className="relative aspect-video">
+                        <div key={index} className="relative aspect-video bg-slate-100 dark:bg-slate-800 rounded-lg overflow-hidden">
                             <video
                                 controls
                                 className="rounded-lg w-full h-full"
+                                onError={() => {
+                                    if (!mediaUrls[url]) {
+                                        fetchMedia(url);
+                                    } else {
+                                        handleImageError(url);
+                                    }
+                                }}
                             >
-                                <source src={url} type="video/mp4" />
+                                <source src={mediaUrl} type="video/mp4" />
                                 Your browser does not support the video tag.
                             </video>
+                            {errorStates[url] && (
+                                <div className="absolute inset-0 flex flex-col items-center justify-center text-sm text-red-500 bg-slate-100 dark:bg-slate-800 bg-opacity-90">
+                                    <span>Failed to load video</span>
+                                    <button 
+                                        onClick={() => fetchMedia(url)}
+                                        className="mt-2 text-blue-500 hover:underline"
+                                    >
+                                        Retry
+                                    </button>
+                                </div>
+                            )}
                         </div>
                     );
                 }
@@ -116,10 +222,28 @@ function MediaContent({ mediaAttachments, className = "" }: MediaContentProps) {
                             <audio
                                 controls
                                 className="w-full"
+                                onError={() => {
+                                    if (!mediaUrls[url]) {
+                                        fetchMedia(url);
+                                    } else {
+                                        handleImageError(url);
+                                    }
+                                }}
                             >
-                                <source src={url} type="audio/mpeg" />
+                                <source src={mediaUrl} type="audio/mpeg" />
                                 Your browser does not support the audio tag.
                             </audio>
+                            {errorStates[url] && (
+                                <div className="text-sm text-red-500">
+                                    <span>Failed to load audio</span>
+                                    <button 
+                                        onClick={() => fetchMedia(url)}
+                                        className="ml-2 text-blue-500 hover:underline"
+                                    >
+                                        Retry
+                                    </button>
+                                </div>
+                            )}
                         </div>
                     );
                 }
@@ -135,9 +259,8 @@ export default function PostDetail({ initialPost, session }: PostDetailProps) {
     const { toast } = useToast()
     const [isSubmitting, setIsSubmitting] = useState(false)
     const [post, setPost] = useState(initialPost)
-    const [shareOption, setShareOption] = useState<string>('')
-    const [showShareDialog, setShowShareDialog] = useState<boolean>(false)
     const [mediaFiles, setMediaFiles] = useState<File[]>([])
+    const fileInputRef = useRef<HTMLInputElement>(null)
 
     const replyForm = useForm<z.infer<typeof replyFormSchema>>({
         resolver: zodResolver(replyFormSchema),
@@ -183,6 +306,30 @@ export default function PostDetail({ initialPost, session }: PostDetailProps) {
         }
     };
 
+    const handleFileSelect = (acceptedTypes: string) => {
+        if (fileInputRef.current) {
+            fileInputRef.current.accept = acceptedTypes
+            fileInputRef.current.click()
+        }
+    }
+
+    const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+        const files = Array.from(event.target.files || [])
+        if (files.length > 0) {
+            // Validate file size (20MB max)
+            const invalidFiles = files.filter(file => file.size > 20 * 1024 * 1024)
+            if (invalidFiles.length > 0) {
+                toast({
+                    title: "Error",
+                    description: "Files must be less than 20MB",
+                    variant: "destructive",
+                })
+                return
+            }
+            setMediaFiles(prev => [...prev, ...files])
+        }
+    }
+
     const onSubmitReply = async (values: z.infer<typeof replyFormSchema>) => {
         setIsSubmitting(true)
         try {
@@ -191,10 +338,9 @@ export default function PostDetail({ initialPost, session }: PostDetailProps) {
             formData.append('visibility', 'public')
             formData.append('parentId', post.id)
 
-            // Add media files if present
             mediaFiles.forEach(file => {
-                formData.append('mediaAttachments', file);
-            });
+                formData.append('mediaAttachments', file)
+            })
 
             const response = await fetch('/api/posts', {
                 method: 'POST',
@@ -283,21 +429,70 @@ export default function PostDetail({ initialPost, session }: PostDetailProps) {
                                 </FormItem>
                             )}
                         />
-                        <FileUpload
+                        {mediaFiles.length > 0 && (
+                            <div className="grid grid-cols-2 gap-2">
+                                {mediaFiles.map((file, index) => (
+                                    <div key={index} className="relative">
+                                        {file.type.startsWith('image/') ? (
+                                            <img
+                                                src={URL.createObjectURL(file)}
+                                                alt={`Preview ${index}`}
+                                                className="rounded-lg w-full h-32 object-cover"
+                                            />
+                                        ) : file.type.startsWith('video/') && (
+                                            <video
+                                                src={URL.createObjectURL(file)}
+                                                className="rounded-lg w-full h-32 object-cover"
+                                            />
+                                        )}
+                                        <Button
+                                            variant="ghost"
+                                            size="icon"
+                                            className="absolute top-1 right-1 bg-black/50 hover:bg-black/70 text-white rounded-full p-1"
+                                            onClick={() => setMediaFiles(files => files.filter((_, i) => i !== index))}
+                                        >
+                                            <X className="h-4 w-4" />
+                                        </Button>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                        <input
+                            type="file"
+                            ref={fileInputRef}
+                            className="hidden"
+                            onChange={handleFileChange}
                             multiple
-                            accept="image/*,video/*,audio/*"
-                            onChange={setMediaFiles}
-                            maxSize={20}
-                            maxFiles={4}
-                            label="Add Photos/Videos to Reply"
                         />
-                        <Button 
-                            type="submit" 
-                            disabled={isSubmitting} 
-                            className="w-fit ml-auto bg-blue-600 hover:bg-blue-700 text-white"
-                        >
-                            {isSubmitting ? 'Posting...' : 'Reply'}
-                        </Button>
+                        <div className="flex justify-between items-center">
+                            <div className="flex space-x-4">
+                                <Button
+                                    type="button"
+                                    variant="ghost"
+                                    className="text-green-500"
+                                    onClick={() => handleFileSelect('image/*')}
+                                >
+                                    <Image className="mr-2 h-4 w-4" />
+                                    Photo
+                                </Button>
+                                <Button
+                                    type="button"
+                                    variant="ghost"
+                                    className="text-blue-500"
+                                    onClick={() => handleFileSelect('video/*')}
+                                >
+                                    <Video className="mr-2 h-4 w-4" />
+                                    Video
+                                </Button>
+                            </div>
+                            <Button 
+                                type="submit" 
+                                disabled={isSubmitting} 
+                                className="w-fit ml-auto bg-blue-600 hover:bg-blue-700 text-white"
+                            >
+                                {isSubmitting ? 'Posting...' : 'Reply'}
+                            </Button>
+                        </div>
                     </form>
                 </Form>
             </CardContent>

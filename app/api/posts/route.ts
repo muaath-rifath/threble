@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth/next'
 import { authOptions } from '@/app/api/auth/[...nextauth]/options'
 import prisma from '@/lib/prisma'
-import { uploadFileToBlobStorage } from '@/lib/azure-storage'
+import { uploadFileToBlobStorage, moveFile } from '@/lib/azure-storage'
 
 // Handle GET requests
 export async function GET(req: NextRequest) {
@@ -99,14 +99,13 @@ export async function POST(req: NextRequest) {
         const parentId = formData.get('parentId') as string | null
         const communityId = formData.get('communityId') as string | null
         const mediaFiles = formData.getAll('mediaAttachments') as File[]
-        const mediaAttachments: string[] = []
+        let mediaAttachments: string[] = []
 
-        // Handle media uploads if any
+        // First upload files to temporary location
         if (mediaFiles.length > 0) {
-            for (const file of mediaFiles) {
-                const imageUrl = await uploadFileToBlobStorage(file)
-                mediaAttachments.push(imageUrl)
-            }
+            mediaAttachments = await Promise.all(
+                mediaFiles.map(file => uploadFileToBlobStorage(file, session.user.id))
+            )
         }
 
         // Create the post/reply
@@ -139,6 +138,24 @@ export async function POST(req: NextRequest) {
                 }
             },
         })
+
+        // Move files from temp location to final location under the post ID
+        if (mediaAttachments.length > 0) {
+            const updatedAttachments = await Promise.all(
+                mediaAttachments.map(url => 
+                    moveFile(url, session.user.id, newPost.id)
+                )
+            )
+
+            // Update the post with new media URLs
+            await prisma.post.update({
+                where: { id: newPost.id },
+                data: { mediaAttachments: updatedAttachments }
+            })
+
+            // Update the returned post object
+            newPost.mediaAttachments = updatedAttachments
+        }
 
         return NextResponse.json(newPost, { status: 201 })
     } catch (error) {

@@ -1,56 +1,52 @@
-import { NextResponse } from "next/server";
-import prisma from "@/lib/prisma";
-import { uploadFileToBlobStorage } from "@/lib/azure-storage";
+import { NextRequest, NextResponse } from 'next/server'
+import { getServerSession } from 'next-auth/next'
+import { authOptions } from '@/app/api/auth/[...nextauth]/options'
+import { uploadFileToBlobStorage } from '@/lib/azure-storage'
+import prisma from '@/lib/prisma'
+import { z } from 'zod'
 
-export async function POST(req: Request) {
+export async function POST(req: NextRequest) {
+    const session = await getServerSession(authOptions)
+    if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
     try {
         const formData = await req.formData()
-        const { userId, username, bio, location, website, birthDate, name } = Object.fromEntries(formData);
+        const userId = session.user.id
+        const name = formData.get('name') as string
+        const bio = formData.get('bio') as string
+        let imageUrl: string | null = null
 
-        let imageUrl = null;
-       const imageFile = formData.get('image') as File | null;
-
+        const imageFile = formData.get('image') as File
         if (imageFile) {
-             imageUrl = await uploadFileToBlobStorage(imageFile);
+            imageUrl = await uploadFileToBlobStorage(imageFile, userId)
         }
 
         if (!userId) {
-            return NextResponse.json({ error: "User ID is required." }, { status: 400 });
+            return NextResponse.json({ error: 'User not found' }, { status: 404 })
         }
 
-
-        const updatedUser = await prisma.user.update({
-            where: { id: userId as string },
-             data: {
-                username: username as string,
-                name: name as string,
-                 image: imageUrl || undefined,
+        const user = await prisma.user.update({
+            where: { id: userId },
+            data: {
+                name,
+                image: imageUrl,
                 profile: {
-                    upsert: {
-                        create: {
-                            bio: bio as string | undefined,
-                            location: location as string | undefined,
-                            website: website as string | undefined,
-                            birthDate: birthDate ? new Date(birthDate as string) : undefined,
-                        },
-                        update: {
-                            bio: bio as string | undefined,
-                            location: location as string | undefined,
-                            website: website as string | undefined,
-                            birthDate: birthDate ? new Date(birthDate as string) : undefined,
-                        },
-                    },
-                },
+                    create: {
+                        bio
+                    }
+                }
             },
             include: {
-                profile: true,
-            },
+                profile: true
+            }
         })
 
-
-        return NextResponse.json(updatedUser);
+        return NextResponse.json(user)
     } catch (error) {
-        console.error("Error updating user:", error);
-        return NextResponse.json({ error: "Failed to update user." }, { status: 500 });
+        console.error('Error in onboarding:', error)
+        return NextResponse.json(
+            { error: 'Failed to complete onboarding' },
+            { status: 500 }
+        )
     }
 }

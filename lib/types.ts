@@ -1,30 +1,32 @@
-export interface Post {
-    id: string;
-    content: string;
-    createdAt: string;
-    authorId: string;
-    parentId: string | null;
-    visibility: string;
+import { type Post } from '@prisma/client'
+
+// Base Post type with media attachments
+export interface BasePost extends Post {
     mediaAttachments: string[];
+}
+
+// Extended Post type for feed and detail views
+export interface ExtendedPost extends BasePost {
     author: {
-        name: string;
+        name: string | null;
         image: string | null;
     };
-    reactions: {
-        id: string;
-        type: string;
+    reactions: Array<{
         userId: string;
-        postId: string;
-    }[];
+        type: string;
+    }>;
     _count: {
         replies: number;
     };
-    parent: {
-        id: string;
-        author: {
-            name: string;
-            image: string | null;
-        };
-    } | null;
-    replies: Post[];
+    parent?: ExtendedPost | null;
+    replies?: ExtendedPost[];
+}
+
+export interface MediaFile {
+    id: string;
+    url: string;
+    type: string;
+    postId: string;
+    userId: string;
+    createdAt: Date;
 }

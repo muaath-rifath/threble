@@ -23,7 +23,7 @@ export async function PUT(req: Request) {
 
   try {
         if (imageFile) {
-            imageUrl = await uploadFileToBlobStorage(imageFile);
+            imageUrl = await uploadFileToBlobStorage(imageFile, session.user.id);
         }
 
     const updatedUser = await prisma.user.update({
