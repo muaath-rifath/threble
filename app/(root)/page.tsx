@@ -370,7 +370,7 @@ export default function HomePage() {
                     </CardHeader>
                     {post.parentId && post.parent &&(
                         <CardContent className="pl-14 italic text-sm text-gray-600">
-                             Replying to <span className='font-medium text-black'>@{post.parent.author.name}</span>
+                             Replied to <span className='font-medium text-black'>@{post.parent.author.name}</span>
                         </CardContent>
                     )}
                     <CardContent>
