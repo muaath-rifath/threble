@@ -11,11 +11,13 @@ import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
 import { Form, FormControl, FormField, FormItem } from "@/components/ui/form"
 import { Separator } from "@/components/ui/separator"
-import { Image, Video, ThumbsUp, MessageSquare, Share2, X, Edit } from 'lucide-react'
+import { Image, Video, ThumbsUp, MessageSquare, Share2, X, Edit, MoreHorizontal, Trash2 } from 'lucide-react'
 import { useToast } from "@/hooks/use-toast"
 import { Session } from 'next-auth'
 import type { Post, Prisma } from '@prisma/client'
 import { FileUpload } from "@/components/ui/file-upload"
+import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from "@/components/ui/dropdown-menu";
+import { AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription, AlertDialogFooter, AlertDialogCancel, AlertDialogAction } from "@/components/ui/alert-dialog";
 
 const replyFormSchema = z.object({
     content: z.string().min(1, "Reply cannot be empty"),
@@ -254,6 +256,7 @@ export default function PostDetail({ initialPost, session }: PostDetailProps) {
     const [editContent, setEditContent] = useState(initialPost.content);
     const [editMediaFiles, setEditMediaFiles] = useState<File[]>([]);
     const [keepMediaUrls, setKeepMediaUrls] = useState<string[]>(initialPost.mediaAttachments || []);
+    const [postToDelete, setPostToDelete] = useState<string | null>(null);
 
     const replyForm = useForm<z.infer<typeof replyFormSchema>>({
         resolver: zodResolver(replyFormSchema),
@@ -299,10 +302,12 @@ export default function PostDetail({ initialPost, session }: PostDetailProps) {
         }
     };
 
-    const handleDeletePost = async () => {
-        if (!confirm('Are you sure you want to delete this post? This action cannot be undone.')) {
-            return;
-        }
+    const handleDeletePost = () => {
+        setPostToDelete(post.id);
+    };
+
+    const handleDeleteConfirmed = async () => {
+        if (!postToDelete) return;
 
         try {
             const response = await fetch(`/api/posts/${post.id}`, {
@@ -325,6 +330,8 @@ export default function PostDetail({ initialPost, session }: PostDetailProps) {
                 description: "Failed to delete post. Please try again.",
                 variant: "destructive",
             });
+        } finally {
+            setPostToDelete(null);
         }
     };
 
@@ -452,37 +459,33 @@ export default function PostDetail({ initialPost, session }: PostDetailProps) {
                             </div>
                         </div>
                         {post.author.name === session?.user.name && (
-                            <div className="flex gap-2">
-                                {!isEditing ? (
-                                    <>
-                                        <Button
-                                            variant="ghost"
-                                            size="icon"
-                                            className="text-blue-500 hover:text-blue-700"
-                                            onClick={() => setIsEditing(true)}
-                                        >
-                                            <Edit className="h-4 w-4" />
-                                        </Button>
-                                        <Button
-                                            variant="ghost"
-                                            size="icon"
-                                            className="text-red-500 hover:text-red-700"
-                                            onClick={handleDeletePost}
-                                        >
-                                            <X className="h-4 w-4" />
-                                        </Button>
-                                    </>
-                                ) : (
-                                    <Button
-                                        variant="ghost"
+                            <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                    <Button 
+                                        variant="ghost" 
                                         size="icon"
-                                        className="text-gray-500 hover:text-gray-700"
-                                        onClick={handleCancelEdit}
+                                        className="hover:bg-gray-100 dark:hover:bg-gray-800"
                                     >
-                                        <X className="h-4 w-4" />
+                                        <MoreHorizontal className="h-5 w-5 text-gray-500" />
                                     </Button>
-                                )}
-                            </div>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end" className="w-40">
+                                    <DropdownMenuItem
+                                        onClick={() => router.push(`/post/${post.id}/edit`)}
+                                        className="cursor-pointer"
+                                    >
+                                        <Edit className="mr-2 h-4 w-4" />
+                                        Edit
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem
+                                        onClick={handleDeletePost}
+                                        className="cursor-pointer text-red-600 focus:text-red-600"
+                                    >
+                                        <Trash2 className="mr-2 h-4 w-4" />
+                                        Delete
+                                    </DropdownMenuItem>
+                                </DropdownMenuContent>
+                            </DropdownMenu>
                         )}
                     </div>
                 </CardHeader>
@@ -622,6 +625,27 @@ export default function PostDetail({ initialPost, session }: PostDetailProps) {
                     </Button>
                 </CardFooter>
             </Card>
+
+            <AlertDialog open={!!postToDelete} onOpenChange={() => setPostToDelete(null)}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            This action cannot be undone. This will permanently delete your post
+                            and remove all associated data.
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogAction
+                            onClick={handleDeleteConfirmed}
+                            className="bg-red-600 text-white hover:bg-red-700"
+                        >
+                            Delete
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
 
             <CardContent className="mt-4 mb-8">
                 <Form {...replyForm}>
