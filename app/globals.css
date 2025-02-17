@@ -198,6 +198,28 @@
   .comment-form_btn {
     @apply rounded-[1.5rem] bg-primary-500 px-[2rem] py-[0.5rem] text-small-regular text-light-1 max-xs:w-full; 
   }
+
+  /* Dropdown menu items */
+  .action-dropdown-item {
+    @apply flex w-full items-center rounded-md py-3 px-4 text-sm hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer;
+  }
+
+  .action-dropdown-item-delete {
+    @apply flex w-full items-center rounded-md py-3 px-4 text-sm text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30 cursor-pointer;
+  }
+
+  /* Post actions */
+  .post-action-button {
+    @apply flex items-center gap-3 rounded-lg px-4 py-3 text-sm font-medium transition-colors hover:bg-slate-100 dark:hover:bg-slate-800 min-w-[90px] justify-center;
+  }
+
+  .post-action-button-active {
+    @apply text-blue-600 dark:text-blue-400;
+  }
+
+  .post-action-count {
+    @apply min-w-[20px] text-center;
+  }
 }
 
 @layer utilities {

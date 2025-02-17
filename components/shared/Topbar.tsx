@@ -5,6 +5,7 @@ import { usePathname, useRouter } from "next/navigation"
 import { topbarNav } from '@/constants/'
 import ProfileMenu from "./ProfileMenu";
 function Topbar() {
+    const pathname = usePathname();
 
     return (
         <nav className="topbar">
@@ -15,16 +16,18 @@ function Topbar() {
 
             <div className="flex flex-right gap-4 items-center">
                 {topbarNav.map((link) => {
+                    const isActive = pathname === link.route;
                     return (
                         <div className="flex w-10" key={link.label}>
                             <Link href={link.route} className="flex items-center">
                                 <Image 
                                     src={link.imgURL} 
-                                    className="dark:invert p-0.5" 
+                                    className={`dark:invert p-0.5 ${isActive ? 'invert' : ''}`}
                                     alt={link.label} 
                                     height={24} 
                                     width={24} 
                                 />
+                                {link.label && <span className="sr-only">{link.label}</span>}
                             </Link>
                         </div>
                     )

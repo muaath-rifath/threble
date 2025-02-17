@@ -5,26 +5,10 @@ import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { ThumbsUp, MessageSquare, Share2 } from 'lucide-react';
-
-interface Post {
-  id: string;
-  content: string;
-  author: {
-    name: string;
-    image: string;
-  };
-  createdAt: string;
-  reactions: {
-    type: string;
-    userId: string;
-  }[];
-  _count: {
-    comments: number;
-  };
-}
+import { ExtendedPost } from '@/lib/types';
 
 interface FeedListProps {
-  initialPosts: Post[];
+  initialPosts: ExtendedPost[];
 }
 
 function formatDate(dateString: string) {
@@ -62,9 +46,17 @@ export default function FeedList({ initialPosts }: FeedListProps) {
         // Update the posts state with the new reaction
         setPosts(prevPosts => prevPosts.map(post => {
           if (post.id === postId) {
+            const newReaction = {
+              id: 'temp',
+              type,
+              userId: 'currentUserId',
+              postId,
+              createdAt: new Date().toISOString(),
+              commentId: null
+            };
             return {
               ...post,
-              reactions: [...post.reactions, { type, userId: 'currentUserId' }], // Replace 'currentUserId' with actual user ID
+              reactions: [...post.reactions, newReaction],
             };
           }
           return post;
@@ -83,7 +75,7 @@ export default function FeedList({ initialPosts }: FeedListProps) {
             <div className="flex items-center space-x-4">
               <Avatar>
                 <AvatarImage src={post.author.image || undefined} />
-                <AvatarFallback>{post.author.name.charAt(0)}</AvatarFallback>
+                <AvatarFallback>{post.author.name?.charAt(0) || '?'}</AvatarFallback>
               </Avatar>
               <div>
                 <p className="font-semibold">{post.author.name}</p>
@@ -105,7 +97,7 @@ export default function FeedList({ initialPosts }: FeedListProps) {
             </Button>
             <Button variant="ghost">
               <MessageSquare className="mr-2 h-4 w-4" />
-              Comment ({post._count.comments})
+              Comment ({post._count.replies})
             </Button>
             <Button variant="ghost">
               <Share2 className="mr-2 h-4 w-4" />

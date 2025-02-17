@@ -36,8 +36,18 @@ export async function GET(
                 },
                 parent: {
                     select: {
+                        id: true,
+                        content: true,
+                        createdAt: true,
+                        authorId: true,
+                        parentId: true,
+                        mediaAttachments: true,
                         author: {
                             select: { name: true, image: true },
+                        },
+                        reactions: true,
+                        _count: {
+                            select: { replies: true },
                         },
                     },
                 },
@@ -49,13 +59,6 @@ export async function GET(
                         mediaAttachments: true,
                         author: {
                             select: { name: true, image: true },
-                        },
-                        parent: {
-                            select: {
-                                author: {
-                                    select: { name: true, image: true },
-                                },
-                            },
                         },
                         reactions: true,
                         _count: {

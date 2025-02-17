@@ -1,8 +1,8 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { useRouter } from 'next/navigation'
 import { useSession } from 'next-auth/react'
+import { useRouter } from 'next/navigation'
 import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
@@ -15,116 +15,124 @@ export default function EditPostPage({ params }: { params: { postId: string } })
     const { data: session } = useSession()
     const { toast } = useToast()
     const [isLoading, setIsLoading] = useState(true)
+    const [post, setPost] = useState<any>(null)
     const [editContent, setEditContent] = useState('')
     const [keepMediaUrls, setKeepMediaUrls] = useState<string[]>([])
     const [editMediaFiles, setEditMediaFiles] = useState<File[]>([])
-    const [post, setPost] = useState<any>(null)
 
     useEffect(() => {
-        fetchPost()
-    }, [params.postId])
+        if (!session) {
+            router.push('/');
+            return;
+        }
+        fetchPost();
+    }, [params.postId, session]);
 
     const fetchPost = async () => {
         try {
-            const response = await fetch(`/api/posts/${params.postId}`)
+            const response = await fetch(`/api/posts/${params.postId}`);
             if (response.ok) {
-                const data = await response.json()
-                setPost(data)
-                setEditContent(data.content)
-                setKeepMediaUrls(data.mediaAttachments || [])
+                const data = await response.json();
+                if (data.author.name !== session?.user.name) {
+                    // If not the author, redirect to post view
+                    router.push(`/post/${params.postId}`);
+                    return;
+                }
+                setPost(data);
+                setEditContent(data.content);
+                setKeepMediaUrls(data.mediaAttachments || []);
             } else {
-                throw new Error('Failed to fetch post')
+                throw new Error('Failed to fetch post');
             }
         } catch (error) {
-            console.error('Error fetching post:', error)
+            console.error('Error fetching post:', error);
             toast({
                 title: "Error",
                 description: "Failed to fetch post. Please try again.",
                 variant: "destructive",
-            })
-            router.push('/')
+            });
+            router.push('/');
         } finally {
-            setIsLoading(false)
+            setIsLoading(false);
         }
-    }
+    };
 
     const handleSubmit = async () => {
         try {
-            const formData = new FormData()
-            formData.append('content', editContent)
-            formData.append('keepMediaUrls', keepMediaUrls.join(','))
+            const formData = new FormData();
+            formData.append('content', editContent);
+            formData.append('keepMediaUrls', keepMediaUrls.join(','));
             
             editMediaFiles.forEach(file => {
-                formData.append('mediaAttachments', file)
-            })
+                formData.append('mediaAttachments', file);
+            });
 
             const response = await fetch(`/api/posts/${params.postId}`, {
                 method: 'PATCH',
                 body: formData,
-            })
+            });
 
             if (response.ok) {
                 toast({ 
                     title: "Success", 
                     description: "Post updated successfully." 
-                })
-                router.push(`/post/${params.postId}`)
+                });
+                router.push(`/post/${params.postId}`);
             } else {
-                throw new Error('Failed to update post')
+                throw new Error('Failed to update post');
             }
         } catch (error) {
-            console.error('Error updating post:', error)
+            console.error('Error updating post:', error);
             toast({
                 title: "Error",
                 description: "Failed to update post. Please try again.",
                 variant: "destructive",
-            })
+            });
         }
-    }
+    };
 
     const handleFileSelect = (acceptedTypes: string) => {
-        const input = document.createElement('input')
-        input.type = 'file'
-        input.accept = acceptedTypes
-        input.multiple = true
+        const input = document.createElement('input');
+        input.type = 'file';
+        input.accept = acceptedTypes;
+        input.multiple = true;
         input.onchange = (e: Event) => {
-            const files = Array.from((e.target as HTMLInputElement).files || [])
+            const files = Array.from((e.target as HTMLInputElement).files || []);
             if (files.length > 0) {
                 // Validate file size (20MB max)
-                const invalidFiles = files.filter(file => file.size > 20 * 1024 * 1024)
+                const invalidFiles = files.filter(file => file.size > 20 * 1024 * 1024);
                 if (invalidFiles.length > 0) {
                     toast({
                         title: "Error",
                         description: "Files must be less than 20MB",
                         variant: "destructive",
-                    })
-                    return
+                    });
+                    return;
                 }
-                setEditMediaFiles(prev => [...prev, ...files])
+                setEditMediaFiles(prev => [...prev, ...files]);
             }
-        }
-        input.click()
-    }
+        };
+        input.click();
+    };
 
     const handleRemoveMedia = (url: string) => {
-        setKeepMediaUrls(prev => prev.filter(u => u !== url))
-    }
+        setKeepMediaUrls(prev => prev.filter(u => u !== url));
+    };
 
     const handleRemoveNewMedia = (index: number) => {
-        setEditMediaFiles(prev => prev.filter((_, i) => i !== index))
+        setEditMediaFiles(prev => prev.filter((_, i) => i !== index));
+    };
+
+    if (!session) {
+        return null;
     }
 
     if (isLoading) {
-        return <div className="flex justify-center items-center min-h-screen">Loading...</div>
+        return <div className="flex justify-center items-center min-h-screen">Loading...</div>;
     }
 
     if (!post) {
-        return <div className="flex justify-center items-center min-h-screen">Post not found</div>
-    }
-
-    if (post.author.name !== session?.user.name) {
-        router.push('/')
-        return null
+        return <div className="flex justify-center items-center min-h-screen">Post not found</div>;
     }
 
     return (
@@ -250,5 +258,5 @@ export default function EditPostPage({ params }: { params: { postId: string } })
                 </CardFooter>
             </Card>
         </div>
-    )
+    );
 }

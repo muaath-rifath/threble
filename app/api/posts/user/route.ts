@@ -20,7 +20,17 @@ export async function GET(req: NextRequest) {
         },
         reactions: true,
         _count: {
-          select: { comments: true },
+          select: { replies: true },
+        },
+        parent: {
+          select: {
+            id: true,
+            content: true,
+            authorId: true,
+            author: {
+              select: { name: true, image: true },
+            },
+          },
         },
       },
     })

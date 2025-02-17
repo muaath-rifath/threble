@@ -3,9 +3,10 @@ import { Session } from 'next-auth'
 import PostDetail from './PostDetail'
 import prisma from '@/lib/prisma'
 import type { Prisma } from '@prisma/client'
+import { ExtendedPost } from '@/lib/types'
 
 async function getPost(postId: string) {
-    return await prisma.post.findUnique({
+    const post = await prisma.post.findUnique({
         where: { id: postId },
         include: {
             author: {
@@ -23,6 +24,10 @@ async function getPost(postId: string) {
                     author: {
                         select: { name: true, image: true },
                     },
+                    reactions: true,
+                    _count: {
+                        select: { replies: true },
+                    },
                 },
             },
             replies: {
@@ -34,7 +39,9 @@ async function getPost(postId: string) {
                         },
                     },
                     parent: {
-                        include: {
+                        select: {
+                            id: true,
+                            authorId: true,
                             author: {
                                 select: { name: true, image: true },
                             },
@@ -48,49 +55,52 @@ async function getPost(postId: string) {
                 orderBy: { createdAt: 'desc' },
             },
         },
-    })
-}
+    });
 
-export default async function PostDetailView({ 
-    postId,
-    session 
-}: { 
-    postId: string
-    session: Session 
-}) {
-    const post = await getPost(postId)
+    if (!post) return null;
 
-    if (!post) {
-        return (
-            <div className="max-w-2xl mx-auto mt-8">
-                <div className="p-6 text-center bg-white dark:bg-slate-900 rounded-lg shadow-sm">
-                    <p className="text-lg font-medium">Post Not Found</p>
-                </div>
-            </div>
-        )
-    }
+    // Transform the Prisma result to match ExtendedPost type
+    const transformedPost: ExtendedPost = {
+        ...post,
+        createdAt: post.createdAt.toISOString(),
+        mediaAttachments: post.mediaAttachments || [],
+        reactions: post.reactions.map(r => ({
+            ...r,
+            createdAt: r.createdAt.toISOString()
+        })),
+        parent: post.parent ? {
+            id: post.parent.id,
+            authorId: post.parent.authorId,
+            createdAt: post.parent.createdAt.toISOString(),
+            author: {
+                name: post.parent.author.name,
+                image: post.parent.author.image
+            }
+        } : null,
+        replies: (post.replies || []).map(reply => ({
+            ...reply,
+            createdAt: reply.createdAt.toISOString(),
+            mediaAttachments: reply.mediaAttachments || [],
+            reactions: reply.reactions.map(r => ({
+                ...r,
+                createdAt: r.createdAt.toISOString()
+            })),
+            author: {
+                name: reply.author.name,
+                image: reply.author.image
+            },
+            parent: null, // Since we don't need nested parent info in replies
+            replies: [], // Initialize empty replies array for nested replies
+            _count: { replies: reply._count?.replies || 0 }
+        })),
+        author: {
+            name: post.author.name,
+            image: post.author.image
+        },
+        _count: {
+            replies: post._count?.replies || 0
+        }
+    };
 
-    return (
-        <Suspense fallback={
-            <div className="max-w-2xl mx-auto mt-8">
-                <div className="p-6 bg-white dark:bg-slate-900 rounded-lg shadow-sm">
-                    <div className="animate-pulse">
-                        <div className="flex items-center space-x-4 mb-4">
-                            <div className="h-12 w-12 bg-slate-200 dark:bg-slate-700 rounded-full" />
-                            <div className="space-y-2">
-                                <div className="h-4 w-32 bg-slate-200 dark:bg-slate-700 rounded" />
-                                <div className="h-3 w-24 bg-slate-200 dark:bg-slate-700 rounded" />
-                            </div>
-                        </div>
-                        <div className="space-y-2">
-                            <div className="h-4 w-full bg-slate-200 dark:bg-slate-700 rounded" />
-                            <div className="h-4 w-3/4 bg-slate-200 dark:bg-slate-700 rounded" />
-                        </div>
-                    </div>
-                </div>
-            </div>
-        }>
-            <PostDetail initialPost={post} session={session} />
-        </Suspense>
-    )
+    return transformedPost;
 }

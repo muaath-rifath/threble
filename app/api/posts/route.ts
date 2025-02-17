@@ -41,30 +41,25 @@ export async function GET(req: NextRequest) {
                     select: { replies: true },
                 },
                 parent: {
-                    include: {
+                    select: {
+                        id: true,
+                        authorId: true,
                         author: {
                             select: { name: true, image: true },
-                        }
-                    }
+                        },
+                    },
                 },
                 replies: {
                     include: {
                         author: {
                             select: { name: true, image: true },
                         },
-                        parent: {
-                            include: {
-                                author: {
-                                    select: { name: true, image: true },
-                                }
-                            }
-                        },
                         reactions: true,
                         _count: {
                             select: { replies: true },
-                        }
-                    }
-                }
+                        },
+                    },
+                },
             },
             take: limit + 1,
             cursor: cursor ? { id: cursor } : undefined,

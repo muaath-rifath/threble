@@ -21,15 +21,24 @@ const postFormSchema = z.object({
     content: z.string().min(1, "Post content cannot be empty"),
 })
 
+interface Reaction {
+    id: string;
+    type: string;
+    userId: string;
+    postId: string;
+    createdAt: Date;
+    commentId: string | null;
+}
+
 interface Post {
     id: string;
     content: string;
     author: {
         name: string;
-        image: string;
+        image: string | null;
     };
     createdAt: string;
-    reactions: { type: string; userId: string; }[];
+    reactions: Reaction[];
     _count: {
         replies: number;
     };
@@ -134,23 +143,49 @@ export default function HomePage() {
     }
 
     const handleReaction = async (postId: string, type: string) => {
-        try {
-            const hasReaction = posts.find(p => p.id === postId)?.reactions.some(
-                r => r.userId === session?.user.id && r.type === type
-            );
+        const post = posts.find(p => p.id === postId);
+        if (!post || !session?.user?.id) return;
 
+        const hasReaction = post.reactions.some(
+            r => r.userId === session.user.id && r.type === type
+        );
+
+        // Create a temporary reaction for optimistic update
+        const tempReaction: Reaction = {
+            id: 'temp',
+            type,
+            userId: session.user.id,
+            postId,
+            createdAt: new Date(),
+            commentId: null
+        };
+
+        // Optimistically update the UI
+        setPosts(posts.map(p => {
+            if (p.id === postId) {
+                return {
+                    ...p,
+                    reactions: hasReaction
+                        ? p.reactions.filter(r => !(r.userId === session.user.id && r.type === type))
+                        : [...p.reactions, tempReaction]
+                };
+            }
+            return p;
+        }));
+
+        try {
             const response = await fetch(`/api/posts/${postId}/reactions`, {
                 method: hasReaction ? 'DELETE' : 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ type }),
             });
 
-            if (response.ok) {
-                fetchPosts();
-            } else {
+            if (!response.ok) {
                 throw new Error('Failed to update reaction');
             }
         } catch (error) {
+            // Revert the optimistic update on error
+            setPosts(prevPosts => prevPosts);
             console.error('Error updating reaction:', error);
             toast({
                 title: "Error",
@@ -193,11 +228,24 @@ export default function HomePage() {
         }
     };
 
-    const handleShare = (postId: string) => {
-        console.log(`Sharing post ${postId}`)
-        toast({ title: "Share", description: "Sharing functionality not implemented yet." })
-    }
-
+    const handleShare = async (postId: string) => {
+        try {
+            await navigator.share({
+                title: 'Share Post',
+                text: posts.find(p => p.id === postId)?.content || '',
+                url: `${window.location.origin}/post/${postId}`
+            });
+        } catch (error) {
+            if ((error as Error).name !== 'AbortError') {
+                // Only show error if it's not user cancellation
+                toast({
+                    title: "Share failed",
+                    description: "Couldn't share the post. Try copying the link instead.",
+                    variant: "destructive",
+                });
+            }
+        }
+    };
 
     const handleReplyClick = (postId: string) => {
         router.push(`/post/${postId}`); // Navigate to specific post page
@@ -343,37 +391,43 @@ export default function HomePage() {
                                         <Button 
                                             variant="ghost" 
                                             size="icon"
-                                            className="hover:bg-gray-100 dark:hover:bg-gray-800"
+                                            className="hover:bg-slate-100 dark:hover:bg-slate-800 h-10 w-10"
                                         >
-                                            <MoreHorizontal className="h-5 w-5 text-gray-500" />
+                                            <MoreHorizontal className="h-5 w-5 text-slate-500" />
                                         </Button>
                                     </DropdownMenuTrigger>
-                                    <DropdownMenuContent align="end" className="w-40">
+                                    <DropdownMenuContent align="end" className="w-56">
                                         <DropdownMenuItem
                                             onClick={() => router.push(`/post/${post.id}/edit`)}
-                                            className="cursor-pointer"
+                                            className="action-dropdown-item"
                                         >
-                                            <Edit className="mr-2 h-4 w-4" />
-                                            Edit
+                                            <Edit className="mr-3 h-5 w-5" />
+                                            Edit post
                                         </DropdownMenuItem>
                                         <DropdownMenuItem
                                             onClick={() => setPostToDelete(post.id)}
-                                            className="cursor-pointer text-red-600 focus:text-red-600"
+                                            className="action-dropdown-item-delete"
                                         >
-                                            <Trash2 className="mr-2 h-4 w-4" />
-                                            Delete
+                                            <Trash2 className="mr-3 h-5 w-5" />
+                                            Delete post
                                         </DropdownMenuItem>
                                     </DropdownMenuContent>
                                 </DropdownMenu>
                             )}
                         </div>
                     </CardHeader>
-                    {post.parentId && post.parent &&(
-                        <CardContent className="pl-14 italic text-sm text-gray-600">
-                             Replied to <span className='font-medium text-black'>@{post.parent.author.name}</span>
-                        </CardContent>
-                    )}
                     <CardContent>
+                        {post.parentId && post.parent && (
+                            <div className="mb-4 italic text-sm text-slate-600 dark:text-slate-400">
+                                Replied to{' '}
+                                <button
+                                    onClick={() => router.push(`/post/${post.parentId}`)}
+                                    className="font-medium text-blue-600 dark:text-blue-400 hover:underline"
+                                >
+                                    @{post.parent.author.name}
+                                </button>
+                            </div>
+                        )}
                         <p>{post.content}</p>
                         {post.mediaAttachments?.length > 0 && (
                             <div className="grid grid-cols-2 gap-2 mt-4">
@@ -472,22 +526,29 @@ export default function HomePage() {
                         <Button
                             variant="ghost"
                             onClick={() => handleReaction(post.id, 'LIKE')}
-                            className={post.reactions.some(r => r.userId === session.user.id && r.type === 'LIKE') 
-                                ? 'text-blue-500 hover:text-blue-700' 
-                                : 'text-gray-500 hover:text-blue-500'}
+                            className={`post-action-button ${
+                                post.reactions.some(r => r.userId === session.user.id && r.type === 'LIKE') 
+                                    ? 'post-action-button-active' 
+                                    : ''
+                            }`}
                         >
-                            <ThumbsUp className="mr-2 h-4 w-4" />
-                            Like ({post.reactions.filter(r => r.type === 'LIKE').length})
+                            <ThumbsUp className="h-5 w-5" />
+                            {post.reactions.filter(r => r.type === 'LIKE').length}
                         </Button>
                         <Button
                             variant="ghost"
                             onClick={() => handleReplyClick(post.id)}
+                            className="post-action-button"
                         >
-                            <MessageSquare className="mr-2 h-4 w-4" />
-                            Replies ({post._count.replies})
+                            <MessageSquare className="h-5 w-5" />
+                            {post._count.replies}
                         </Button>
-                        <Button variant="ghost" onClick={() => handleShare(post.id)}>
-                            <Share2 className="mr-2 h-4 w-4" />
+                        <Button 
+                            variant="ghost" 
+                            onClick={() => handleShare(post.id)}
+                            className="post-action-button"
+                        >
+                            <Share2 className="h-5 w-5" />
                             Share
                         </Button>
                     </CardFooter>
