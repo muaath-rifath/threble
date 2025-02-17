@@ -1,50 +1,115 @@
-'use client'
-
-import { useEffect, useState } from 'react'
-import { useSession } from 'next-auth/react'
-import { useRouter } from 'next/navigation'
+import { getServerSession } from 'next-auth/next'
+import { authOptions } from '@/app/api/auth/[...nextauth]/options'
 import PostDetail from '@/components/post/PostDetail'
-import { ExtendedPost } from '@/lib/types'
+import prisma from '@/lib/prisma'
+import type { ExtendedPost } from '@/lib/types'
 
-export default function PostDetailPage({ params }: { params: { postId: string } }) {
-    const { data: session } = useSession()
-    const router = useRouter()
-    const [post, setPost] = useState<ExtendedPost | null>(null)
-    const [isLoading, setIsLoading] = useState(true)
-
-    useEffect(() => {
-        fetchPost()
-    }, [params.postId])
-
-    const fetchPost = async () => {
-        try {
-            const response = await fetch(`/api/posts/${params.postId}`)
-            if (response.ok) {
-                const data = await response.json()
-                setPost(data)
-            } else {
-                console.error('Failed to fetch post:', response.statusText)
-                router.push('/')
-            }
-        } catch (error) {
-            console.error('Error fetching post:', error)
-            router.push('/')
-        } finally {
-            setIsLoading(false)
+// Transform post from Prisma to ExtendedPost type
+const transformPost = (post: any): ExtendedPost => ({
+    ...post,
+    createdAt: post.createdAt.toISOString(),
+    mediaAttachments: post.mediaAttachments || [],
+    reactions: post.reactions.map((r: any) => ({
+        ...r,
+        createdAt: r.createdAt.toISOString()
+    })),
+    parent: post.parent ? {
+        id: post.parent.id,
+        authorId: post.parent.authorId,
+        createdAt: post.parent.createdAt.toISOString(),
+        author: {
+            name: post.parent.author.name,
+            image: post.parent.author.image
         }
+    } : null,
+    replies: (post.replies || []).map((reply: any) => ({
+        ...reply,
+        createdAt: reply.createdAt.toISOString(),
+        mediaAttachments: reply.mediaAttachments || [],
+        reactions: reply.reactions.map((r: any) => ({
+            ...r,
+            createdAt: r.createdAt.toISOString()
+        })),
+        author: {
+            name: reply.author.name,
+            image: reply.author.image
+        },
+        parent: null,
+        replies: [],
+        _count: { replies: reply._count?.replies || 0 }
+    })),
+    author: {
+        name: post.author.name,
+        image: post.author.image
+    },
+    _count: {
+        replies: post._count?.replies || 0
     }
+});
+
+export default async function PostDetailPage({ params }: { params: { postId: string } }) {
+    const session = await getServerSession(authOptions);
 
     if (!session) {
-        return <div className="text-center mt-8">Please sign in to view posts.</div>
+        return <div className="text-center mt-8">Please sign in to view posts.</div>;
     }
 
-    if (isLoading) {
-        return <div className="text-center mt-8">Loading...</div>
-    }
+    const post = await prisma.post.findUnique({
+        where: { id: params.postId },
+        include: {
+            author: {
+                select: {
+                    name: true,
+                    image: true,
+                },
+            },
+            reactions: true,
+            _count: {
+                select: { replies: true },
+            },
+            parent: {
+                include: {
+                    author: {
+                        select: { name: true, image: true },
+                    },
+                    reactions: true,
+                    _count: {
+                        select: { replies: true },
+                    },
+                },
+            },
+            replies: {
+                include: {
+                    author: {
+                        select: {
+                            name: true,
+                            image: true,
+                        },
+                    },
+                    parent: {
+                        select: {
+                            id: true,
+                            authorId: true,
+                            author: {
+                                select: { name: true, image: true },
+                            },
+                        },
+                    },
+                    reactions: true,
+                    _count: {
+                        select: { replies: true },
+                    },
+                },
+                orderBy: { createdAt: 'desc' },
+            },
+        },
+    });
 
     if (!post) {
-        return <div className="text-center mt-8">Post not found.</div>
+        return <div className="text-center mt-8">Post not found.</div>;
     }
 
-    return <PostDetail initialPost={post} session={session} />
+    const transformedPost = transformPost(post);
+
+    return <PostDetail initialPost={transformedPost} session={session} />;
 }
