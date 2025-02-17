@@ -4,6 +4,23 @@ import { authOptions } from '@/app/api/auth/[...nextauth]/options'
 import prisma from '@/lib/prisma'
 import { deleteFileFromBlobStorage, uploadFileToBlobStorage, moveFile } from '@/lib/azure-storage'
 
+async function authorizeUser(postId: string, userId: string) {
+    const post = await prisma.post.findUnique({
+        where: { id: postId },
+        select: { authorId: true }
+    });
+    
+    if (!post) {
+        throw new Error('Post not found');
+    }
+    
+    if (post.authorId !== userId) {
+        throw new Error('Unauthorized');
+    }
+    
+    return post;
+}
+
 export async function GET(
     req: NextRequest,
     { params }: { params: { postId: string } }
@@ -90,30 +107,25 @@ export async function DELETE(
 ) {
     try {
         const session = await getServerSession(authOptions);
-        if (!session) {
+        if (!session?.user?.id) {
             return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
         }
 
-        // Get the post to check ownership and get media attachments
+        // Authorize user
+        try {
+            await authorizeUser(params.postId, session.user.id);
+        } catch (error: any) {
+            return NextResponse.json({ error: error.message }, { status: error.message === 'Post not found' ? 404 : 403 });
+        }
+
+        // Get post media attachments
         const post = await prisma.post.findUnique({
             where: { id: params.postId },
-            select: {
-                authorId: true,
-                mediaAttachments: true
-            }
+            select: { mediaAttachments: true }
         });
 
-        if (!post) {
-            return NextResponse.json({ error: 'Post not found' }, { status: 404 });
-        }
-
-        // Check if the user is authorized to delete this post
-        if (post.authorId !== session.user.id) {
-            return NextResponse.json({ error: 'Not authorized' }, { status: 403 });
-        }
-
         // Delete all media attachments from blob storage
-        if (post.mediaAttachments && post.mediaAttachments.length > 0) {
+        if (post?.mediaAttachments?.length) {
             await Promise.allSettled(
                 post.mediaAttachments.map(url => deleteFileFromBlobStorage(url))
             ).then(results => {
@@ -125,7 +137,7 @@ export async function DELETE(
             });
         }
 
-        // Delete the post and all associated data (reactions, replies, etc.)
+        // Delete the post and all associated data
         await prisma.post.delete({
             where: { id: params.postId },
         });
@@ -143,26 +155,15 @@ export async function PATCH(
 ) {
     try {
         const session = await getServerSession(authOptions);
-        if (!session) {
+        if (!session?.user?.id) {
             return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
         }
 
-        // Get the existing post
-        const existingPost = await prisma.post.findUnique({
-            where: { id: params.postId },
-            select: {
-                authorId: true,
-                mediaAttachments: true
-            }
-        });
-
-        if (!existingPost) {
-            return NextResponse.json({ error: 'Post not found' }, { status: 404 });
-        }
-
-        // Check if the user is authorized to edit this post
-        if (existingPost.authorId !== session.user.id) {
-            return NextResponse.json({ error: 'Not authorized' }, { status: 403 });
+        // Authorize user
+        try {
+            await authorizeUser(params.postId, session.user.id);
+        } catch (error: any) {
+            return NextResponse.json({ error: error.message }, { status: error.message === 'Post not found' ? 404 : 403 });
         }
 
         const formData = await req.formData();
@@ -170,12 +171,18 @@ export async function PATCH(
         const mediaFiles = formData.getAll('mediaAttachments') as File[];
         const keepMediaUrls = (formData.get('keepMediaUrls') as string || '').split(',').filter(Boolean);
 
+        // Get existing post media
+        const existingPost = await prisma.post.findUnique({
+            where: { id: params.postId },
+            select: { mediaAttachments: true }
+        });
+
         let mediaAttachments = [...keepMediaUrls];
 
         // Delete media files that are not in keepMediaUrls
-        if (existingPost.mediaAttachments) {
-            const toDelete = existingPost.mediaAttachments.filter((url: string) => !keepMediaUrls.includes(url));
-            await Promise.all(toDelete.map((url: string) => deleteFileFromBlobStorage(url)));
+        if (existingPost?.mediaAttachments) {
+            const toDelete = existingPost.mediaAttachments.filter(url => !keepMediaUrls.includes(url));
+            await Promise.allSettled(toDelete.map(url => deleteFileFromBlobStorage(url)));
         }
 
         // Upload new media files
@@ -186,7 +193,7 @@ export async function PATCH(
 
             // Move files to final location
             const finalUrls = await Promise.all(
-                newMediaUrls.map((url: string) => moveFile(url, session.user.id, params.postId))
+                newMediaUrls.map(url => moveFile(url, session.user.id, params.postId))
             );
 
             mediaAttachments = [...mediaAttachments, ...finalUrls];

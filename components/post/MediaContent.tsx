@@ -1,5 +1,7 @@
 'use client'
 
+import { useState, useEffect } from 'react'
+
 interface MediaContentProps {
     mediaAttachments: string[];
     className?: string;

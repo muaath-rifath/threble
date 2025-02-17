@@ -3,6 +3,31 @@ import { authOptions } from '@/app/api/auth/[...nextauth]/options';
 import prisma from '@/lib/prisma';
 import UserPostList from '@/components/post/UserPostList';
 
+const transformPost = (post: any) => ({
+    ...post,
+    createdAt: post.createdAt.toISOString(),
+    mediaAttachments: post.mediaAttachments || [],
+    reactions: post.reactions.map((r: any) => ({
+        ...r,
+        createdAt: r.createdAt.toISOString()
+    })),
+    parent: post.parent ? {
+        id: post.parent.id,
+        authorId: post.parent.authorId,
+        createdAt: post.parent.createdAt.toISOString(),
+        author: post.parent.author
+    } : null,
+    replies: post.replies?.map((reply: any) => ({
+        ...reply,
+        createdAt: reply.createdAt.toISOString(),
+        reactions: reply.reactions.map((r: any) => ({
+            ...r,
+            createdAt: r.createdAt.toISOString()
+        }))
+    })) || [],
+    _count: post._count || { replies: 0 }
+});
+
 export default async function UserPostPage() {
     const session = await getServerSession(authOptions);
     
@@ -15,6 +40,7 @@ export default async function UserPostPage() {
         include: {
             author: {
                 select: {
+                    id: true,     // Add author id
                     name: true,
                     image: true,
                 },
@@ -23,27 +49,43 @@ export default async function UserPostPage() {
             parent: {
                 include: {
                     author: {
-                        select: { name: true, image: true },
+                        select: { 
+                            id: true,    // Add parent author id
+                            name: true, 
+                            image: true 
+                        },
                     },
                 },
             },
             replies: {
                 include: {
                     author: {
-                        select: { name: true, image: true },
+                        select: { 
+                            id: true,    // Add reply author id
+                            name: true, 
+                            image: true 
+                        },
                     },
                     reactions: true,
                     parent: {
                         include: {
                             author: {
-                                select: { name: true, image: true },
+                                select: { 
+                                    id: true,    // Add nested parent author id
+                                    name: true, 
+                                    image: true 
+                                },
                             },
                         },
                     },
                     replies: {
                         include: {
                             author: {
-                                select: { name: true, image: true },
+                                select: { 
+                                    id: true,    // Add nested reply author id
+                                    name: true, 
+                                    image: true 
+                                },
                             },
                             reactions: true,
                             _count: {
@@ -63,24 +105,11 @@ export default async function UserPostPage() {
         orderBy: { createdAt: 'desc' },
     });
 
-    const transformPostToExtended = (post: any): any => ({
-        ...post,
-        createdAt: post.createdAt.toISOString(),
-        reactions: post.reactions.map((r: any) => ({
-            ...r,
-            createdAt: r.createdAt.toISOString()
-        })),
-        parent: post.parent ? {
-            id: post.parent.id,
-            authorId: post.parent.authorId,
-            createdAt: post.parent.createdAt.toISOString(),
-            author: post.parent.author
-        } : null,
-        replies: post.replies?.map((reply: any) => transformPostToExtended(reply)) || [],
-        _count: post._count || { replies: 0 }
-    });
+    const transformedPosts = posts.map(transformPost);
 
-    const transformedPosts = posts.map(transformPostToExtended);
-
-    return <UserPostList initialPosts={transformedPosts} />;
+    return (
+        <div className="w-full max-w-4xl mx-auto">
+            <UserPostList initialPosts={transformedPosts} session={session} />
+        </div>
+    );
 }

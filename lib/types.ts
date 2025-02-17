@@ -6,17 +6,13 @@ export interface BasePost extends Omit<Post, 'createdAt'> {
     createdAt: string;
 }
 
-interface PostParent {
+export interface User {
     id: string;
-    authorId: string;
-    createdAt: string;
-    author: {
-        name: string | null;
-        image: string | null;
-    };
+    name: string | null;
+    image: string | null;
 }
 
-interface PostReaction {
+export interface Reaction {
     id: string;
     type: string;
     userId: string;
@@ -26,18 +22,25 @@ interface PostReaction {
 }
 
 // Extended Post type for feed and detail views
-export interface ExtendedPost extends BasePost {
-    author: {
-        name: string | null;
-        image: string | null;
-    };
-    reactions: PostReaction[];
+export interface ExtendedPost {
+    id: string;
+    content: string;
+    authorId: string;
+    createdAt: string;
+    mediaAttachments: string[];
+    author: User;
+    reactions: Reaction[];
+    parentId: string | null;
+    parent: {
+        id: string;
+        authorId: string;
+        author: User;
+        createdAt: string;
+    } | null;
+    replies: ExtendedPost[];
     _count: {
         replies: number;
     };
-    parentId: string | null;
-    parent: PostParent | null;
-    replies: ExtendedPost[];
 }
 
 export interface MediaFile {

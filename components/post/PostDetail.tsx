@@ -14,8 +14,7 @@ import { Separator } from "@/components/ui/separator"
 import { Image, Video, ThumbsUp, MessageSquare, Share2, X, Edit, MoreHorizontal, Trash2 } from 'lucide-react'
 import { useToast } from "@/hooks/use-toast"
 import { Session } from 'next-auth'
-import { FileUpload } from "@/components/ui/file-upload"
-import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from "@/components/ui/dropdown-menu";
+import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from "@/components/ui/dropdown-menu"
 import { AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription, AlertDialogFooter, AlertDialogCancel, AlertDialogAction } from "@/components/ui/alert-dialog";
 
 const replyFormSchema = z.object({
@@ -35,6 +34,7 @@ type ExtendedPost = {
     id: string;
     content: string;
     author: {
+        id: string;  // Add id to author type
         name: string | null;
         image: string | null;
     };
@@ -119,6 +119,402 @@ function MediaContent({ mediaAttachments, className = "" }: MediaContentProps) {
                 return null;
             })}
         </div>
+    );
+}
+
+interface PostCardProps {
+    post: ExtendedPost;
+    session: Session;
+    onUpdate: () => void;
+    isReply?: boolean;
+}
+
+function PostCard({ post, session, onUpdate, isReply = false }: PostCardProps) {
+    const router = useRouter();
+    const { toast } = useToast();
+    const [isEditing, setIsEditing] = useState(false);
+    const [editContent, setEditContent] = useState(post.content);
+    const [keepMediaUrls, setKeepMediaUrls] = useState<string[]>(post.mediaAttachments || []);
+    const [editMediaFiles, setEditMediaFiles] = useState<File[]>([]);
+    const [isDeleting, setIsDeleting] = useState(false);
+
+    const isAuthor = session.user?.id === post.author.id; // Fix: Use author.id instead of authorId
+
+    const handleEdit = async () => {
+        if (!isAuthor) return;
+
+        try {
+            const formData = new FormData();
+            formData.append('content', editContent);
+            formData.append('keepMediaUrls', keepMediaUrls.join(','));
+            
+            editMediaFiles.forEach(file => {
+                formData.append('mediaAttachments', file);
+            });
+
+            const response = await fetch(`/api/posts/${post.id}`, {
+                method: 'PATCH',
+                body: formData,
+            });
+
+            if (!response.ok) {
+                const error = await response.json();
+                throw new Error(error.message || 'Failed to update post');
+            }
+
+            toast({ 
+                title: "Success", 
+                description: "Post updated successfully." 
+            });
+            setIsEditing(false);
+            onUpdate();
+        } catch (error: any) {
+            console.error('Error updating post:', error);
+            toast({
+                title: "Error",
+                description: error.message || "Failed to update post. Please try again.",
+                variant: "destructive",
+            });
+        }
+    };
+
+    const handleDelete = async () => {
+        if (!isAuthor) return;
+
+        try {
+            const response = await fetch(`/api/posts/${post.id}`, {
+                method: 'DELETE',
+            });
+
+            if (!response.ok) {
+                const error = await response.json();
+                throw new Error(error.message || 'Failed to delete post');
+            }
+
+            toast({ 
+                title: "Success", 
+                description: "Post deleted successfully." 
+            });
+            setIsDeleting(false);
+            onUpdate();
+            if (!isReply) {
+                router.push('/');
+            }
+        } catch (error: any) {
+            console.error('Error deleting post:', error);
+            toast({
+                title: "Error",
+                description: error.message || "Failed to delete post. Please try again.",
+                variant: "destructive",
+            });
+        }
+    };
+
+    const handleFileSelect = (acceptedTypes: string) => {
+        const input = document.createElement('input');
+        input.type = 'file';
+        input.accept = acceptedTypes;
+        input.multiple = true;
+        input.onchange = (e: Event) => {
+            const files = Array.from((e.target as HTMLInputElement).files || []);
+            if (files.length > 0) {
+                const invalidFiles = files.filter(file => file.size > 20 * 1024 * 1024);
+                if (invalidFiles.length > 0) {
+                    toast({
+                        title: "Error",
+                        description: "Files must be less than 20MB",
+                        variant: "destructive",
+                    });
+                    return;
+                }
+                setEditMediaFiles(prev => [...prev, ...files]);
+            }
+        };
+        input.click();
+    };
+
+    const handleReaction = async (type: string) => {
+        if (!session?.user?.id) return;
+
+        const hasReaction = post.reactions.some(
+            r => r.userId === session.user.id && r.type === type
+        );
+
+        // Create a temporary reaction for optimistic update
+        const tempReaction: Reaction = {
+            id: 'temp',
+            type,
+            userId: session.user.id,
+            postId: post.id,
+            createdAt: new Date().toISOString(),
+            commentId: null
+        };
+
+        // Optimistically update the UI
+        onUpdate();
+
+        try {
+            const response = await fetch(`/api/posts/${post.id}/reactions`, {
+                method: hasReaction ? 'DELETE' : 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ type }),
+            });
+
+            if (!response.ok) {
+                throw new Error('Failed to update reaction');
+            }
+            onUpdate();
+        } catch (error) {
+            console.error('Error updating reaction:', error);
+            toast({
+                title: "Error",
+                description: "Failed to update reaction. Please try again.",
+                variant: "destructive",
+            });
+        }
+    };
+
+    const handleShare = async () => {
+        try {
+            await navigator.share({
+                title: 'Share Post',
+                text: post.content,
+                url: `${window.location.origin}/post/${post.id}`
+            });
+        } catch (error) {
+            if ((error as Error).name !== 'AbortError') {
+                toast({
+                    title: "Share failed",
+                    description: "Couldn't share the post. Try copying the link instead.",
+                    variant: "destructive",
+                });
+            }
+        }
+    };
+
+    return (
+        <Card className={`${isReply ? 'mt-4' : 'mb-8'} border-none bg-white dark:bg-slate-900 shadow-sm`}>
+            <CardHeader className="pb-3">
+                <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-4">
+                        <Avatar>
+                            <AvatarImage src={post.author.image || undefined} />
+                            <AvatarFallback>{post.author.name?.charAt(0)}</AvatarFallback>
+                        </Avatar>
+                        <div>
+                            <p className="font-semibold text-slate-900 dark:text-slate-100">{post.author.name}</p>
+                            <p className="text-sm text-slate-500">{new Date(post.createdAt).toLocaleString()}</p>
+                        </div>
+                    </div>
+                    {isAuthor && (
+                        <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                                <Button 
+                                    variant="ghost" 
+                                    size="icon"
+                                    className="hover:bg-slate-100 dark:hover:bg-slate-800 h-10 w-10"
+                                >
+                                    <MoreHorizontal className="h-5 w-5 text-slate-500" />
+                                </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end" className="w-56">
+                                <DropdownMenuItem
+                                    onClick={() => setIsEditing(true)}
+                                    className="action-dropdown-item"
+                                >
+                                    <Edit className="mr-3 h-5 w-5" />
+                                    Edit post
+                                </DropdownMenuItem>
+                                <DropdownMenuItem
+                                    onClick={() => setIsDeleting(true)}
+                                    className="action-dropdown-item-delete"
+                                >
+                                    <Trash2 className="mr-3 h-5 w-5" />
+                                    Delete post
+                                </DropdownMenuItem>
+                            </DropdownMenuContent>
+                        </DropdownMenu>
+                    )}
+                </div>
+            </CardHeader>
+            <CardContent>
+                {post.parentId && post.parent && (
+                    <div className="mb-4 italic text-sm text-slate-600 dark:text-slate-400">
+                        Replied to{' '}
+                        <button
+                            onClick={() => router.push(`/post/${post.parentId}`)}
+                            className="font-medium text-blue-600 dark:text-blue-400 hover:underline"
+                        >
+                            @{post.parent.author.name}
+                        </button>
+                    </div>
+                )}
+                {isEditing ? (
+                    <div className="space-y-4">
+                        <Textarea
+                            value={editContent}
+                            onChange={(e) => setEditContent(e.target.value)}
+                            className="min-h-[100px] mb-4"
+                        />
+                        {/* Existing media */}
+                        {keepMediaUrls.length > 0 && (
+                            <div className="grid grid-cols-2 gap-2">
+                                {keepMediaUrls.map((url, index) => (
+                                    <div key={url} className="relative aspect-square">
+                                        {url.match(/\.(jpg|jpeg|png|gif|webp)$/i) ? (
+                                            <img
+                                                src={url}
+                                                alt={`Media ${index + 1}`}
+                                                className="rounded-lg w-full h-full object-cover"
+                                            />
+                                        ) : url.match(/\.(mp4|webm|ogg)$/i) && (
+                                            <video
+                                                src={url}
+                                                className="rounded-lg w-full h-full object-cover"
+                                                controls
+                                            />
+                                        )}
+                                        <Button
+                                            variant="ghost"
+                                            size="icon"
+                                            className="absolute top-2 right-2 bg-black/50 hover:bg-black/70 text-white rounded-full"
+                                            onClick={() => setKeepMediaUrls(urls => urls.filter(u => u !== url))}
+                                        >
+                                            <X className="h-4 w-4" />
+                                        </Button>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                        {/* New media */}
+                        {editMediaFiles.length > 0 && (
+                            <div className="grid grid-cols-2 gap-2">
+                                {editMediaFiles.map((file, index) => (
+                                    <div key={index} className="relative aspect-square">
+                                        {file.type.startsWith('image/') ? (
+                                            <img
+                                                src={URL.createObjectURL(file)}
+                                                alt={`New media ${index + 1}`}
+                                                className="rounded-lg w-full h-full object-cover"
+                                            />
+                                        ) : file.type.startsWith('video/') && (
+                                            <video
+                                                src={URL.createObjectURL(file)}
+                                                className="rounded-lg w-full h-full object-cover"
+                                                controls
+                                            />
+                                        )}
+                                        <Button
+                                            variant="ghost"
+                                            size="icon"
+                                            className="absolute top-2 right-2 bg-black/50 hover:bg-black/70 text-white rounded-full"
+                                            onClick={() => setEditMediaFiles(files => files.filter((_, i) => i !== index))}
+                                        >
+                                            <X className="h-4 w-4" />
+                                        </Button>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                        <div className="flex justify-between items-center pt-4">
+                            <div className="flex space-x-2">
+                                <Button
+                                    type="button"
+                                    variant="ghost"
+                                    className="text-green-500"
+                                    onClick={() => handleFileSelect('image/*')}
+                                >
+                                    <Image className="mr-2 h-4 w-4" />
+                                    Photo
+                                </Button>
+                                <Button
+                                    type="button"
+                                    variant="ghost"
+                                    className="text-blue-500"
+                                    onClick={() => handleFileSelect('video/*')}
+                                >
+                                    <Video className="mr-2 h-4 w-4" />
+                                    Video
+                                </Button>
+                            </div>
+                            <div className="flex space-x-2">
+                                <Button
+                                    variant="outline"
+                                    onClick={() => {
+                                        setIsEditing(false);
+                                        setEditContent(post.content);
+                                        setKeepMediaUrls(post.mediaAttachments || []);
+                                        setEditMediaFiles([]);
+                                    }}
+                                >
+                                    Cancel
+                                </Button>
+                                <Button
+                                    onClick={handleEdit}
+                                    className="bg-blue-500 hover:bg-blue-600 text-white"
+                                >
+                                    Save Changes
+                                </Button>
+                            </div>
+                        </div>
+                    </div>
+                ) : (
+                    <>
+                        <p className="text-slate-800 dark:text-slate-200">{post.content}</p>
+                        <MediaContent mediaAttachments={post.mediaAttachments} />
+                    </>
+                )}
+            </CardContent>
+            <CardFooter className="flex justify-between border-t border-slate-100 dark:border-slate-800 mt-4 pt-4">
+                <Button
+                    variant="ghost"
+                    onClick={() => handleReaction('LIKE')}
+                    className={`post-action-button ${
+                        post.reactions.some(r => r.userId === session.user.id && r.type === 'LIKE') 
+                            ? 'post-action-button-active' 
+                            : ''
+                    }`}
+                >
+                    <ThumbsUp className="h-5 w-5" />
+                    {post.reactions.filter(r => r.type === 'LIKE').length}
+                </Button>
+                <Button
+                    variant="ghost"
+                    className="post-action-button"
+                >
+                    <MessageSquare className="h-5 w-5" />
+                    {post._count.replies}
+                </Button>
+                <Button 
+                    variant="ghost"
+                    className="post-action-button"
+                    onClick={handleShare}
+                >
+                    <Share2 className="h-5 w-5" />
+                    Share
+                </Button>
+            </CardFooter>
+            <AlertDialog open={isDeleting} onOpenChange={setIsDeleting}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            This action cannot be undone. This will permanently delete your post
+                            and remove all associated data.
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogAction
+                            onClick={handleDelete}
+                            className="bg-red-600 text-white hover:bg-red-700"
+                        >
+                            Delete
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
+        </Card>
     );
 }
 
@@ -384,96 +780,8 @@ export default function PostDetail({ initialPost, session }: PostDetailProps) {
 
     return (
         <div className="max-w-2xl mx-auto mt-8">
-            <Card className="mb-8 border-none bg-white dark:bg-slate-900 shadow-sm">
-                <CardHeader className="pb-3">
-                    <div className="flex items-center justify-between">
-                        <div className="flex items-center space-x-4">
-                            <Avatar className="h-10 w-10">
-                                <AvatarImage src={post.author.image || undefined} />
-                                <AvatarFallback>{post.author.name?.charAt(0) || '?'}</AvatarFallback>
-                            </Avatar>
-                            <div>
-                                <p className="font-semibold text-slate-900 dark:text-slate-100">{post.author.name}</p>
-                                <p className="text-sm text-slate-500 dark:text-slate-400">{new Date(post.createdAt).toLocaleString()}</p>
-                            </div>
-                        </div>
-                        {post.author.name === session?.user.name && (
-                            <DropdownMenu>
-                                <DropdownMenuTrigger asChild>
-                                    <Button 
-                                        variant="ghost" 
-                                        size="icon"
-                                        className="hover:bg-slate-100 dark:hover:bg-slate-800 h-10 w-10"
-                                    >
-                                        <MoreHorizontal className="h-5 w-5 text-slate-500" />
-                                    </Button>
-                                </DropdownMenuTrigger>
-                                <DropdownMenuContent align="end" className="w-56">
-                                    <DropdownMenuItem
-                                        onClick={() => router.push(`/post/${post.id}/edit`)}
-                                        className="action-dropdown-item"
-                                    >
-                                        <Edit className="mr-3 h-5 w-5" />
-                                        Edit post
-                                    </DropdownMenuItem>
-                                    <DropdownMenuItem
-                                        onClick={handleDeletePost}
-                                        className="action-dropdown-item-delete"
-                                    >
-                                        <Trash2 className="mr-3 h-5 w-5" />
-                                        Delete post
-                                    </DropdownMenuItem>
-                                </DropdownMenuContent>
-                            </DropdownMenu>
-                        )}
-                    </div>
-                </CardHeader>
-                <CardContent>
-                    {post.parentId && post.parent && (
-                        <div className="mb-4 italic text-sm text-slate-600 dark:text-slate-400">
-                            Replied to{' '}
-                            <button
-                                onClick={() => router.push(`/post/${post.parentId}`)}
-                                className="font-medium text-blue-600 dark:text-blue-400 hover:underline"
-                            >
-                                @{post.parent.author.name}
-                            </button>
-                        </div>
-                    )}
-                    <p className="text-slate-800 dark:text-slate-200">{post.content}</p>
-                    <MediaContent mediaAttachments={post.mediaAttachments} />
-                </CardContent>
-                <CardFooter className="flex justify-between border-t border-slate-100 dark:border-slate-800 mt-4 pt-4">
-                    <Button
-                        variant="ghost"
-                        onClick={() => handleReaction(post.id, 'LIKE')}
-                        className={`post-action-button ${
-                            post.reactions.some(r => r.userId === session.user.id && r.type === 'LIKE') 
-                                ? 'post-action-button-active' 
-                                : ''
-                        }`}
-                    >
-                        <ThumbsUp className="h-5 w-5" />
-                        {post.reactions.filter(r => r.type === 'LIKE').length}
-                    </Button>
-                    <Button
-                        variant="ghost"
-                        className="post-action-button"
-                    >
-                        <MessageSquare className="h-5 w-5" />
-                        {post._count.replies}
-                    </Button>
-                    <Button 
-                        variant="ghost"
-                        className="post-action-button"
-                        onClick={() => handleShare(post.id)}
-                    >
-                        <Share2 className="h-5 w-5" />
-                        Share
-                    </Button>
-                </CardFooter>
-            </Card>
-
+            <PostCard post={post} session={session} onUpdate={fetchPost} />
+            
             {/* Reply Form */}
             <Card className="mt-8 border-none bg-white dark:bg-slate-900 shadow-sm">
                 <CardContent className="p-6">
@@ -566,110 +874,17 @@ export default function PostDetail({ initialPost, session }: PostDetailProps) {
 
             <div className="mt-8 space-y-6">
                 {post.replies.map((reply) => (
-                    <Card key={reply.id} className="border-none bg-white dark:bg-slate-900 shadow-sm">
-                        <CardHeader className="pb-3">
-                            <div className="flex items-center justify-between">
-                                <div className="flex items-center space-x-4">
-                                    <Avatar className="h-10 w-10">
-                                        <AvatarImage src={reply.author.image || undefined} />
-                                        <AvatarFallback>{reply.author.name?.charAt(0)}</AvatarFallback>
-                                    </Avatar>
-                                    <div>
-                                        <p className="font-semibold text-slate-900 dark:text-slate-100">{reply.author.name}</p>
-                                        <p className="text-sm text-slate-500">{new Date(reply.createdAt).toLocaleString()}</p>
-                                    </div>
-                                </div>
-                                {reply.author.name === session?.user.name && (
-                                    <DropdownMenu>
-                                        <DropdownMenuTrigger asChild>
-                                            <Button 
-                                                variant="ghost" 
-                                                size="icon"
-                                                className="hover:bg-slate-100 dark:hover:bg-slate-800 h-10 w-10"
-                                            >
-                                                <MoreHorizontal className="h-5 w-5 text-slate-500" />
-                                            </Button>
-                                        </DropdownMenuTrigger>
-                                        <DropdownMenuContent align="end" className="w-56">
-                                            <DropdownMenuItem
-                                                onClick={() => router.push(`/post/${reply.id}/edit`)}
-                                                className="action-dropdown-item"
-                                            >
-                                                <Edit className="mr-3 h-5 w-5" />
-                                                Edit post
-                                            </DropdownMenuItem>
-                                            <DropdownMenuItem
-                                                onClick={() => setPostToDelete(reply.id)}
-                                                className="action-dropdown-item-delete"
-                                            >
-                                                <Trash2 className="mr-3 h-5 w-5" />
-                                                Delete post
-                                            </DropdownMenuItem>
-                                        </DropdownMenuContent>
-                                    </DropdownMenu>
-                                )}
-                            </div>
-                        </CardHeader>
-                        <CardContent className="pt-2">
-                            <p className="text-slate-800 dark:text-slate-200">{reply.content}</p>
-                            <MediaContent mediaAttachments={reply.mediaAttachments} />
-                        </CardContent>
-                        <CardFooter className="flex justify-between border-t border-slate-100 dark:border-slate-800 mt-4 pt-4">
-                            <Button
-                                variant="ghost"
-                                onClick={() => handleReaction(reply.id, 'LIKE')}
-                                className={`post-action-button ${
-                                    reply.reactions.some(r => r.userId === session.user.id && r.type === 'LIKE') 
-                                        ? 'post-action-button-active' 
-                                        : ''
-                                }`}
-                            >
-                                <ThumbsUp className="h-5 w-5" />
-                                {reply.reactions.filter(r => r.type === 'LIKE').length}
-                            </Button>
-                            <Button
-                                variant="ghost"
-                                onClick={() => router.push(`/post/${reply.id}`)}
-                                className="post-action-button"
-                            >
-                                <MessageSquare className="h-5 w-5" />
-                                {reply._count.replies}
-                            </Button>
-                            <Button 
-                                variant="ghost"
-                                onClick={() => handleShare(reply.id)}
-                                className="post-action-button"
-                            >
-                                <Share2 className="h-5 w-5" />
-                                Share
-                            </Button>
-                        </CardFooter>
-                    </Card>
+                    <PostCard
+                        key={reply.id}
+                        post={reply}
+                        session={session}
+                        onUpdate={fetchPost}
+                        isReply={true}
+                    />
                 ))}
             </div>
 
-            <AlertDialog open={!!postToDelete} onOpenChange={() => setPostToDelete(null)}>
-                <AlertDialogContent>
-                    <AlertDialogHeader>
-                        <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-                        <AlertDialogDescription>
-                            This action cannot be undone. This will permanently delete your post
-                            and remove all associated data.
-                        </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                        <AlertDialogCancel>Cancel</AlertDialogCancel>
-                        <AlertDialogAction
-                            onClick={handleDeleteConfirmed}
-                            className="bg-red-600 text-white hover:bg-red-700"
-                        >
-                            Delete
-                        </AlertDialogAction>
-                    </AlertDialogFooter>
-                </AlertDialogContent>
-            </AlertDialog>
-
             <Separator className="my-8" />
         </div>
-    )
+    );
 }
