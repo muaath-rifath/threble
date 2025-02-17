@@ -98,14 +98,24 @@ export async function deleteFileFromBlobStorage(url: string): Promise<void> {
     if (!clients) throw new Error('Storage not initialized');
 
     try {
-        const blobPath = url.replace('/api/media/', '');
-        if (!blobPath) throw new Error('Invalid blob path');
-        
-        const blockBlobClient = clients.containerClient.getBlockBlobClient(blobPath);
-        await blockBlobClient.delete();
-    } catch (error) {
-        console.error('Error deleting from blob storage:', error);
-        throw new Error('Failed to delete file');
+        // Extract the blob name from the full URL
+        const blobName = url.split('/').pop();
+        if (!blobName) {
+            throw new Error('Invalid blob URL');
+        }
+
+        // Get blob client for the specific blob
+        const blobClient = clients.containerClient.getBlobClient(blobName);
+
+        // Delete the blob
+        await blobClient.delete();
+    } catch (error: any) {
+        // If the blob doesn't exist, we can consider this a success
+        if (error.statusCode === 404) {
+            console.log('Blob already deleted or does not exist:', url);
+            return;
+        }
+        throw error;
     }
 }
 

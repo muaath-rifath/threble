@@ -133,8 +133,12 @@ export default function HomePage() {
 
     const handleReaction = async (postId: string, type: string) => {
         try {
+            const hasReaction = posts.find(p => p.id === postId)?.reactions.some(
+                r => r.userId === session?.user.id && r.type === type
+            );
+
             const response = await fetch(`/api/posts/${postId}/reactions`, {
-                method: 'POST',
+                method: hasReaction ? 'DELETE' : 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ type }),
             });
@@ -142,13 +146,42 @@ export default function HomePage() {
             if (response.ok) {
                 fetchPosts();
             } else {
-                throw new Error('Failed to add reaction');
+                throw new Error('Failed to update reaction');
             }
         } catch (error) {
-            console.error('Error adding reaction:', error);
+            console.error('Error updating reaction:', error);
             toast({
                 title: "Error",
-                description: "Failed to add reaction. Please try again.",
+                description: "Failed to update reaction. Please try again.",
+                variant: "destructive",
+            });
+        }
+    };
+
+    const handleDeletePost = async (postId: string) => {
+        if (!confirm('Are you sure you want to delete this post? This action cannot be undone.')) {
+            return;
+        }
+
+        try {
+            const response = await fetch(`/api/posts/${postId}`, {
+                method: 'DELETE',
+            });
+
+            if (response.ok) {
+                toast({ 
+                    title: "Success", 
+                    description: "Post deleted successfully." 
+                });
+                fetchPosts(); // Refresh the posts list
+            } else {
+                throw new Error('Failed to delete post');
+            }
+        } catch (error) {
+            console.error('Error deleting post:', error);
+            toast({
+                title: "Error",
+                description: "Failed to delete post. Please try again.",
                 variant: "destructive",
             });
         }
@@ -287,15 +320,27 @@ export default function HomePage() {
             {posts.map((post) => (
                 <Card key={post.id} className="mb-8">
                     <CardHeader>
-                        <div className="flex items-center space-x-4">
-                            <Avatar>
-                                <AvatarImage src={post.author.image || undefined} />
-                                <AvatarFallback>{post.author.name.charAt(0)}</AvatarFallback>
-                            </Avatar>
-                            <div>
-                                <p className="font-semibold">{post.author.name}</p>
-                                <p className="text-sm text-gray-500">{new Date(post.createdAt).toLocaleString()}</p>
+                        <div className="flex items-center justify-between">
+                            <div className="flex items-center space-x-4">
+                                <Avatar>
+                                    <AvatarImage src={post.author.image || undefined} />
+                                    <AvatarFallback>{post.author.name.charAt(0)}</AvatarFallback>
+                                </Avatar>
+                                <div>
+                                    <p className="font-semibold">{post.author.name}</p>
+                                    <p className="text-sm text-gray-500">{new Date(post.createdAt).toLocaleString()}</p>
+                                </div>
                             </div>
+                            {post.author.name === session?.user.name && (
+                                <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="text-red-500 hover:text-red-700"
+                                    onClick={() => handleDeletePost(post.id)}
+                                >
+                                    <X className="h-4 w-4" />
+                                </Button>
+                            )}
                         </div>
                     </CardHeader>
                     {post.parentId && post.parent &&(
@@ -402,7 +447,9 @@ export default function HomePage() {
                         <Button
                             variant="ghost"
                             onClick={() => handleReaction(post.id, 'LIKE')}
-                            className={post.reactions.some(r => r.userId === session.user.id && r.type === 'LIKE') ? 'text-blue-500' : ''}
+                            className={post.reactions.some(r => r.userId === session.user.id && r.type === 'LIKE') 
+                                ? 'text-blue-500 hover:text-blue-700' 
+                                : 'text-gray-500 hover:text-blue-500'}
                         >
                             <ThumbsUp className="mr-2 h-4 w-4" />
                             Like ({post.reactions.filter(r => r.type === 'LIKE').length})

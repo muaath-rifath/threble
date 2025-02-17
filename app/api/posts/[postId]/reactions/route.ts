@@ -4,66 +4,70 @@ import { authOptions } from '@/app/api/auth/[...nextauth]/options';
 import prisma from '@/lib/prisma';
 
 export async function POST(req: NextRequest, { params }: { params: { postId: string } }) {
-  const session = await getServerSession(authOptions);
-
-  if (!session) {
-    return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
-  }
-
   try {
-    const { type } = await req.json();
-    const postId = params.postId;
+    const session = await getServerSession(authOptions);
+    if (!session) {
+      return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
+    }
 
+    const { type } = await req.json();
+
+    // Check if reaction already exists
     const existingReaction = await prisma.reaction.findFirst({
       where: {
-        postId,
+        postId: params.postId,
         userId: session.user.id,
         type,
       },
     });
 
     if (existingReaction) {
-      return NextResponse.json({ error: 'Reaction already exists' }, { status: 400 });
+      // If reaction exists, remove it
+      await prisma.reaction.delete({
+        where: {
+          id: existingReaction.id,
+        },
+      });
+      return NextResponse.json({ message: 'Reaction removed' });
     }
 
+    // If reaction doesn't exist, create it
     const reaction = await prisma.reaction.create({
       data: {
         type,
-        postId,
+        postId: params.postId,
         userId: session.user.id,
       },
     });
 
     return NextResponse.json(reaction);
   } catch (error) {
-    console.error('Error creating reaction:', error);
-    return NextResponse.json({ error: 'Failed to create reaction' }, { status: 500 });
+    console.error('Error handling reaction:', error);
+    return NextResponse.json({ error: 'Failed to handle reaction' }, { status: 500 });
   }
 }
 
 export async function DELETE(req: NextRequest, { params }: { params: { postId: string } }) {
-  const session = await getServerSession(authOptions);
-
-  if (!session) {
-    return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
-  }
-
   try {
+    const session = await getServerSession(authOptions);
+    if (!session) {
+      return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
+    }
+
     const { type } = await req.json();
-    const postId = params.postId;
 
     await prisma.reaction.deleteMany({
       where: {
-        postId,
+        postId: params.postId,
         userId: session.user.id,
         type,
       },
     });
 
-    return NextResponse.json({ success: true });
+    return NextResponse.json({ message: 'Reaction removed' });
   } catch (error) {
-    console.error('Error deleting reaction:', error);
-    return NextResponse.json({ error: 'Failed to delete reaction' }, { status: 500 });
+    console.error('Error removing reaction:', error);
+    return NextResponse.json({ error: 'Failed to remove reaction' }, { status: 500 });
   }
 }
 

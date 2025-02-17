@@ -11,7 +11,7 @@ import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
 import { Form, FormControl, FormField, FormItem } from "@/components/ui/form"
 import { Separator } from "@/components/ui/separator"
-import { Image, Video, ThumbsUp, MessageSquare, Share2, X } from 'lucide-react'
+import { Image, Video, ThumbsUp, MessageSquare, Share2, X, Edit } from 'lucide-react'
 import { useToast } from "@/hooks/use-toast"
 import { Session } from 'next-auth'
 import type { Post, Prisma } from '@prisma/client'
@@ -250,6 +250,10 @@ export default function PostDetail({ initialPost, session }: PostDetailProps) {
     const [post, setPost] = useState(initialPost)
     const [mediaFiles, setMediaFiles] = useState<File[]>([])
     const fileInputRef = useRef<HTMLInputElement>(null)
+    const [isEditing, setIsEditing] = useState(false);
+    const [editContent, setEditContent] = useState(initialPost.content);
+    const [editMediaFiles, setEditMediaFiles] = useState<File[]>([]);
+    const [keepMediaUrls, setKeepMediaUrls] = useState<string[]>(initialPost.mediaAttachments || []);
 
     const replyForm = useForm<z.infer<typeof replyFormSchema>>({
         resolver: zodResolver(replyFormSchema),
@@ -270,12 +274,12 @@ export default function PostDetail({ initialPost, session }: PostDetailProps) {
 
     const handleReaction = async (postId: string, type: string) => {
         try {
-            const method = post.reactions.some(r => r.userId === session.user.id && r.type === type)
-                ? 'DELETE'
-                : 'POST';
+            const hasReaction = post.reactions.some(r => 
+                r.userId === session.user.id && r.type === type
+            );
 
             const response = await fetch(`/api/posts/${postId}/reactions`, {
-                method,
+                method: hasReaction ? 'DELETE' : 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ type }),
             });
@@ -290,6 +294,35 @@ export default function PostDetail({ initialPost, session }: PostDetailProps) {
             toast({
                 title: "Error",
                 description: "Failed to update reaction. Please try again.",
+                variant: "destructive",
+            });
+        }
+    };
+
+    const handleDeletePost = async () => {
+        if (!confirm('Are you sure you want to delete this post? This action cannot be undone.')) {
+            return;
+        }
+
+        try {
+            const response = await fetch(`/api/posts/${post.id}`, {
+                method: 'DELETE',
+            });
+
+            if (response.ok) {
+                toast({ 
+                    title: "Success", 
+                    description: "Post deleted successfully." 
+                });
+                router.push('/'); // Redirect to home page after deletion
+            } else {
+                throw new Error('Failed to delete post');
+            }
+        } catch (error) {
+            console.error('Error deleting post:', error);
+            toast({
+                title: "Error",
+                description: "Failed to delete post. Please try again.",
                 variant: "destructive",
             });
         }
@@ -356,19 +389,101 @@ export default function PostDetail({ initialPost, session }: PostDetailProps) {
         }
     }
 
+    const handleEditSubmit = async () => {
+        try {
+            const formData = new FormData();
+            formData.append('content', editContent);
+            formData.append('keepMediaUrls', keepMediaUrls.join(','));
+            
+            editMediaFiles.forEach(file => {
+                formData.append('mediaAttachments', file);
+            });
+
+            const response = await fetch(`/api/posts/${post.id}`, {
+                method: 'PATCH',
+                body: formData,
+            });
+
+            if (response.ok) {
+                const updatedPost = await response.json();
+                setPost(updatedPost);
+                setIsEditing(false);
+                toast({ 
+                    title: "Success", 
+                    description: "Post updated successfully." 
+                });
+            } else {
+                throw new Error('Failed to update post');
+            }
+        } catch (error) {
+            console.error('Error updating post:', error);
+            toast({
+                title: "Error",
+                description: "Failed to update post. Please try again.",
+                variant: "destructive",
+            });
+        }
+    };
+
+    const handleCancelEdit = () => {
+        setIsEditing(false);
+        setEditContent(post.content);
+        setKeepMediaUrls(post.mediaAttachments || []);
+        setEditMediaFiles([]);
+    };
+
+    const handleRemoveMedia = (url: string) => {
+        setKeepMediaUrls(prev => prev.filter(u => u !== url));
+    };
+
     return (
         <div className="max-w-2xl mx-auto mt-8">
             <Card className="mb-8 border-none bg-white dark:bg-slate-900 shadow-sm">
                 <CardHeader className="pb-3">
-                    <div className="flex items-center space-x-4">
-                        <Avatar className="h-10 w-10">
-                            <AvatarImage src={post.author.image || undefined} />
-                            <AvatarFallback>{post.author.name?.charAt(0) || '?'}</AvatarFallback>
-                        </Avatar>
-                        <div>
-                            <p className="font-semibold text-slate-900 dark:text-slate-100">{post.author.name}</p>
-                            <p className="text-sm text-slate-500 dark:text-slate-400">{new Date(post.createdAt).toLocaleString()}</p>
+                    <div className="flex items-center justify-between">
+                        <div className="flex items-center space-x-4">
+                            <Avatar className="h-10 w-10">
+                                <AvatarImage src={post.author.image || undefined} />
+                                <AvatarFallback>{post.author.name?.charAt(0) || '?'}</AvatarFallback>
+                            </Avatar>
+                            <div>
+                                <p className="font-semibold text-slate-900 dark:text-slate-100">{post.author.name}</p>
+                                <p className="text-sm text-slate-500 dark:text-slate-400">{new Date(post.createdAt).toLocaleString()}</p>
+                            </div>
                         </div>
+                        {post.author.name === session?.user.name && (
+                            <div className="flex gap-2">
+                                {!isEditing ? (
+                                    <>
+                                        <Button
+                                            variant="ghost"
+                                            size="icon"
+                                            className="text-blue-500 hover:text-blue-700"
+                                            onClick={() => setIsEditing(true)}
+                                        >
+                                            <Edit className="h-4 w-4" />
+                                        </Button>
+                                        <Button
+                                            variant="ghost"
+                                            size="icon"
+                                            className="text-red-500 hover:text-red-700"
+                                            onClick={handleDeletePost}
+                                        >
+                                            <X className="h-4 w-4" />
+                                        </Button>
+                                    </>
+                                ) : (
+                                    <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        className="text-gray-500 hover:text-gray-700"
+                                        onClick={handleCancelEdit}
+                                    >
+                                        <X className="h-4 w-4" />
+                                    </Button>
+                                )}
+                            </div>
+                        )}
                     </div>
                 </CardHeader>
                 {post.parentId && post.parent && (
@@ -383,8 +498,116 @@ export default function PostDetail({ initialPost, session }: PostDetailProps) {
                     </CardContent>
                 )}
                 <CardContent className="pt-2">
-                    <p className="text-slate-800 dark:text-slate-200">{post.content}</p>
-                    <MediaContent mediaAttachments={post.mediaAttachments} />
+                    {isEditing ? (
+                        <div className="space-y-4">
+                            <Textarea
+                                value={editContent}
+                                onChange={(e) => setEditContent(e.target.value)}
+                                className="min-h-[100px] bg-slate-50 dark:bg-slate-800 border-none"
+                            />
+                            {/* Existing media preview */}
+                            {keepMediaUrls.length > 0 && (
+                                <div className="grid grid-cols-2 gap-2">
+                                    {keepMediaUrls.map((url, index) => (
+                                        <div key={url} className="relative">
+                                            {url.match(/\.(jpg|jpeg|png|gif|webp)$/i) ? (
+                                                <img
+                                                    src={url}
+                                                    alt={`Media ${index + 1}`}
+                                                    className="rounded-lg w-full h-32 object-cover"
+                                                />
+                                            ) : url.match(/\.(mp4|webm|ogg)$/i) && (
+                                                <video
+                                                    src={url}
+                                                    className="rounded-lg w-full h-32 object-cover"
+                                                />
+                                            )}
+                                            <Button
+                                                type="button"
+                                                variant="ghost"
+                                                size="icon"
+                                                className="absolute top-1 right-1 bg-black/50 hover:bg-black/70 text-white rounded-full p-1"
+                                                onClick={() => handleRemoveMedia(url)}
+                                            >
+                                                <X className="h-4 w-4" />
+                                            </Button>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+                            {/* New media preview */}
+                            {editMediaFiles.length > 0 && (
+                                <div className="grid grid-cols-2 gap-2">
+                                    {editMediaFiles.map((file, index) => (
+                                        <div key={index} className="relative">
+                                            {file.type.startsWith('image/') ? (
+                                                <img
+                                                    src={URL.createObjectURL(file)}
+                                                    alt={`New media ${index + 1}`}
+                                                    className="rounded-lg w-full h-32 object-cover"
+                                                />
+                                            ) : file.type.startsWith('video/') && (
+                                                <video
+                                                    src={URL.createObjectURL(file)}
+                                                    className="rounded-lg w-full h-32 object-cover"
+                                                />
+                                            )}
+                                            <Button
+                                                type="button"
+                                                variant="ghost"
+                                                size="icon"
+                                                className="absolute top-1 right-1 bg-black/50 hover:bg-black/70 text-white rounded-full p-1"
+                                                onClick={() => setEditMediaFiles(files => files.filter((_, i) => i !== index))}
+                                            >
+                                                <X className="h-4 w-4" />
+                                            </Button>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+                            <div className="flex justify-between items-center">
+                                <div className="flex space-x-4">
+                                    <Button
+                                        type="button"
+                                        variant="ghost"
+                                        className="text-green-500"
+                                        onClick={() => handleFileSelect('image/*')}
+                                    >
+                                        <Image className="mr-2 h-4 w-4" />
+                                        Photo
+                                    </Button>
+                                    <Button
+                                        type="button"
+                                        variant="ghost"
+                                        className="text-blue-500"
+                                        onClick={() => handleFileSelect('video/*')}
+                                    >
+                                        <Video className="mr-2 h-4 w-4" />
+                                        Video
+                                    </Button>
+                                </div>
+                                <div className="flex gap-2">
+                                    <Button
+                                        variant="ghost"
+                                        onClick={handleCancelEdit}
+                                    >
+                                        Cancel
+                                    </Button>
+                                    <Button
+                                        onClick={handleEditSubmit}
+                                        className="bg-blue-500 hover:bg-blue-600 text-white"
+                                    >
+                                        Save Changes
+                                    </Button>
+                                </div>
+                            </div>
+                        </div>
+                    ) : (
+                        <>
+                            <p className="text-slate-800 dark:text-slate-200">{post.content}</p>
+                            <MediaContent mediaAttachments={post.mediaAttachments} />
+                        </>
+                    )}
                 </CardContent>
                 <CardFooter className="flex justify-between border-t border-slate-100 dark:border-slate-800 mt-4 pt-4">
                     <Button
