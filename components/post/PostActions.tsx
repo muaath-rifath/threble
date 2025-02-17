@@ -195,140 +195,103 @@ export default function PostActions({
         )
     }
 
+    if (!isEditing) {
+        return (
+            <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                    <Button 
+                        variant="ghost" 
+                        size="icon"
+                        className="h-8 w-8 p-0"
+                    >
+                        <MoreHorizontal className="h-4 w-4" />
+                    </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                    <DropdownMenuItem onClick={onEditStart}>
+                        <Edit className="mr-2 h-4 w-4" /> Edit
+                    </DropdownMenuItem>
+                    <DropdownMenuItem 
+                        onClick={() => setIsDeleting(true)}
+                        className="text-red-600 dark:text-red-400"
+                    >
+                        <Trash2 className="mr-2 h-4 w-4" /> Delete
+                    </DropdownMenuItem>
+                </DropdownMenuContent>
+            </DropdownMenu>
+        )
+    }
+
     return (
-        <>
-            {!isEditing ? (
-                <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                        <Button 
-                            variant="ghost" 
-                            size="icon"
-                            className="h-8 w-8 p-0"
-                        >
-                            <MoreHorizontal className="h-4 w-4" />
-                        </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                        <DropdownMenuItem onClick={onEditStart}>
-                            <Edit className="mr-2 h-4 w-4" /> Edit
-                        </DropdownMenuItem>
-                        <DropdownMenuItem 
-                            onClick={() => setIsDeleting(true)}
-                            className="text-red-600 dark:text-red-400"
-                        >
-                            <Trash2 className="mr-2 h-4 w-4" /> Delete
-                        </DropdownMenuItem>
-                    </DropdownMenuContent>
-                </DropdownMenu>
-            ) : (
-                <div className="flex flex-col w-full space-y-4">
-                    <Textarea
-                        value={editContent}
-                        onChange={(e) => setEditContent(e.target.value)}
-                        className="post-edit-textarea"
-                        placeholder="What's on your mind?"
-                    />
-                    {keepMediaUrls.length > 0 && (
-                        <div className={`post-media-grid grid ${keepMediaUrls.length === 1 ? 'grid-cols-1' : 'grid-cols-2'}`}>
-                            {keepMediaUrls.map((url, index) => (
-                                <div key={url} className={`post-media-item ${
-                                    keepMediaUrls.length === 1 ? 'aspect-auto max-h-[512px]' : 'aspect-square'
-                                }`}>
-                                    {url.match(/\.(jpg|jpeg|png|gif|webp)$/i) ? (
-                                        <img
-                                            src={url}
-                                            alt={`Media ${index + 1}`}
-                                            className={`w-full h-full ${
-                                                keepMediaUrls.length === 1 ? 'object-contain' : 'object-cover'
-                                            }`}
-                                        />
-                                    ) : url.match(/\.(mp4|webm|ogg)$/i) && (
-                                        <video
-                                            src={url}
-                                            className="w-full h-full object-cover"
-                                            controls
-                                        />
-                                    )}
-                                    <button
-                                        type="button"
-                                        onClick={() => setKeepMediaUrls(prev => prev.filter(u => u !== url))}
-                                        className="post-media-delete"
-                                        aria-label="Remove media"
-                                    >
-                                        <X className="h-4 w-4" />
-                                    </button>
-                                </div>
-                            ))}
-                        </div>
-                    )}
-                    {editMediaFiles.length > 0 && (
-                        <div className={`post-media-grid grid ${editMediaFiles.length === 1 ? 'grid-cols-1' : 'grid-cols-2'}`}>
-                            {editMediaFiles.map((file, index) => (
-                                <div key={index} className="post-media-item aspect-square">
-                                    {file.type.startsWith('image/') ? (
-                                        <img
-                                            src={URL.createObjectURL(file)}
-                                            alt={`New media ${index + 1}`}
-                                            className="w-full h-full object-cover"
-                                        />
-                                    ) : file.type.startsWith('video/') && (
-                                        <video
-                                            src={URL.createObjectURL(file)}
-                                            className="w-full h-full object-cover"
-                                            controls
-                                        />
-                                    )}
-                                    <button
-                                        type="button"
-                                        onClick={() => setEditMediaFiles(prev => prev.filter((_, i) => i !== index))}
-                                        className="post-media-delete"
-                                        aria-label="Remove media"
-                                    >
-                                        <X className="h-4 w-4" />
-                                    </button>
-                                </div>
-                            ))}
-                        </div>
-                    )}
-                    <div className="post-edit-actions">
-                        <div className="post-edit-buttons">
-                            <Button
-                                variant="ghost"
-                                size="icon"
-                                onClick={() => handleFileSelect('image/*')}
-                                className="post-action-button"
+        <div className="flex flex-col w-full">
+            <Textarea
+                value={editContent}
+                onChange={(e) => setEditContent(e.target.value)}
+                className="post-edit-textarea"
+                placeholder="What's on your mind?"
+            />
+            {keepMediaUrls.length > 0 && (
+                <div className={`post-media-grid grid ${keepMediaUrls.length === 1 ? 'grid-cols-1' : 'grid-cols-2'}`}>
+                    {keepMediaUrls.map((url, index) => (
+                        <div key={url} className={`post-media-item ${
+                            keepMediaUrls.length === 1 ? 'aspect-auto max-h-[512px]' : 'aspect-square'
+                        }`}>
+                            {url.match(/\.(jpg|jpeg|png|gif|webp)$/i) ? (
+                                <img
+                                    src={url}
+                                    alt={`Media ${index + 1}`}
+                                    className={`w-full h-full ${
+                                        keepMediaUrls.length === 1 ? 'object-contain' : 'object-cover'
+                                    }`}
+                                />
+                            ) : url.match(/\.(mp4|webm|ogg)$/i) && (
+                                <video
+                                    src={url}
+                                    className="w-full h-full object-cover"
+                                    controls
+                                />
+                            )}
+                            <button
+                                type="button"
+                                onClick={() => setKeepMediaUrls(prev => prev.filter(u => u !== url))}
+                                className="post-media-delete"
+                                aria-label="Remove media"
                             >
-                                <Image className="h-4 w-4" />
-                            </Button>
-                            <Button
-                                variant="ghost"
-                                size="icon"
-                                onClick={() => handleFileSelect('video/*')}
-                                className="post-action-button"
-                            >
-                                <Video className="h-4 w-4" />
-                            </Button>
+                                <X className="h-4 w-4" />
+                            </button>
                         </div>
-                        <div className="post-edit-buttons">
-                            <Button
-                                variant="ghost"
-                                onClick={onEditEnd}
-                                size="sm"
-                            >
-                                Cancel
-                            </Button>
-                            <Button
-                                onClick={handleEdit}
-                                size="sm"
-                                className="bg-blue-600 text-white hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600"
-                            >
-                                Save
-                            </Button>
-                        </div>
-                    </div>
+                    ))}
                 </div>
             )}
-
+            {editMediaFiles.length > 0 && (
+                <div className={`post-media-grid grid ${editMediaFiles.length === 1 ? 'grid-cols-1' : 'grid-cols-2'}`}>
+                    {editMediaFiles.map((file, index) => (
+                        <div key={index} className="post-media-item aspect-square">
+                            {file.type.startsWith('image/') ? (
+                                <img
+                                    src={URL.createObjectURL(file)}
+                                    alt={`New media ${index + 1}`}
+                                    className="w-full h-full object-cover"
+                                />
+                            ) : file.type.startsWith('video/') && (
+                                <video
+                                    src={URL.createObjectURL(file)}
+                                    className="w-full h-full object-cover"
+                                    controls
+                                />
+                            )}
+                            <button
+                                type="button"
+                                onClick={() => setEditMediaFiles(prev => prev.filter((_, i) => i !== index))}
+                                className="post-media-delete"
+                                aria-label="Remove media"
+                            >
+                                <X className="h-4 w-4" />
+                            </button>
+                        </div>
+                    ))}
+                </div>
+            )}
             <AlertDialog open={isDeleting} onOpenChange={setIsDeleting}>
                 <AlertDialogContent>
                     <AlertDialogHeader>
@@ -349,6 +312,6 @@ export default function PostActions({
                     </AlertDialogFooter>
                 </AlertDialogContent>
             </AlertDialog>
-        </>
+        </div>
     )
 }

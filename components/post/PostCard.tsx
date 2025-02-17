@@ -161,7 +161,6 @@ export default function PostCard({
                             className="post-action-button"
                         >
                             <Share2 className="h-5 w-5" />
-                            <span>Share</span>
                         </Button>
                     </>
                 )}
