@@ -7,13 +7,27 @@ import prisma from '@/lib/prisma';
 
 // Check access permission for the requested blob
 async function checkAccess(path: string[], session: any) {
+    // Always allow access to profile pictures
+    if (path[2] === 'profile') {
+        return true;
+    }
+
     // Extract post ID from the URL path (users/[userId]/posts/[postId]/[filename])
     const postId = path[3]; // Index 3 because path is split: ['users', userId, 'posts', postId, filename]
     
     if (!postId) {
         // For temp uploads, only allow access to the user's own files
         const userId = path[1]; // Index 1 is userId in the path
-        return session.user.id === userId;
+        return session?.user?.id === userId;
+    }
+
+    // If no session, only allow access to public posts
+    if (!session?.user?.id) {
+        const post = await prisma.post.findUnique({
+            where: { id: postId },
+            select: { visibility: true },
+        });
+        return post?.visibility === 'public';
     }
 
     // Check if the user has access to this post
@@ -50,30 +64,27 @@ export async function GET(
 ) {
     try {
         const session = await getServerSession(authOptions);
-        if (!session) {
-            return new Response('Unauthorized', { status: 401 });
-        }
-
         const storageClients = getStorageClients();
+        
         if (!storageClients) {
             return new Response('Storage configuration not available', { status: 503 });
         }
 
         const { containerClient, sharedKeyCredential, containerName } = storageClients;
-
-        const hasAccess = await checkAccess(params.path, session);
-        if (!hasAccess) {
-            return new Response('Forbidden', { status: 403 });
-        }
-
         const blobPath = params.path.join('/');
         const blockBlobClient = containerClient.getBlockBlobClient(blobPath);
-        
+
         try {
             // Check if blob exists
             const exists = await blockBlobClient.exists();
             if (!exists) {
                 return new Response('Not Found', { status: 404 });
+            }
+
+            // Check access permissions
+            const hasAccess = await checkAccess(params.path, session);
+            if (!hasAccess) {
+                return new Response('Forbidden', { status: 403 });
             }
 
             // Get blob properties for content type
@@ -96,16 +107,20 @@ export async function GET(
             // Create URL with SAS token
             const blobUrl = `${blockBlobClient.url}?${sasToken}`;
 
+            // Set cache control based on content type
+            const cacheControl = params.path[2] === 'profile' 
+                ? 'public, max-age=3600' // Cache profile pictures for 1 hour
+                : 'private, no-cache';    // No cache for other media
+
             // Return redirect response with proper headers
             return new Response(null, {
                 status: 302,
                 headers: new Headers({
                     'Location': blobUrl,
                     'Content-Type': properties.contentType || 'application/octet-stream',
-                    'Cache-Control': 'private, no-cache',
+                    'Cache-Control': cacheControl,
                     'Access-Control-Allow-Origin': req.headers.get('origin') || '*',
                     'Access-Control-Allow-Methods': 'GET',
-                    'Access-Control-Allow-Credentials': 'true',
                     'Access-Control-Allow-Headers': '*',
                     'Access-Control-Expose-Headers': '*'
                 })

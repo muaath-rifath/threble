@@ -10,16 +10,18 @@ import { useToast } from '@/hooks/use-toast'
 import { Card, CardContent } from '@/components/ui/card'
 import { Separator } from '@/components/ui/separator'
 import { Button } from '@/components/ui/button'
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import {
     Form,
     FormField,
     FormItem,
+    FormControl,
 } from '@/components/ui/form'
 import { Textarea } from '@/components/ui/textarea'
-import { Image, Video } from 'lucide-react'
+import { Image, Video, X } from 'lucide-react'
 import { ExtendedPost } from '@/lib/types'
+
 import PostCard from './PostCard'
-import { createPost } from '@/lib/actions/post.actions'
 
 const replyFormSchema = z.object({
     content: z.string().min(1, "Reply cannot be empty"),
@@ -83,22 +85,25 @@ export default function PostDetailView({ initialPost, session }: PostDetailViewP
         try {
             const formData = new FormData()
             formData.append('content', values.content)
-            formData.append('visibility', 'public')
             formData.append('parentId', post.id)
 
             mediaFiles.forEach(file => {
                 formData.append('mediaAttachments', file)
             })
 
-            const result = await createPost(formData)
+            const response = await fetch('/api/posts', {
+                method: 'POST',
+                body: formData,
+            })
 
-            if (!result.success) {
-                throw new Error(result.error)
+            if (!response.ok) {
+                const error = await response.json()
+                throw new Error(error.error || 'Failed to post reply')
             }
 
             toast({ 
-                title: "Reply posted", 
-                description: "Your reply has been successfully posted." 
+                title: "Success", 
+                description: "Your reply has been posted successfully." 
             })
             replyForm.reset()
             setMediaFiles([])
@@ -133,21 +138,29 @@ export default function PostDetailView({ initialPost, session }: PostDetailViewP
                 <CardContent className="p-6">
                     <Form {...replyForm}>
                         <form onSubmit={replyForm.handleSubmit(onSubmitReply)} className="space-y-4">
-                            <FormField
-                                control={replyForm.control}
-                                name="content"
-                                render={({ field }) => (
-                                    <FormItem>
-                                        <Textarea
-                                            {...field}
-                                            placeholder="Write a reply..."
-                                            className="min-h-[100px]"
-                                        />
-                                    </FormItem>
-                                )}
-                            />
+                            <div className="flex items-start space-x-4">
+                                <Avatar className="h-10 w-10">
+                                    <AvatarImage src={session?.user?.image || undefined} />
+                                    <AvatarFallback>{session?.user?.name?.[0]}</AvatarFallback>
+                                </Avatar>
+                                <FormField
+                                    control={replyForm.control}
+                                    name="content"
+                                    render={({ field }) => (
+                                        <FormItem className="flex-1">
+                                            <FormControl>
+                                                <Textarea
+                                                    {...field}
+                                                    placeholder="Write your reply..."
+                                                    className="min-h-[100px] resize-none"
+                                                />
+                                            </FormControl>
+                                        </FormItem>
+                                    )}
+                                />
+                            </div>
                             {mediaFiles.length > 0 && (
-                                <div className="grid grid-cols-2 gap-2">
+                                <div className="grid grid-cols-2 gap-2 pl-14">
                                     {mediaFiles.map((file, index) => (
                                         <div key={index} className="relative">
                                             {file.type.startsWith('image/') ? (
@@ -169,36 +182,36 @@ export default function PostDetailView({ initialPost, session }: PostDetailViewP
                                                 onClick={() => handleRemoveMedia(index)}
                                             >
                                                 <span className="sr-only">Remove</span>
-                                                ×
+                                                <X className="h-4 w-4" />
                                             </Button>
                                         </div>
                                     ))}
                                 </div>
                             )}
-                            <div className="flex justify-between items-center pt-4">
+                            <div className="flex justify-between items-center pl-14">
                                 <div className="flex space-x-2">
                                     <Button
                                         type="button"
                                         variant="ghost"
-                                        size="icon"
                                         onClick={() => handleFileSelect('image/*')}
                                     >
-                                        <Image className="h-5 w-5" />
+                                        <Image className="mr-2 h-4 w-4" />
+                                        Photo
                                     </Button>
                                     <Button
                                         type="button"
                                         variant="ghost"
-                                        size="icon"
                                         onClick={() => handleFileSelect('video/*')}
                                     >
-                                        <Video className="h-5 w-5" />
+                                        <Video className="mr-2 h-4 w-4" />
+                                        Video
                                     </Button>
                                 </div>
                                 <Button
                                     type="submit"
                                     disabled={isSubmitting}
                                 >
-                                    Reply
+                                    {isSubmitting ? 'Posting...' : 'Reply'}
                                 </Button>
                             </div>
                             <input

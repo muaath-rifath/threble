@@ -2,7 +2,9 @@ import { getServerSession } from 'next-auth/next'
 import { authOptions } from '@/app/api/auth/[...nextauth]/options'
 import prisma from '@/lib/prisma'
 import FeedList from '@/components/FeedList'
+import PostForm from '@/components/PostForm'
 import { transformPost } from '@/lib/utils'
+import { Post } from '@/lib/types'
 
 export default async function Home() {
     const session = await getServerSession(authOptions)
@@ -68,11 +70,12 @@ export default async function Home() {
         },
     })
 
-    const transformedPosts = posts.map(transformPost)
+    const transformedPosts = posts.map(post => transformPost(post)) as Post[]
 
     return (
-        <div className="w-full max-w-4xl">
-            <FeedList initialPosts={transformedPosts} session={session} />
+        <div className="w-full max-w-4xl space-y-4">
+            <PostForm />
+            <FeedList session={session} initialPosts={transformedPosts} />
         </div>
     )
 }

@@ -1,7 +1,9 @@
-import { type Post } from '@prisma/client'
+import type { Post as PrismaPost } from '@prisma/client'
 
-// Base Post type with media attachments
-export interface BasePost extends Omit<Post, 'createdAt'> {
+export type Visibility = 'public' | 'private' | 'followers'
+
+// Base post interface
+export interface BasePost extends Omit<PrismaPost, 'createdAt'> {
     mediaAttachments: string[];
     createdAt: string;
 }
@@ -21,7 +23,7 @@ export interface Reaction {
     commentId: string | null;
 }
 
-// Extended Post type for feed and detail views
+// Extended post interface for feed and detail views
 export interface ExtendedPost {
     id: string;
     content: string;
@@ -50,4 +52,33 @@ export interface MediaFile {
     postId: string;
     userId: string;
     createdAt: Date;
+}
+
+export interface Post extends Omit<PrismaPost, 'createdAt' | 'updatedAt'> {
+    createdAt: string;
+    updatedAt: string;
+    visibility: Visibility;
+    author: {
+        id: string;
+        name: string | null;
+        image: string | null;
+        username?: string | null;
+    };
+    reactions: Array<{
+        id: string;
+        type: string;
+        userId: string;
+        createdAt: string;
+        user?: {
+            id: string;
+            name: string | null;
+            image: string | null;
+        };
+    }>;
+    _count: {
+        replies: number;
+    };
+    parent?: Post | null;
+    replies?: Post[];
+    mediaAttachments: string[];
 }

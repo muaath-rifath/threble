@@ -257,6 +257,19 @@
   .post-edit-cancel-btn {
     @apply text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors duration-200 rounded-lg px-4 py-2 text-sm font-medium;
   }
+
+  /* Feed specific styles */
+  .feed-loading-indicator {
+    @apply text-center py-4;
+  }
+  
+  .feed-empty-state {
+    @apply text-center py-10;
+  }
+
+  .feed-intersection-target {
+    @apply h-[10px] w-full;
+  }
 }
 
 @layer utilities {

@@ -19,9 +19,15 @@ const onboardingSchema = z.object({
   bio: z.string().max(160, 'Bio must be 160 characters or less').optional(),
   location: z.string().max(100, 'Location must be 100 characters or less').optional(),
   website: z.string().url('Invalid URL').optional(),
-  birthDate: z.string().optional().refine((date) => !date || !isNaN(Date.parse(date)), {
-    message: 'Invalid date format',
-  }),
+  birthDate: z.string()
+    .optional()
+    .refine((date) => {
+      if (!date) return true;
+      const parsedDate = new Date(date);
+      return !isNaN(parsedDate.getTime()) && parsedDate < new Date();
+    }, {
+      message: 'Birth date cannot be in the future',
+    }),
 })
 
 type OnboardingInput = z.infer<typeof onboardingSchema>
@@ -30,7 +36,8 @@ export default function OnboardingPage() {
   const [error, setError] = useState<string | null>(null)
   const router = useRouter()
   const { data: session, status, update } = useSession()
-    const [profileFile, setProfileFile] = useState<File[]>([]);
+  const [profileFile, setProfileFile] = useState<File[]>([])
+  const [isSubmitting, setIsSubmitting] = useState(false)
 
   useEffect(() => {
     if (status === 'unauthenticated') {
@@ -43,42 +50,59 @@ export default function OnboardingPage() {
   const {
     register,
     handleSubmit,
-    formState: { errors, isSubmitting },
-      setValue,
+    formState: { errors },
+    setValue,
   } = useForm<OnboardingInput>({
     resolver: zodResolver(onboardingSchema),
   })
 
-    const onSubmit = async (data: OnboardingInput) => {
+  const onSubmit = async (data: OnboardingInput) => {
+    if (isSubmitting) return;
+    
     try {
-        const formData = new FormData()
-        formData.append('username', data.username);
-        formData.append('bio', data.bio || "");
-        formData.append('location', data.location || "");
-        formData.append('website', data.website || "");
-       
-      if (data.birthDate) {
-           formData.append('birthDate', data.birthDate);
-        }
+      setIsSubmitting(true)
+      setError(null)
+      
+      const formData = new FormData()
+      formData.append('username', data.username.trim())
+      if (data.bio) formData.append('bio', data.bio.trim())
+      if (data.location) formData.append('location', data.location.trim())
+      if (data.website) formData.append('website', data.website.trim())
+      if (data.birthDate) formData.append('birthDate', data.birthDate)
+      if (profileFile.length > 0) formData.append('image', profileFile[0])
 
-        if (profileFile.length > 0) {
-           formData.append('image', profileFile[0]);
-        }
+      const response = await fetch('/api/user/onboarding', {
+        method: 'POST',
+        body: formData,
+      })
 
-        const response = await fetch('/api/user/onboarding', {
-            method: 'POST',
-             body: formData,
-        })
-
-      if (response.ok) {
-        await update({ ...session, user: { ...session?.user, hasProfile: true } })
-        router.push('/')
-      } else {
+      if (!response.ok) {
         const errorData = await response.json()
-        setError(errorData.message || 'An error occurred during onboarding.')
+        throw new Error(errorData.error || 'Failed to complete onboarding')
       }
+
+      const result = await response.json()
+
+      // Update session and force refresh
+      await update({
+        ...session,
+        user: {
+          ...session?.user,
+          ...result.user,
+          hasProfile: true
+        }
+      })
+
+      // Clear any existing session data from storage
+      await fetch('/api/auth/session', { method: 'GET' })
+
+      // Force a hard navigation to refresh the session
+      window.location.href = '/'
     } catch (error) {
-      setError('An error occurred during onboarding. Please try again.')
+      console.error('Onboarding error:', error)
+      setError(error instanceof Error ? error.message : 'An error occurred during onboarding. Please try again.')
+    } finally {
+      setIsSubmitting(false)
     }
   }
 
@@ -113,10 +137,10 @@ export default function OnboardingPage() {
                 <p className="text-sm text-red-500">{errors.bio.message}</p>
               )}
             </div>
-                <div className="grid gap-2">
-                    <Label htmlFor="profile">Profile Image</Label>
-                    <FileUpload  onChange={(files) => setProfileFile(files)} />
-                </div>
+            <div className="grid gap-2">
+              <Label htmlFor="profile">Profile Image</Label>
+              <FileUpload onChange={(files) => setProfileFile(files)} />
+            </div>
             <div className="grid gap-2">
               <Label htmlFor="location">Location</Label>
               <Input id="location" {...register('location')} />

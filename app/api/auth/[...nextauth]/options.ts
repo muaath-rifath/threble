@@ -119,16 +119,27 @@ export const authOptions: NextAuthOptions = {
         token.id = user.id;
       }
     
-      // Check for user profile every time the JWT is generated
-      const userWithProfile = await prisma.user.findUnique({
-        where: { id: token.id as string },
-        include: { profile: true },
-      });
-    
-      token.hasProfile = !!userWithProfile?.profile;
-      console.log(`JWT token updated: id=${token.id}, hasProfile=${token.hasProfile}`);
-    
-      return token;
+      try {
+        // Always fetch fresh user data for the JWT
+        const userData = await prisma.user.findUnique({
+          where: { id: token.id as string },
+          include: { 
+            profile: true,
+            accounts: true
+          }
+        });
+
+        if (userData) {
+          token.hasProfile = !!userData.profile;
+          token.username = userData.username;
+          token.image = userData.image;
+        }
+
+        return token;
+      } catch (error) {
+        console.error('Error in JWT callback:', error);
+        return token;
+      }
     },
     
 
@@ -140,16 +151,28 @@ export const authOptions: NextAuthOptions = {
       console.log("Session Callback:", { session, token })
 
       if (session.user && token) {
-        // Assign the token ID and profile status to the session
-        session.user.id = token.id as string
-        session.user.hasProfile = token.hasProfile as boolean
-        session.user.needsOnboarding = !(token.hasProfile as boolean)
-        console.log(
-          `Session updated: userId=${session.user.id}, hasProfile=${session.user.hasProfile}, needsOnboarding=${session.user.needsOnboarding}`
-        )
-      }
+        try {
+          // Get fresh user data for the session
+          const userData = await prisma.user.findUnique({
+            where: { id: token.id as string },
+            include: { profile: true }
+          });
 
-      return session
+          session.user.id = token.id as string;
+          session.user.hasProfile = !!userData?.profile;
+          session.user.username = userData?.username;
+          session.user.image = userData?.image;
+
+          console.log('Session updated with fresh data:', {
+            userId: session.user.id,
+            hasProfile: session.user.hasProfile,
+            username: session.user.username
+          });
+        } catch (error) {
+          console.error('Error in session callback:', error);
+        }
+      }
+      return session;
     },
   },
 

@@ -4,6 +4,8 @@ import { authOptions } from '@/app/api/auth/[...nextauth]/options'
 import prisma from '@/lib/prisma'
 import { uploadFileToBlobStorage, moveFile, getStorageClients } from '@/lib/azure-storage'
 
+type Visibility = 'public' | 'private' | 'followers'
+
 // Handle GET requests
 export async function GET(req: NextRequest) {
     const session = await getServerSession(authOptions)
@@ -17,6 +19,8 @@ export async function GET(req: NextRequest) {
     const cursor = searchParams.get('cursor')
 
     try {
+        console.log('Fetching posts for user:', session.user.id)
+        
         const posts = await prisma.post.findMany({
             where: {
                 OR: [
@@ -34,30 +38,30 @@ export async function GET(req: NextRequest) {
             orderBy: { createdAt: 'desc' },
             include: {
                 author: {
-                    select: { name: true, image: true },
-                },
-                reactions: true,
-                _count: {
-                    select: { replies: true },
-                },
-                parent: {
-                    select: {
+                    select: { 
                         id: true,
-                        authorId: true,
-                        author: {
-                            select: { name: true, image: true },
-                        },
+                        name: true, 
+                        image: true,
+                        username: true
                     },
                 },
-                replies: {
+                reactions: {
                     include: {
-                        author: {
-                            select: { name: true, image: true },
-                        },
-                        reactions: true,
-                        _count: {
-                            select: { replies: true },
-                        },
+                        user: {
+                            select: {
+                                id: true,
+                                name: true
+                            }
+                        }
+                    },
+                    where: {
+                        userId: session.user.id
+                    }
+                },
+                _count: {
+                    select: { 
+                        replies: true,
+                        reactions: true
                     },
                 },
             },
@@ -69,10 +73,42 @@ export async function GET(req: NextRequest) {
         let nextCursor = null
         if (posts.length > limit) {
             const nextItem = posts.pop()
-            nextCursor = nextItem?.id || null
+            nextCursor = nextItem?.id
         }
 
-        return NextResponse.json({ posts, nextCursor })
+        // Get reaction counts for each post
+        const postsWithReactionCounts = await Promise.all(
+            posts.map(async (post) => {
+                const reactionCounts = await prisma.reaction.groupBy({
+                    by: ['type'],
+                    where: { postId: post.id },
+                    _count: true,
+                })
+
+                const reactions = reactionCounts.reduce((acc, curr) => ({
+                    ...acc,
+                    [curr.type]: curr._count
+                }), {})
+
+                return {
+                    ...post,
+                    createdAt: post.createdAt.toISOString(),
+                    updatedAt: post.updatedAt.toISOString(),
+                    reactions: post.reactions.map(reaction => ({
+                        ...reaction,
+                        createdAt: reaction.createdAt.toISOString()
+                    })),
+                    reactionCounts: reactions
+                }
+            })
+        )
+
+        console.log('Fetched posts count:', postsWithReactionCounts.length)
+
+        return NextResponse.json({ 
+            posts: postsWithReactionCounts, 
+            nextCursor 
+        })
     } catch (error) {
         console.error('Error fetching posts:', error)
         return NextResponse.json({ error: 'Failed to fetch posts' }, { status: 500 })
@@ -89,11 +125,18 @@ export async function POST(req: NextRequest) {
 
         const formData = await req.formData();
         const content = formData.get('content') as string;
-        const visibility = formData.get('visibility') as string;
+        const visibility = (formData.get('visibility') as Visibility) || 'public';
         const parentId = formData.get('parentId') as string | null;
         const communityId = formData.get('communityId') as string | null;
         const mediaFiles = formData.getAll('mediaAttachments') as File[];
         let mediaAttachments: string[] = [];
+
+        // Validate visibility
+        if (!['public', 'private', 'followers'].includes(visibility)) {
+            return NextResponse.json({ 
+                error: 'Invalid visibility value. Must be public, private, or followers.' 
+            }, { status: 400 });
+        }
 
         // First upload files to temporary location
         if (mediaFiles.length > 0) {
@@ -107,7 +150,7 @@ export async function POST(req: NextRequest) {
             data: {
                 content,
                 authorId: session.user.id,
-                visibility,
+                visibility: visibility as Visibility,
                 parentId,
                 communityId,
                 mediaAttachments

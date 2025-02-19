@@ -71,22 +71,50 @@ export async function uploadFileToBlobStorage(file: File, userId: string): Promi
     if (!clients) throw new Error('Storage not initialized');
 
     try {
+        console.log('Starting file upload:', { fileName: file.name, fileSize: file.size, userId });
+
+        // Generate a unique filename
         const extension = file.name.split('.').pop() || '';
-        const fileName = `${randomUUID()}.${extension}`;
-        const blobPath = `users/${userId}/temp/${fileName}`;
-        const blockBlobClient = clients.containerClient.getBlockBlobClient(blobPath);
+        const uniqueId = Math.random().toString(36).substring(2);
         
+        // Determine if this is a profile picture upload based on the file metadata or context
+        const isProfilePicture = file.name.toLowerCase().includes('profile');
+        const blobName = isProfilePicture 
+            ? `users/${userId}/profile/${uniqueId}.${extension}`
+            : `users/${userId}/${uniqueId}.${extension}`;
+
+        const blockBlobClient = clients.containerClient.getBlockBlobClient(blobName);
+
+        // Set blob options including content type and caching
         const options = {
             blobHTTPHeaders: {
                 blobContentType: file.type,
-                blobCacheControl: 'private, no-cache'
+                blobCacheControl: isProfilePicture 
+                    ? 'public, max-age=3600'   // Cache profile pictures for 1 hour
+                    : 'private, no-cache',     // No cache for other media
+                blobContentDisposition: 'inline'
             }
         };
 
+        // Convert File to ArrayBuffer
         const arrayBuffer = await file.arrayBuffer();
-        await blockBlobClient.uploadData(arrayBuffer, options);
         
-        return `/api/media/${blobPath}`;
+        console.log('Uploading to blob storage:', { blobName, contentType: file.type });
+        
+        // Upload the file
+        await blockBlobClient.uploadData(arrayBuffer, options);
+
+        // Set blob metadata
+        await blockBlobClient.setMetadata({
+            userId,
+            originalName: file.name,
+            contentType: file.type,
+            isProfilePicture: isProfilePicture.toString()
+        });
+
+        console.log('Upload successful:', { url: blockBlobClient.url });
+
+        return `/api/media/${blobName}`;
     } catch (error) {
         console.error('Error uploading to blob storage:', error);
         throw new Error('Failed to upload file');

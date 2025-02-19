@@ -10,7 +10,7 @@ datasource db {
 model User {
   id                 String            @id @default(cuid())
   name               String?
-  email              String            @unique
+  email              String?           @unique
   username           String?           @unique
   password           String?
   image              String?
@@ -18,16 +18,16 @@ model User {
   role               Role              @default(USER)
   createdAt          DateTime          @default(now())
   updatedAt          DateTime          @updatedAt
-  preferences        Json?
-  settings           Json?
+  preferences        Json?             @default("{}")
+  settings           Json?             @default("{}")
   activities         Activity[]
   comments           Comment[]
   createdCommunities Community[]       @relation("CommunityCreator")
   communities        CommunityMember[]
   connectedTo        Connection[]      @relation("Connections")
   connections        Connection[]
-  following          Follow[]          @relation("Follower")
-  followers          Follow[]          @relation("Following")
+  following          Follow[]          @relation("Following")
+  followers          Follow[]          @relation("Follower")
   posts              Post[]
   reactions          Reaction[]
   profile            UserProfile?
@@ -75,7 +75,7 @@ model VerificationToken {
 model UserProfile {
   id         String    @id @default(cuid())
   userId     String    @unique
-  bio        String?
+  bio        String?   @db.Text
   coverImage String?
   location   String?
   website    String?
@@ -89,20 +89,20 @@ model UserProfile {
 
 model Post {
   id               String     @id @default(cuid())
-  content          String
+  content          String     @db.Text
   authorId         String
   communityId      String?
   createdAt        DateTime   @default(now())
   updatedAt        DateTime   @updatedAt
   mediaAttachments String[]   @default([])
-  visibility       String     @default("public")
-  comments         Comment[]
+  visibility       Visibility @default(public)
+  parentId         String?
+
   author           User       @relation(fields: [authorId], references: [id], onDelete: Cascade)
   community        Community? @relation(fields: [communityId], references: [id])
+  parent           Post?      @relation("PostReplies", fields: [parentId], references: [id], onDelete: Cascade)
+  replies          Post[]     @relation("PostReplies")
   reactions        Reaction[]
-  parentId         String?
-  parent           Post?       @relation("PostReplies", fields: [parentId], references: [id], onDelete: Cascade)
-  replies          Post[]      @relation("PostReplies")
 
   @@index([authorId, createdAt])
   @@index([communityId, createdAt])
@@ -130,7 +130,9 @@ model Comment {
 model Community {
   id          String            @id @default(cuid())
   name        String            @unique
-  description String?
+  description String?           @db.Text
+  image       String?
+  coverImage  String?
   creatorId   String
   createdAt   DateTime          @default(now())
   updatedAt   DateTime          @updatedAt
@@ -146,7 +148,7 @@ model CommunityMember {
   id          String    @id @default(cuid())
   userId      String
   communityId String
-  role        String    @default("member")
+  role        Role      @default(USER)
   joinedAt    DateTime  @default(now())
   community   Community @relation(fields: [communityId], references: [id], onDelete: Cascade)
   user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -157,20 +159,19 @@ model CommunityMember {
 
 model Reaction {
   id        String   @id @default(cuid())
-  type      String
+  type      String   // e.g., "LIKE", "LOVE", etc.
   userId    String
   postId    String
-  commentId String?
   createdAt DateTime @default(now())
-  comment   Comment? @relation(fields: [commentId], references: [id], onDelete: Cascade)
-  post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  @@unique([userId, postId])
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, postId, type])
   @@index([userId, type])
   @@index([postId, type])
-  @@index([commentId, type])
 }
+
 model Activity {
   id        String   @id @default(cuid())
   type      String
@@ -187,8 +188,8 @@ model Follow {
   followerId  String
   followingId String
   createdAt   DateTime @default(now())
-  follower    User     @relation("Follower", fields: [followerId], references: [id], onDelete: Cascade)
-  following   User     @relation("Following", fields: [followingId], references: [id], onDelete: Cascade)
+  follower    User     @relation("Following", fields: [followerId], references: [id], onDelete: Cascade)
+  following   User     @relation("Follower", fields: [followingId], references: [id], onDelete: Cascade)
 
   @@unique([followerId, followingId])
   @@index([followerId])
@@ -212,4 +213,10 @@ enum Role {
   USER
   MODERATOR
   ADMIN
+}
+
+enum Visibility {
+  public
+  private
+  followers
 }
