@@ -16,7 +16,11 @@ const postFormSchema = z.object({
   content: z.string().min(1, "Post content cannot be empty"),
 });
 
-export default function PostForm() {
+interface PostFormProps {
+  onPostCreated?: () => void;
+}
+
+export default function PostForm({ onPostCreated }: PostFormProps) {
   const router = useRouter();
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -79,6 +83,7 @@ export default function PostForm() {
         form.reset();
         setMediaFiles([]);
         router.refresh();
+        onPostCreated?.();  // Call the callback when post is created successfully
       } else {
         throw new Error('Failed to create post');
       }

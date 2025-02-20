@@ -1,8 +1,7 @@
 import { getServerSession } from 'next-auth/next'
 import { authOptions } from '@/app/api/auth/[...nextauth]/options'
 import prisma from '@/lib/prisma'
-import FeedList from '@/components/FeedList'
-import PostForm from '@/components/PostForm'
+import FeedListContainer from '@/components/FeedListContainer'
 import { transformPost } from '@/lib/utils'
 import { Post } from '@/lib/types'
 
@@ -74,8 +73,7 @@ export default async function Home() {
 
     return (
         <div className="w-full max-w-4xl space-y-4">
-            <PostForm />
-            <FeedList session={session} initialPosts={transformedPosts} />
+            <FeedListContainer session={session} initialPosts={transformedPosts} />
         </div>
     )
 }
