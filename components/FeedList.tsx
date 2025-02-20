@@ -25,7 +25,14 @@ import {
     AlertDialogCancel,
     AlertDialogAction,
 } from '@/components/ui/alert-dialog'
-import { Image, Video, MoreHorizontal, Edit, Trash2, MessageSquare, Share2, X, ThumbsUp } from 'lucide-react'
+import { Image, Video, MoreHorizontal, Edit, Trash2, MessageSquare, Share2, X, ThumbsUp, ChevronRight } from 'lucide-react'
+import {
+    Sheet,
+    SheetContent,
+    SheetHeader,
+    SheetTitle,
+    SheetTrigger,
+} from '@/components/ui/sheet'
 
 interface Post {
     id: string
@@ -40,6 +47,11 @@ interface Post {
         id: string
         type: string
         userId: string
+        user?: {
+            id: string
+            name: string | null
+            image: string | null
+        }
     }>
     _count: {
         replies: number
@@ -77,6 +89,8 @@ function PostCard({ post, session, onUpdate, isReply = false }: PostCardProps) {
     const [keepMediaUrls, setKeepMediaUrls] = useState<string[]>(post.mediaAttachments || [])
     const [editMediaFiles, setEditMediaFiles] = useState<File[]>([])
     const [isDeleting, setIsDeleting] = useState(false)
+    const [isLoadingReactions, setIsLoadingReactions] = useState(false)
+    const [reactionUsers, setReactionUsers] = useState<Post['reactions']>([])
 
     const isAuthor = session.user?.id === post.author.id
 
@@ -198,6 +212,33 @@ function PostCard({ post, session, onUpdate, isReply = false }: PostCardProps) {
                 variant: "destructive",
             })
         }
+    }
+
+    const loadReactions = async () => {
+        try {
+            setIsLoadingReactions(true)
+            const response = await fetch(`/api/posts/${post.id}/reactions`)
+            if (!response.ok) {
+                throw new Error('Failed to load reactions')
+            }
+            const data = await response.json()
+            setReactionUsers(data.reactions)
+        } catch (error) {
+            console.error('Error loading reactions:', error)
+            toast({
+                title: "Error",
+                description: "Failed to load reactions",
+                variant: "destructive",
+            })
+        } finally {
+            setIsLoadingReactions(false)
+        }
+    }
+
+    const handleLikeClick = (e: React.MouseEvent) => {
+        e.preventDefault()
+        e.stopPropagation()
+        handleReaction('LIKE')
     }
 
     return (
@@ -389,20 +430,70 @@ function PostCard({ post, session, onUpdate, isReply = false }: PostCardProps) {
                 )}
             </CardContent>
             <CardFooter className="flex justify-between border-t border-slate-100 dark:border-slate-800 mt-4 pt-4">
-                <Button
-                    variant="ghost"
-                    onClick={() => handleReaction('LIKE')}
-                    className={`post-action-button ${
-                        post.reactions.some(r => r.userId === session.user.id && r.type === 'LIKE') 
-                            ? 'post-action-button-active' 
-                            : ''
-                    }`}
-                >
-                    <ThumbsUp className="h-5 w-5" />
-                    <span className="ml-2">
-                        {post._count.reactions || post.reactions.filter(r => r.type === 'LIKE').length}
-                    </span>
-                </Button>
+                <Sheet>
+                    <div className="flex items-center space-x-1">
+                        <div>
+                            <Button
+                                variant="ghost"
+                                onClick={handleLikeClick}
+                                className={`post-action-button ${
+                                    post.reactions.some(r => r.userId === session.user.id && r.type === 'LIKE') 
+                                        ? 'post-action-button-active' 
+                                        : ''
+                                }`}
+                            >
+                                <ThumbsUp className="h-5 w-5" />
+                                <span className="ml-2">
+                                    {post._count.reactions || post.reactions.filter(r => r.type === 'LIKE').length}
+                                </span>
+                            </Button>
+                        </div>
+                        <SheetTrigger asChild>
+                            <Button
+                                variant="ghost"
+                                size="sm"
+                                className="like-trigger-button"
+                                onClick={(e) => {
+                                    e.stopPropagation()
+                                    if (!isLoadingReactions && reactionUsers.length === 0) {
+                                        loadReactions()
+                                    }
+                                }}
+                            >
+                                <ChevronRight className="h-4 w-4" />
+                            </Button>
+                        </SheetTrigger>
+                    </div>
+                    <SheetContent side="right" className="like-sheet-content">
+                        <SheetHeader>
+                            <SheetTitle>Liked by</SheetTitle>
+                        </SheetHeader>
+                        <div className="mt-4 space-y-4">
+                            {isLoadingReactions ? (
+                                <div className="text-center py-4 text-sm text-slate-500">
+                                    Loading...
+                                </div>
+                            ) : reactionUsers.length > 0 ? (
+                                reactionUsers.map((reaction) => (
+                                    <div key={reaction.id} className="flex items-center space-x-3">
+                                        <Avatar>
+                                            <AvatarImage src={reaction.user?.image || undefined} />
+                                            <AvatarFallback>{reaction.user?.name?.[0]}</AvatarFallback>
+                                        </Avatar>
+                                        <div>
+                                            <p className="font-medium text-sm">{reaction.user?.name}</p>
+                                        </div>
+                                    </div>
+                                ))
+                            ) : (
+                                <div className="text-center py-4 text-sm text-slate-500">
+                                    No likes yet
+                                </div>
+                            )}
+                        </div>
+                    </SheetContent>
+                </Sheet>
+                
                 <Button
                     variant="ghost"
                     className="post-action-button"

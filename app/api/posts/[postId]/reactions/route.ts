@@ -13,7 +13,10 @@ export async function GET(req: NextRequest, { params }: { params: { postId: stri
   try {
     // Get all reactions for the post with user details
     const reactions = await prisma.reaction.findMany({
-      where: { postId: params.postId },
+      where: { 
+        postId: params.postId,
+        type: 'LIKE'  // Only get LIKE reactions
+      },
       include: {
         user: {
           select: {
@@ -36,7 +39,10 @@ export async function GET(req: NextRequest, { params }: { params: { postId: stri
     });
 
     return NextResponse.json({
-      reactions,
+      reactions: reactions.map(reaction => ({
+        ...reaction,
+        createdAt: reaction.createdAt.toISOString()
+      })),
       counts: reactionCounts.reduce((acc, curr) => ({
         ...acc,
         [curr.type]: curr._count
