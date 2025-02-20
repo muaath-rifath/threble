@@ -464,32 +464,38 @@ function PostCard({ post, session, onUpdate, isReply = false }: PostCardProps) {
                             </Button>
                         </SheetTrigger>
                     </div>
-                    <SheetContent side="right" className="like-sheet-content">
-                        <SheetHeader>
-                            <SheetTitle>Liked by</SheetTitle>
-                        </SheetHeader>
-                        <div className="mt-4 space-y-4">
-                            {isLoadingReactions ? (
-                                <div className="text-center py-4 text-sm text-slate-500">
-                                    Loading...
-                                </div>
-                            ) : reactionUsers.length > 0 ? (
-                                reactionUsers.map((reaction) => (
-                                    <div key={reaction.id} className="flex items-center space-x-3">
-                                        <Avatar>
-                                            <AvatarImage src={reaction.user?.image || undefined} />
-                                            <AvatarFallback>{reaction.user?.name?.[0]}</AvatarFallback>
-                                        </Avatar>
-                                        <div>
-                                            <p className="font-medium text-sm">{reaction.user?.name}</p>
-                                        </div>
+                    <SheetContent 
+                        side="bottom" 
+                        className="p-0 h-[85vh] sm:max-w-none rounded-t-[20px]"
+                    >
+                        <div className="p-6">
+                            <div className="w-12 h-1.5 bg-slate-300 dark:bg-slate-600 rounded-full mx-auto mb-6" />
+                            <SheetHeader>
+                                <SheetTitle>People who liked this</SheetTitle>
+                            </SheetHeader>
+                            <div className="mt-4 space-y-4 overflow-y-auto max-h-[calc(85vh-120px)]">
+                                {isLoadingReactions ? (
+                                    <div className="text-center py-4 text-sm text-slate-500">
+                                        Loading...
                                     </div>
-                                ))
-                            ) : (
-                                <div className="text-center py-4 text-sm text-slate-500">
-                                    No likes yet
-                                </div>
-                            )}
+                                ) : reactionUsers.length > 0 ? (
+                                    reactionUsers.map((reaction) => (
+                                        <div key={reaction.id} className="flex items-center space-x-3">
+                                            <Avatar>
+                                                <AvatarImage src={reaction.user?.image || undefined} />
+                                                <AvatarFallback>{reaction.user?.name?.[0]}</AvatarFallback>
+                                            </Avatar>
+                                            <div>
+                                                <p className="font-medium text-sm">{reaction.user?.name}</p>
+                                            </div>
+                                        </div>
+                                    ))
+                                ) : (
+                                    <div className="text-center py-4 text-sm text-slate-500">
+                                        No likes yet
+                                    </div>
+                                )}
+                            </div>
                         </div>
                     </SheetContent>
                 </Sheet>
