@@ -11,11 +11,13 @@ import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
 import { Form, FormControl, FormField, FormItem } from "@/components/ui/form"
 import { Separator } from "@/components/ui/separator"
-import { Image, Video, ThumbsUp, MessageSquare, Share2, X, Edit, MoreHorizontal, Trash2 } from 'lucide-react'
+import { Image, Video, ThumbsUp, MessageSquare, Share2, X, Edit, MoreHorizontal, Trash2, ChevronRight } from 'lucide-react'
 import { useToast } from "@/hooks/use-toast"
 import { Session } from 'next-auth'
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from "@/components/ui/dropdown-menu"
 import { AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription, AlertDialogFooter, AlertDialogCancel, AlertDialogAction } from "@/components/ui/alert-dialog";
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet'
+import { Post } from './PostCard'
 
 const replyFormSchema = z.object({
     content: z.string().min(1, "Reply cannot be empty"),
@@ -30,41 +32,28 @@ interface Reaction {
     commentId: string | null;
 }
 
-type ExtendedPost = {
-    id: string;
-    content: string;
-    author: {
-        id: string;  // Add id to author type
-        name: string | null;
-        image: string | null;
-    };
-    createdAt: string;
-    reactions: Reaction[];
-    _count: {
-        replies: number;
-    };
-    parentId: string | null;
+type ExtendedPost = Post & {
+    parentId: string | null
     parent: {
         author: {
-            name: string | null;
-            image: string | null;
-        };
-    } | null;
-    replies: ExtendedPost[];
-    mediaAttachments: string[];
-};
+            name: string | null
+            image: string | null
+        }
+    } | null
+    replies: ExtendedPost[]
+}
 
 interface PostDetailProps {
-    initialPost: ExtendedPost;
-    session: Session;
+    initialPost: ExtendedPost
+    session: Session
 }
 
 interface MediaContentProps {
-    mediaAttachments: string[];
+    mediaAttachments: string[] | undefined;
     className?: string;
 }
 
-function MediaContent({ mediaAttachments, className = "" }: MediaContentProps) {
+function MediaContent({ mediaAttachments = [], className = "" }: MediaContentProps) {
     const [loadingStates, setLoadingStates] = useState<{ [key: string]: boolean }>({});
     const [errorStates, setErrorStates] = useState<{ [key: string]: boolean }>({});
     const [mediaUrls, setMediaUrls] = useState<{ [key: string]: string }>({});
@@ -137,6 +126,8 @@ function PostCard({ post, session, onUpdate, isReply = false }: PostCardProps) {
     const [keepMediaUrls, setKeepMediaUrls] = useState<string[]>(post.mediaAttachments || []);
     const [editMediaFiles, setEditMediaFiles] = useState<File[]>([]);
     const [isDeleting, setIsDeleting] = useState(false);
+    const [isLoadingReactions, setIsLoadingReactions] = useState(false)
+    const [reactionUsers, setReactionUsers] = useState<Post['reactions']>([])
 
     const isAuthor = session.user?.id === post.author.id; // Fix: Use author.id instead of authorId
 
@@ -291,6 +282,33 @@ function PostCard({ post, session, onUpdate, isReply = false }: PostCardProps) {
             }
         }
     };
+
+    const loadReactions = async () => {
+        try {
+            setIsLoadingReactions(true)
+            const response = await fetch(`/api/posts/${post.id}/reactions`)
+            if (!response.ok) {
+                throw new Error('Failed to load reactions')
+            }
+            const data = await response.json()
+            setReactionUsers(data.reactions)
+        } catch (error) {
+            console.error('Error loading reactions:', error)
+            toast({
+                title: "Error",
+                description: "Failed to load reactions",
+                variant: "destructive",
+            })
+        } finally {
+            setIsLoadingReactions(false)
+        }
+    }
+
+    const handleLikeClick = (e: React.MouseEvent) => {
+        e.preventDefault()
+        e.stopPropagation()
+        handleReaction('LIKE')
+    }
 
     return (
         <Card className={`${isReply ? 'mt-4' : 'mb-8'} border-none bg-white dark:bg-slate-900 shadow-sm`}>
@@ -466,18 +484,75 @@ function PostCard({ post, session, onUpdate, isReply = false }: PostCardProps) {
                 )}
             </CardContent>
             <CardFooter className="flex justify-between border-t border-slate-100 dark:border-slate-800 mt-4 pt-4">
-                <Button
-                    variant="ghost"
-                    onClick={() => handleReaction('LIKE')}
-                    className={`post-action-button ${
-                        post.reactions.some(r => r.userId === session.user.id && r.type === 'LIKE') 
-                            ? 'post-action-button-active' 
-                            : ''
-                    }`}
-                >
-                    <ThumbsUp className="h-5 w-5" />
-                    {post.reactions.filter(r => r.type === 'LIKE').length}
-                </Button>
+                <Sheet>
+                    <div className="flex items-center space-x-1">
+                        <div>
+                            <Button
+                                variant="ghost"
+                                onClick={handleLikeClick}
+                                className={`post-action-button ${
+                                    post.reactions.some(r => r.userId === session.user.id && r.type === 'LIKE') 
+                                        ? 'post-action-button-active' 
+                                        : ''
+                                }`}
+                            >
+                                <ThumbsUp className="h-5 w-5" />
+                                <span className="ml-2">
+                                    {post._count.reactions || post.reactions.filter(r => r.type === 'LIKE').length}
+                                </span>
+                            </Button>
+                        </div>
+                        <SheetTrigger asChild>
+                            <Button
+                                variant="ghost"
+                                size="sm"
+                                className="like-trigger-button"
+                                onClick={(e) => {
+                                    e.stopPropagation()
+                                    if (!isLoadingReactions && reactionUsers.length === 0) {
+                                        loadReactions()
+                                    }
+                                }}
+                            >
+                                <ChevronRight className="h-4 w-4" />
+                            </Button>
+                        </SheetTrigger>
+                    </div>
+                    <SheetContent 
+                        side="bottom" 
+                        className="p-0 h-[85vh] sm:max-w-none rounded-t-[20px]"
+                    >
+                        <div className="p-6">
+                            <div className="w-12 h-1.5 bg-slate-300 dark:bg-slate-600 rounded-full mx-auto mb-6" />
+                            <SheetHeader>
+                                <SheetTitle>People who liked this</SheetTitle>
+                            </SheetHeader>
+                            <div className="mt-4 space-y-4 overflow-y-auto max-h-[calc(85vh-120px)]">
+                                {isLoadingReactions ? (
+                                    <div className="text-center py-4 text-sm text-slate-500">
+                                        Loading...
+                                    </div>
+                                ) : reactionUsers.length > 0 ? (
+                                    reactionUsers.map((reaction) => (
+                                        <div key={reaction.id} className="flex items-center space-x-3">
+                                            <Avatar>
+                                                <AvatarImage src={reaction.user?.image || undefined} />
+                                                <AvatarFallback>{reaction.user?.name?.[0]}</AvatarFallback>
+                                            </Avatar>
+                                            <div>
+                                                <p className="font-medium text-sm">{reaction.user?.name}</p>
+                                            </div>
+                                        </div>
+                                    ))
+                                ) : (
+                                    <div className="text-center py-4 text-sm text-slate-500">
+                                        No likes yet
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    </SheetContent>
+                </Sheet>
                 <Button
                     variant="ghost"
                     className="post-action-button"

@@ -2,18 +2,17 @@
 
 import { useState } from 'react'
 import { Session } from 'next-auth'
-import PostCard from './PostCard'
-import { ExtendedPost } from '@/lib/types'
+import PostCard, { Post } from '@/components/post/PostCard'
 
 interface UserPostListProps {
-    initialPosts: ExtendedPost[]
     session: Session
+    initialPosts: Post[]
 }
 
-export default function UserPostList({ initialPosts, session }: UserPostListProps) {
-    const [posts, setPosts] = useState(initialPosts)
+export default function UserPostList({ session, initialPosts }: UserPostListProps) {
+    const [posts, setPosts] = useState<Post[]>(initialPosts)
 
-    const handleUpdate = async () => {
+    const handlePostUpdate = async () => {
         try {
             const response = await fetch('/api/posts/user')
             if (response.ok) {
@@ -21,14 +20,14 @@ export default function UserPostList({ initialPosts, session }: UserPostListProp
                 setPosts(data.posts)
             }
         } catch (error) {
-            console.error('Error fetching user posts:', error)
+            console.error('Error refreshing posts:', error)
         }
     }
 
-    if (posts.length === 0) {
+    if (!posts.length) {
         return (
-            <div className="text-center mt-8 text-slate-500 dark:text-slate-400">
-                No posts yet.
+            <div className="text-center py-10">
+                <p className="text-gray-500">You haven't posted anything yet.</p>
             </div>
         )
     }
@@ -40,7 +39,7 @@ export default function UserPostList({ initialPosts, session }: UserPostListProp
                     key={post.id}
                     post={post}
                     session={session}
-                    onUpdate={handleUpdate}
+                    onUpdate={handlePostUpdate}
                 />
             ))}
         </div>

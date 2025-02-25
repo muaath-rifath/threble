@@ -1,4 +1,6 @@
 import type { Post as PrismaPost } from '@prisma/client'
+import { Post } from '@/components/post/PostCard'
+export type { Post }
 
 export type Visibility = 'public' | 'private' | 'followers'
 
@@ -52,33 +54,4 @@ export interface MediaFile {
     postId: string;
     userId: string;
     createdAt: Date;
-}
-
-export interface Post extends Omit<PrismaPost, 'createdAt' | 'updatedAt'> {
-    createdAt: string;
-    updatedAt: string;
-    visibility: Visibility;
-    author: {
-        id: string;
-        name: string | null;
-        image: string | null;
-        username?: string | null;
-    };
-    reactions: Array<{
-        id: string;
-        type: string;
-        userId: string;
-        createdAt: string;
-        user?: {
-            id: string;
-            name: string | null;
-            image: string | null;
-        };
-    }>;
-    _count: {
-        replies: number;
-    };
-    parent?: Post | null;
-    replies?: Post[];
-    mediaAttachments: string[];
 }
