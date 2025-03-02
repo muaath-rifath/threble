@@ -2,7 +2,7 @@ import { NextRequest } from 'next/server';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/app/api/auth/[...nextauth]/options';
 import { getStorageClients } from '@/lib/azure-storage';
-import { BlobSASPermissions, SASProtocol, generateBlobSASQueryParameters } from '@azure/storage-blob';
+import { BlobDownloadResponseParsed } from '@azure/storage-blob';
 import prisma from '@/lib/prisma';
 
 // Check access permission for the requested blob
@@ -70,7 +70,7 @@ export async function GET(
             return new Response('Storage configuration not available', { status: 503 });
         }
 
-        const { containerClient, sharedKeyCredential, containerName } = storageClients;
+        const { containerClient } = storageClients;
         const blobPath = params.path.join('/');
         const blockBlobClient = containerClient.getBlockBlobClient(blobPath);
 
@@ -87,37 +87,26 @@ export async function GET(
                 return new Response('Forbidden', { status: 403 });
             }
 
-            // Get blob properties for content type
+            // Get blob properties
             const properties = await blockBlobClient.getProperties();
             
-            // Generate SAS token with short expiry
-            const startsOn = new Date();
-            const expiresOn = new Date(startsOn);
-            expiresOn.setMinutes(startsOn.getMinutes() + 5); // 5 minutes expiry
-
-            const sasToken = generateBlobSASQueryParameters({
-                containerName,
-                blobName: blobPath,
-                permissions: BlobSASPermissions.parse("r"), // Read-only permission
-                startsOn,
-                expiresOn,
-                protocol: SASProtocol.Https
-            }, sharedKeyCredential).toString();
-
-            // Create URL with SAS token
-            const blobUrl = `${blockBlobClient.url}?${sasToken}`;
+            // Download the blob content
+            const response = await blockBlobClient.downloadToBuffer();
+            
+            if (!response) {
+                return new Response('Error reading file', { status: 500 });
+            }
 
             // Set cache control based on content type
             const cacheControl = params.path[2] === 'profile' 
                 ? 'public, max-age=3600' // Cache profile pictures for 1 hour
                 : 'private, no-cache';    // No cache for other media
 
-            // Return redirect response with proper headers
-            return new Response(null, {
-                status: 302,
+            // Return the blob content with appropriate headers
+            return new Response(response, {
                 headers: new Headers({
-                    'Location': blobUrl,
                     'Content-Type': properties.contentType || 'application/octet-stream',
+                    'Content-Length': properties.contentLength?.toString() || '0',
                     'Cache-Control': cacheControl,
                     'Access-Control-Allow-Origin': req.headers.get('origin') || '*',
                     'Access-Control-Allow-Methods': 'GET',
