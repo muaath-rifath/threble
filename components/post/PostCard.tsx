@@ -466,14 +466,18 @@ export default function PostCard({ post, session, onUpdate, isReply = false, sho
                         <Button
                             variant="ghost"
                             onClick={handleLike}
-                            className={`post-action-button ${
-                                post.reactions.some(r => r.userId === session.user.id && r.type === 'LIKE') 
-                                    ? 'post-action-button-active' 
-                                    : ''
+                            className={`post-action-button flex items-center space-x-2 ${
+                                post.reactions.some(r => r.userId === session?.user?.id && r.type === 'LIKE') 
+                                    ? 'text-blue-600 hover:text-blue-700' 
+                                    : 'text-slate-600 hover:text-slate-700'
                             }`}
                         >
-                            <ThumbsUp className="h-5 w-5" />
-                            <span className="ml-2">
+                            <ThumbsUp className={`h-5 w-5 ${
+                                post.reactions.some(r => r.userId === session?.user?.id && r.type === 'LIKE') 
+                                    ? 'fill-current' 
+                                    : ''
+                            }`} />
+                            <span>
                                 {post._count.reactions || post.reactions.filter(r => r.type === 'LIKE').length}
                             </span>
                         </Button>
