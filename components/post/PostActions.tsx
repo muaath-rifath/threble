@@ -109,8 +109,8 @@ export default function PostActions({
             onUpdate()
             router.refresh()
 
-            // If we're on the post detail page, redirect to home
-            if (window.location.pathname === `/post/${post.id}`) {
+            // If we're on the thread detail page, redirect to home
+            if (window.location.pathname === `/thread/${post.id}`) {
                 router.push('/')
             }
         } catch (error: any) {

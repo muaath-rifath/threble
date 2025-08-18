@@ -66,22 +66,31 @@ export async function setupContainerCORS(): Promise<void> {
     }
 }
 
-export async function uploadFileToBlobStorage(file: File, userId: string): Promise<string> {
+export async function uploadFileToBlobStorage(file: File, userId: string, type?: 'profile' | 'cover' | 'post'): Promise<string> {
     const clients = getStorageClients();
     if (!clients) throw new Error('Storage not initialized');
 
     try {
-        console.log('Starting file upload:', { fileName: file.name, fileSize: file.size, userId });
+        console.log('Starting file upload:', { fileName: file.name, fileSize: file.size, userId, type });
 
         // Generate a unique filename
         const extension = file.name.split('.').pop() || '';
         const uniqueId = Math.random().toString(36).substring(2);
         
-        // Determine if this is a profile picture upload based on the file metadata or context
-        const isProfilePicture = file.name.toLowerCase().includes('profile');
-        const blobName = isProfilePicture 
-            ? `users/${userId}/profile/${uniqueId}.${extension}`
-            : `users/${userId}/${uniqueId}.${extension}`;
+        // Determine blob path based on type
+        let blobName: string;
+        let isProfilePicture = false;
+        
+        if (type === 'profile') {
+            blobName = `users/${userId}/profile/${uniqueId}.${extension}`;
+            isProfilePicture = true;
+        } else if (type === 'cover') {
+            blobName = `users/${userId}/cover/${uniqueId}.${extension}`;
+            isProfilePicture = true; // Cover images should also be publicly accessible
+        } else {
+            // Default to general user files
+            blobName = `users/${userId}/${uniqueId}.${extension}`;
+        }
 
         const blockBlobClient = clients.containerClient.getBlockBlobClient(blobName);
 
@@ -109,6 +118,7 @@ export async function uploadFileToBlobStorage(file: File, userId: string): Promi
             userId,
             originalName: file.name,
             contentType: file.type,
+            uploadType: type || 'general',
             isProfilePicture: isProfilePicture.toString()
         });
 

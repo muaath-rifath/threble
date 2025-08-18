@@ -18,6 +18,7 @@ export async function GET(req: NextRequest) {
   try {
     const posts = await prisma.post.findMany({
       where: {
+        parentId: null, // Only top-level posts, no replies
         OR: [
           { authorId: session.user.id },
           {
@@ -36,20 +37,8 @@ export async function GET(req: NextRequest) {
           select: { name: true, image: true },
         },
         reactions: true,
-        comments: {
-          include: {
-            author: { select: { name: true, image: true } },
-            reactions: true,
-            replies: {
-              include: {
-                author: { select: { name: true, image: true } },
-                reactions: true,
-              },
-            },
-          },
-        },
         _count: {
-          select: { comments: true },
+          select: { replies: true },
         },
       },
       take: limit + 1,

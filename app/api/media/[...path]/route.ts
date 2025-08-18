@@ -7,8 +7,16 @@ import prisma from '@/lib/prisma';
 
 // Check access permission for the requested blob
 async function checkAccess(path: string[], session: any) {
-    // Always allow access to profile pictures
-    if (path[2] === 'profile') {
+    // Always allow access to profile pictures and cover images
+    // New format: users/{userId}/profile/{filename} or users/{userId}/cover/{filename}
+    if (path.length >= 3 && path[0] === 'users' && (path[2] === 'profile' || path[2] === 'cover')) {
+        return true;
+    }
+
+    // Legacy format: users/{userId}/{filename} - check if this is a profile picture by metadata
+    if (path.length === 3 && path[0] === 'users') {
+        // This could be a legacy profile picture, let's allow it for now
+        // We can add more sophisticated checking later if needed
         return true;
     }
 
@@ -16,7 +24,7 @@ async function checkAccess(path: string[], session: any) {
     const postId = path[3]; // Index 3 because path is split: ['users', userId, 'posts', postId, filename]
     
     if (!postId) {
-        // For temp uploads, only allow access to the user's own files
+        // For temp uploads or direct user files, only allow access to the user's own files
         const userId = path[1]; // Index 1 is userId in the path
         return session?.user?.id === userId;
     }

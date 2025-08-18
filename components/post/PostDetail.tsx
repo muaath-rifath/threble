@@ -270,7 +270,7 @@ function PostCard({ post, session, onUpdate, isReply = false }: PostCardProps) {
             await navigator.share({
                 title: 'Share Post',
                 text: post.content,
-                url: `${window.location.origin}/post/${post.id}`
+                url: `${window.location.origin}/thread/${post.id}`
             });
         } catch (error) {
             if ((error as Error).name !== 'AbortError') {
@@ -360,7 +360,7 @@ function PostCard({ post, session, onUpdate, isReply = false }: PostCardProps) {
                     <div className="mb-4 italic text-sm text-slate-600 dark:text-slate-400">
                         Replied to{' '}
                         <button
-                            onClick={() => router.push(`/post/${post.parentId}`)}
+                            onClick={() => router.push(`/thread/${post.parentId}`)}
                             className="font-medium text-blue-600 dark:text-blue-400 hover:underline"
                         >
                             @{post.parent.author.name}
@@ -839,7 +839,7 @@ export default function PostDetail({ initialPost, session }: PostDetailProps) {
             await navigator.share({
                 title: 'Share Post',
                 text: targetPost.content,
-                url: `${window.location.origin}/post/${postId}`
+                url: `${window.location.origin}/thread/${postId}`
             });
         } catch (error) {
             if ((error as Error).name !== 'AbortError') {

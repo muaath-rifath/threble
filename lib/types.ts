@@ -13,6 +13,7 @@ export interface BasePost extends Omit<PrismaPost, 'createdAt'> {
 export interface User {
     id: string;
     name: string | null;
+    username?: string | null;
     image: string | null;
 }
 
@@ -22,7 +23,6 @@ export interface Reaction {
     userId: string;
     postId: string;
     createdAt: string;
-    commentId: string | null;
 }
 
 // Extended post interface for feed and detail views
@@ -31,16 +31,12 @@ export interface ExtendedPost {
     content: string;
     authorId: string;
     createdAt: string;
+    updatedAt: string;
     mediaAttachments: string[];
     author: User;
     reactions: Reaction[];
     parentId: string | null;
-    parent: {
-        id: string;
-        authorId: string;
-        author: User;
-        createdAt: string;
-    } | null;
+    parent: ExtendedPost | null;
     replies: ExtendedPost[];
     _count: {
         replies: number;

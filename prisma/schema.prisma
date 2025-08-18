@@ -21,7 +21,6 @@ model User {
   preferences        Json?             @default("{}")
   settings           Json?             @default("{}")
   activities         Activity[]
-  comments           Comment[]
   createdCommunities Community[]       @relation("CommunityCreator")
   communities        CommunityMember[]
   connectedTo        Connection[]      @relation("Connections")
@@ -102,30 +101,11 @@ model Post {
   community        Community? @relation(fields: [communityId], references: [id])
   parent           Post?      @relation("PostReplies", fields: [parentId], references: [id], onDelete: Cascade)
   replies          Post[]     @relation("PostReplies")
-  comments         Comment[]
   reactions        Reaction[]
 
   @@index([authorId, createdAt])
   @@index([communityId, createdAt])
-}
-
-model Comment {
-  id        String     @id @default(cuid())
-  content   String
-  authorId  String
-  postId    String
-  parentId  String?
-  createdAt DateTime   @default(now())
-  updatedAt DateTime   @updatedAt
-  author    User       @relation(fields: [authorId], references: [id], onDelete: Cascade)
-  parent    Comment?   @relation("CommentReplies", fields: [parentId], references: [id])
-  replies   Comment[]  @relation("CommentReplies")
-  post      Post       @relation(fields: [postId], references: [id], onDelete: Cascade)
-  reactions Reaction[]
-
-  @@index([authorId, createdAt])
-  @@index([postId, createdAt])
-  @@index([parentId])
+  @@index([parentId, createdAt])
 }
 
 model Community {
@@ -163,18 +143,14 @@ model Reaction {
   type      String   // e.g., "LIKE", "LOVE", etc.
   userId    String
   postId    String?
-  commentId String?
   createdAt DateTime @default(now())
 
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   post      Post?    @relation(fields: [postId], references: [id], onDelete: Cascade)
-  comment   Comment? @relation(fields: [commentId], references: [id], onDelete: Cascade)
 
   @@unique([userId, postId, type])
-  @@unique([userId, commentId, type])
   @@index([userId, type])
   @@index([postId, type])
-  @@index([commentId, type])
 }
 
 model Activity {

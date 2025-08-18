@@ -13,6 +13,7 @@ import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuIte
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Textarea } from "@/components/ui/textarea"
+import { DebugAvatar } from "@/components/DebugAvatar"
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog"
 
 export interface Post {
@@ -24,6 +25,7 @@ export interface Post {
         image: string | null
     }
     createdAt: string
+    updatedAt: string
     reactions: Array<{
         id: string
         type: string
@@ -71,6 +73,7 @@ export default function PostCard({ post, session, onUpdate, isReply = false, sho
 
     const isAuthor = session?.user?.id === post.author.id
     const isLiked = post.reactions.some(r => r.userId === session?.user?.id && r.type === 'LIKE')
+    const isEdited = new Date(post.updatedAt) > new Date(post.createdAt)
 
     const handleLike = async () => {
         if (!session?.user?.id || isUpdating) return
@@ -150,7 +153,7 @@ export default function PostCard({ post, session, onUpdate, isReply = false, sho
             await navigator.share({
                 title: 'Share Post',
                 text: post.content,
-                url: `${window.location.origin}/post/${post.id}`
+                url: `${window.location.origin}/thread/${post.id}`
             })
         } catch (error) {
             if ((error as Error).name !== 'AbortError') {
@@ -165,7 +168,7 @@ export default function PostCard({ post, session, onUpdate, isReply = false, sho
 
     const navigateToPost = () => {
         if (!isReply) {
-            router.push(`/post/${post.id}`)
+            router.push(`/thread/${post.id}`)
         }
     }
 
@@ -279,8 +282,16 @@ export default function PostCard({ post, session, onUpdate, isReply = false, sho
                             <AvatarImage src={post.author.image || undefined} alt={post.author.name || 'User'} />
                             <AvatarFallback className="bg-primary-500/20 text-primary-500">{post.author.name?.[0]}</AvatarFallback>
                         </Avatar>
+                        <DebugAvatar src={post.author.image || undefined} alt={post.author.name || 'User'} fallback={post.author.name?.[0]} />
                         <div className="flex-1 space-y-1">
-                            <p className="text-sm font-medium cursor-pointer text-black dark:text-white hover:text-primary-500 transition-colors" onClick={() => router.push(`/profile/${post.author.id}`)}>{post.author.name}</p>
+                            <div className="flex items-center gap-2">
+                                <p className="text-sm font-medium cursor-pointer text-black dark:text-white hover:text-primary-500 transition-colors" onClick={() => router.push(`/profile/${post.author.id}`)}>{post.author.name}</p>
+                                {isEdited && (
+                                    <span className="text-xs text-gray-500 bg-gray-100 dark:bg-gray-800 px-2 py-1 rounded-full">
+                                        edited
+                                    </span>
+                                )}
+                            </div>
                             <p className="text-xs text-black/60 dark:text-white/60">{format(new Date(post.createdAt), 'MMM d, yyyy')}</p>
                         </div>
                     </div>
@@ -430,7 +441,7 @@ export default function PostCard({ post, session, onUpdate, isReply = false, sho
                                     <Button
                                         variant="link"
                                         className="p-0 h-auto text-primary-500 hover:text-primary-600"
-                                        onClick={() => router.push(`/post/${post.id}`)}
+                                        onClick={() => router.push(`/thread/${post.id}`)}
                                     >
                                         Show more
                                     </Button>
@@ -539,7 +550,7 @@ export default function PostCard({ post, session, onUpdate, isReply = false, sho
                 <Button
                     variant="ghost"
                     size="sm"
-                    onClick={() => router.push(`/post/${post.id}`)}
+                    onClick={() => router.push(`/thread/${post.id}`)}
                     className="glass-button flex items-center space-x-2 text-black/60 dark:text-white/60"
                 >
                     <MessageSquare className="h-4 w-4" />

@@ -20,28 +20,25 @@ import { Camera, Pencil } from 'lucide-react'
 import ReactCrop, { Crop } from 'react-image-crop'
 import 'react-image-crop/dist/ReactCrop.css'
 import { uploadFileToBlobStorage } from '@/lib/azure-storage'
+import { profileUpdateSchema, type ProfileUpdateInput } from '@/lib/validations/username'
 
 interface ProfileData {
   name?: string;
   email?: string;
+  username?: string;
   image?: string;
   coverImage?: string;
   profile?: {
     bio?: string;
+    location?: string;
+    website?: string;
+    birthDate?: string;
     image?: string;
     coverImage?: string;
   };
 }
 
-const formSchema = z.object({
-    name: z.string().min(2, {
-        message: "Name must be at least 2 characters.",
-    }),
-    email: z.string().email({
-        message: "Please enter a valid email.",
-    }),
-    bio: z.string().max(160).optional(),
-})
+const formSchema = profileUpdateSchema
 
 export default function ProfilePage() {
   const { data: session, status } = useSession()
@@ -61,12 +58,16 @@ export default function ProfilePage() {
   const [croppedProfileImage, setCroppedProfileImage] = useState<File | null>(null)
     const [croppedCoverImage, setCroppedCoverImage] = useState<File | null>(null)
 
-  const form = useForm<z.infer<typeof formSchema>>({
+  const form = useForm<ProfileUpdateInput>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       name: '',
       email: '',
+      username: '',
       bio: '',
+      location: '',
+      website: '',
+      birthDate: '',
     },
   })
 
@@ -88,7 +89,11 @@ export default function ProfilePage() {
                  form.reset({
                     name: data.name || '',
                     email: data.email || '',
+                    username: data.username || '',
                     bio: data.profile?.bio || '',
+                    location: data.profile?.location || '',
+                    website: data.profile?.website || '',
+                    birthDate: data.profile?.birthDate ? new Date(data.profile.birthDate).toISOString().split('T')[0] : '',
                 })
             }
         } catch (error) {
@@ -154,15 +159,28 @@ export default function ProfilePage() {
       })
     }
 
-    const onSubmit = async (values: z.infer<typeof formSchema>) => {
+    const onSubmit = async (values: ProfileUpdateInput) => {
          try {
         const formData = new FormData()
 
             formData.append('name', values.name);
             formData.append('email', values.email);
+            formData.append('username', values.username.toLowerCase());
 
             if(values.bio){
                 formData.append('bio', values.bio)
+            }
+
+            if(values.location){
+                formData.append('location', values.location)
+            }
+
+            if(values.website){
+                formData.append('website', values.website)
+            }
+
+            if(values.birthDate){
+                formData.append('birthDate', values.birthDate)
             }
 
 
@@ -185,13 +203,14 @@ export default function ProfilePage() {
                 })
                 fetchProfile();
             } else {
-                throw new Error('Failed to update profile')
+                const errorData = await response.json()
+                throw new Error(errorData.error || 'Failed to update profile')
             }
         } catch (error) {
             console.error('Error updating profile:', error)
             toast({
                 title: "Error",
-                description: "Failed to update profile. Please try again.",
+                description: error instanceof Error ? error.message : "Failed to update profile. Please try again.",
                 variant: "destructive",
             })
         }
@@ -353,6 +372,30 @@ export default function ProfilePage() {
                   />
                   <FormField
                     control={form.control}
+                    name="username"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Username</FormLabel>
+                        <FormControl>
+                          <Input 
+                            {...field} 
+                            placeholder="Enter your username"
+                            className="lowercase"
+                            onChange={(e) => {
+                              e.target.value = e.target.value.toLowerCase();
+                              field.onChange(e);
+                            }}
+                          />
+                        </FormControl>
+                        <FormDescription>
+                          Only lowercase letters, numbers, and underscores allowed. No spaces.
+                        </FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
                     name="email"
                     render={({ field }) => (
                       <FormItem>
@@ -371,11 +414,50 @@ export default function ProfilePage() {
                       <FormItem>
                         <FormLabel>Bio</FormLabel>
                         <FormControl>
-                          <Textarea {...field} />
+                          <Textarea {...field} maxLength={160} />
                         </FormControl>
                         <FormDescription>
                           Write a short bio about yourself. Max 160 characters.
                         </FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="location"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Location</FormLabel>
+                        <FormControl>
+                          <Input {...field} placeholder="Where are you from?" />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="website"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Website</FormLabel>
+                        <FormControl>
+                          <Input {...field} placeholder="https://yourwebsite.com" />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="birthDate"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Birth Date</FormLabel>
+                        <FormControl>
+                          <Input {...field} type="date" />
+                        </FormControl>
                         <FormMessage />
                       </FormItem>
                     )}

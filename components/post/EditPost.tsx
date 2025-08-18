@@ -25,7 +25,7 @@ export default function EditPost({ post, session }: EditPostProps) {
     const fileInputRef = useRef<HTMLInputElement>(null)
 
     if (session?.user?.id !== post.author.id) {
-        router.push(`/post/${post.id}`)
+        router.push(`/thread/${post.id}`)
         return null
     }
 
@@ -90,11 +90,11 @@ export default function EditPost({ post, session }: EditPostProps) {
                 throw new Error(error.error || 'Failed to update post')
             }
 
-            toast({ 
-                title: "Success", 
+            toast({
+                title: "Success",
                 description: "Post updated successfully." 
             })
-            router.push(`/post/${post.id}`)
+            router.push(`/thread/${post.id}`)
             router.refresh()
         } catch (error: any) {
             toast({
@@ -196,7 +196,7 @@ export default function EditPost({ post, session }: EditPostProps) {
                     <div className="flex space-x-2">
                         <Button
                             variant="outline"
-                            onClick={() => router.push(`/post/${post.id}`)}
+                            onClick={() => router.push(`/thread/${post.id}`)}
                         >
                             Cancel
                         </Button>

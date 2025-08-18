@@ -14,6 +14,7 @@ export default async function Home() {
 
     const posts = await prisma.post.findMany({
         where: {
+            parentId: null, // Only top-level posts, no replies
             OR: [
                 { authorId: session.user.id },
                 {

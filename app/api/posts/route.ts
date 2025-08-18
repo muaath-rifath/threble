@@ -14,6 +14,19 @@ export async function GET(req: NextRequest) {
         return NextResponse.json({ error: 'Not authenticated' }, { status: 401 })
     }
 
+    // Check if user exists in database
+    const user = await prisma.user.findUnique({
+        where: { id: session.user.id }
+    });
+
+    if (!user) {
+        return NextResponse.json({ 
+            error: 'User not found. Please sign out and sign back in.',
+            posts: [],
+            nextCursor: null
+        }, { status: 200 });
+    }
+
     const { searchParams } = new URL(req.url)
     const limit = parseInt(searchParams.get('limit') || '20')
     const cursor = searchParams.get('cursor')
@@ -23,6 +36,7 @@ export async function GET(req: NextRequest) {
         
         const posts = await prisma.post.findMany({
             where: {
+                parentId: null, // Only top-level posts, no replies
                 OR: [
                     { authorId: session.user.id },
                     {
@@ -121,6 +135,17 @@ export async function POST(req: NextRequest) {
         const session = await getServerSession(authOptions);
         if (!session) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+        }
+
+        // Check if user exists in database
+        const user = await prisma.user.findUnique({
+            where: { id: session.user.id }
+        });
+
+        if (!user) {
+            return NextResponse.json({ 
+                error: 'User not found. Please sign out and sign back in.' 
+            }, { status: 404 });
         }
 
         const formData = await req.formData();

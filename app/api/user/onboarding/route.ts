@@ -3,15 +3,7 @@ import { getServerSession } from 'next-auth/next'
 import { authOptions } from '@/app/api/auth/[...nextauth]/options'
 import { uploadFileToBlobStorage } from '@/lib/azure-storage'
 import prisma from '@/lib/prisma'
-import { z } from 'zod'
-
-const onboardingSchema = z.object({
-    username: z.string().min(3, 'Username must be at least 3 characters'),
-    bio: z.string().max(160).optional(),
-    location: z.string().max(100).optional(),
-    website: z.string().url().optional(),
-    birthDate: z.string().optional(),
-})
+import { onboardingSchema } from '@/lib/validations/username'
 
 export async function POST(req: NextRequest) {
     try {
@@ -43,7 +35,7 @@ export async function POST(req: NextRequest) {
                     type: imageFile.type,
                     name: imageFile.name
                 });
-                imageUrl = await uploadFileToBlobStorage(imageFile, session.user.id)
+                imageUrl = await uploadFileToBlobStorage(imageFile, session.user.id, 'profile')
                 console.log('Image uploaded successfully:', imageUrl)
             } catch (error) {
                 console.error('Image upload error:', error)
@@ -56,11 +48,54 @@ export async function POST(req: NextRequest) {
         }
 
         const username = formData.get('username') as string
+        const bio = formData.get('bio') as string
+        const location = formData.get('location') as string
+        const website = formData.get('website') as string
+        const birthDate = formData.get('birthDate') as string
+
+        // Validate the form data
+        const validation = onboardingSchema.safeParse({
+            username,
+            bio: bio || undefined,
+            location: location || undefined,
+            website: website || undefined,
+            birthDate
+        })
+
+        if (!validation.success) {
+            return NextResponse.json({ 
+                success: false,
+                error: validation.error.issues[0].message
+            }, { status: 400 })
+        }
+
         if (!username) {
             return NextResponse.json({ 
                 success: false,
                 error: 'Username is required' 
             }, { status: 400 })
+        }
+
+        if (!birthDate) {
+            return NextResponse.json({ 
+                success: false,
+                error: 'Birth date is required' 
+            }, { status: 400 })
+        }
+
+        // Check if username is available
+        const existingUser = await prisma.user.findUnique({
+            where: { 
+                username: username.toLowerCase() 
+            },
+            select: { id: true }
+        })
+
+        if (existingUser) {
+            return NextResponse.json({ 
+                success: false,
+                error: 'Username is already taken' 
+            }, { status: 409 })
         }
 
         try {
@@ -70,14 +105,14 @@ export async function POST(req: NextRequest) {
                     id: session.user.id 
                 },
                 data: {
-                    username,
+                    username: username.toLowerCase(),
                     ...(imageUrl && { image: imageUrl }),
                     profile: {
                         create: {
-                            bio: (formData.get('bio') as string) || null,
-                            location: (formData.get('location') as string) || null,
-                            website: (formData.get('website') as string) || null,
-                            birthDate: formData.get('birthDate') ? new Date(formData.get('birthDate') as string) : null
+                            bio: bio || null,
+                            location: location || null,
+                            website: website || null,
+                            birthDate: new Date(birthDate)
                         }
                     }
                 },

@@ -5,32 +5,13 @@ import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { z } from 'zod'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
-import { FileUpload } from '@/components/ui/file-upload' // Importing the file upload component
-
-
-const onboardingSchema = z.object({
-  username: z.string().min(3, 'Username must be at least 3 characters'),
-  bio: z.string().max(160, 'Bio must be 160 characters or less').optional(),
-  location: z.string().max(100, 'Location must be 100 characters or less').optional(),
-  website: z.string().url('Invalid URL').optional(),
-  birthDate: z.string()
-    .optional()
-    .refine((date) => {
-      if (!date) return true;
-      const parsedDate = new Date(date);
-      return !isNaN(parsedDate.getTime()) && parsedDate < new Date();
-    }, {
-      message: 'Birth date cannot be in the future',
-    }),
-})
-
-type OnboardingInput = z.infer<typeof onboardingSchema>
+import { FileUpload } from '@/components/ui/file-upload'
+import { onboardingSchema, type OnboardingInput } from '@/lib/validations/username'
 
 export default function OnboardingPage() {
   const [error, setError] = useState<string | null>(null)
@@ -62,9 +43,16 @@ export default function OnboardingPage() {
     try {
       setIsSubmitting(true)
       setError(null)
+
+      // Check if username is available
+      const usernameCheck = await fetch(`/api/user/check-username?username=${encodeURIComponent(data.username.toLowerCase())}`)
+      if (!usernameCheck.ok) {
+        const errorData = await usernameCheck.json()
+        throw new Error(errorData.error || 'Username is not available')
+      }
       
       const formData = new FormData()
-      formData.append('username', data.username.trim())
+      formData.append('username', data.username.toLowerCase().trim())
       if (data.bio) formData.append('bio', data.bio.trim())
       if (data.location) formData.append('location', data.location.trim())
       if (data.website) formData.append('website', data.website.trim())
@@ -124,44 +112,80 @@ export default function OnboardingPage() {
         <form onSubmit={handleSubmit(onSubmit)}>
           <div className="grid gap-4">
             <div className="grid gap-2">
-              <Label htmlFor="username">Username</Label>
-              <Input id="username" {...register('username')} />
+              <Label htmlFor="username">
+                Username <span className="text-red-500">*</span>
+              </Label>
+              <Input 
+                id="username" 
+                {...register('username')} 
+                placeholder="Enter your username"
+                className="lowercase"
+                onChange={(e) => {
+                  e.target.value = e.target.value.toLowerCase();
+                  register('username').onChange(e);
+                }}
+              />
               {errors.username && (
                 <p className="text-sm text-red-500">{errors.username.message}</p>
               )}
+              <p className="text-xs text-gray-500">
+                Only lowercase letters, numbers, and underscores allowed. No spaces.
+              </p>
             </div>
+            
             <div className="grid gap-2">
-              <Label htmlFor="bio">Bio</Label>
-              <Textarea id="bio" {...register('bio')} />
-              {errors.bio && (
-                <p className="text-sm text-red-500">{errors.bio.message}</p>
-              )}
-            </div>
-            <div className="grid gap-2">
-              <Label htmlFor="profile">Profile Image</Label>
-              <FileUpload onChange={(files) => setProfileFile(files)} />
-            </div>
-            <div className="grid gap-2">
-              <Label htmlFor="location">Location</Label>
-              <Input id="location" {...register('location')} />
-              {errors.location && (
-                <p className="text-sm text-red-500">{errors.location.message}</p>
-              )}
-            </div>
-            <div className="grid gap-2">
-              <Label htmlFor="website">Website</Label>
-              <Input id="website" type="url" {...register('website')} />
-              {errors.website && (
-                <p className="text-sm text-red-500">{errors.website.message}</p>
-              )}
-            </div>
-            <div className="grid gap-2">
-              <Label htmlFor="birthDate">Birth Date</Label>
+              <Label htmlFor="birthDate">
+                Birth Date <span className="text-red-500">*</span>
+              </Label>
               <Input id="birthDate" type="date" {...register('birthDate')} />
               {errors.birthDate && (
                 <p className="text-sm text-red-500">{errors.birthDate.message}</p>
               )}
             </div>
+
+            <div className="grid gap-2">
+              <Label htmlFor="bio">Bio</Label>
+              <Textarea 
+                id="bio" 
+                {...register('bio')} 
+                placeholder="Tell us about yourself (optional)"
+                maxLength={160}
+              />
+              {errors.bio && (
+                <p className="text-sm text-red-500">{errors.bio.message}</p>
+              )}
+            </div>
+            
+            <div className="grid gap-2">
+              <Label htmlFor="profile">Profile Image</Label>
+              <FileUpload onChange={(files) => setProfileFile(files)} />
+            </div>
+            
+            <div className="grid gap-2">
+              <Label htmlFor="location">Location</Label>
+              <Input 
+                id="location" 
+                {...register('location')} 
+                placeholder="Where are you from? (optional)"
+              />
+              {errors.location && (
+                <p className="text-sm text-red-500">{errors.location.message}</p>
+              )}
+            </div>
+            
+            <div className="grid gap-2">
+              <Label htmlFor="website">Website</Label>
+              <Input 
+                id="website" 
+                type="url" 
+                {...register('website')} 
+                placeholder="https://yourwebsite.com (optional)"
+              />
+              {errors.website && (
+                <p className="text-sm text-red-500">{errors.website.message}</p>
+              )}
+            </div>
+            
             <Button type="submit" disabled={isSubmitting} className="bg-primary-500">
               {isSubmitting ? 'Saving...' : 'Complete Profile'}
             </Button>
