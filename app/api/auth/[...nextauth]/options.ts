@@ -184,4 +184,23 @@ export const authOptions: NextAuthOptions = {
 
   // Enable debug mode in development
   debug: process.env.NODE_ENV === "development",
+
+  // Add event handlers for better debugging
+  events: {
+    async signIn({ user, account, profile }) {
+      console.log("Sign in event:", { user, account, profile });
+    },
+    async signOut({ session, token }) {
+      console.log("Sign out event:", { session, token });
+    },
+    async createUser({ user }) {
+      console.log("Create user event:", user);
+    },
+    async linkAccount({ user, account, profile }) {
+      console.log("Link account event:", { user, account, profile });
+    },
+    async session({ session, token }) {
+      console.log("Session event:", { session, token });
+    },
+  },
 }

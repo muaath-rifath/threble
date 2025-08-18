@@ -271,17 +271,17 @@ export default function PostCard({ post, session, onUpdate, isReply = false, sho
     }, [showLikes, post.id])
 
     return (
-        <Card className={`${isReply ? 'mt-4' : 'mb-8'} border-none bg-white dark:bg-slate-900 shadow-sm`}>
+        <Card className={`${isReply ? 'mt-4' : 'mb-8'} glass-card shadow-lg hover:shadow-xl transition-all duration-300`}>
             <CardHeader className="pb-3">
                 <div className="flex items-center justify-between">
                     <div className="flex items-center space-x-4">
-                        <Avatar className="h-10 w-10 cursor-pointer" onClick={() => router.push(`/profile/${post.author.id}`)}>
+                        <Avatar className="h-10 w-10 cursor-pointer border-2 border-glass-border dark:border-glass-border-dark" onClick={() => router.push(`/profile/${post.author.id}`)}>
                             <AvatarImage src={post.author.image || undefined} alt={post.author.name || 'User'} />
-                            <AvatarFallback>{post.author.name?.[0]}</AvatarFallback>
+                            <AvatarFallback className="bg-primary-500/20 text-primary-500">{post.author.name?.[0]}</AvatarFallback>
                         </Avatar>
                         <div className="flex-1 space-y-1">
-                            <p className="text-sm font-medium cursor-pointer" onClick={() => router.push(`/profile/${post.author.id}`)}>{post.author.name}</p>
-                            <p className="text-xs text-gray-500">{format(new Date(post.createdAt), 'MMM d, yyyy')}</p>
+                            <p className="text-sm font-medium cursor-pointer text-black dark:text-white hover:text-primary-500 transition-colors" onClick={() => router.push(`/profile/${post.author.id}`)}>{post.author.name}</p>
+                            <p className="text-xs text-black/60 dark:text-white/60">{format(new Date(post.createdAt), 'MMM d, yyyy')}</p>
                         </div>
                     </div>
                     {isAuthor && (
@@ -290,12 +290,12 @@ export default function PostCard({ post, session, onUpdate, isReply = false, sho
                                 <Button 
                                     variant="ghost" 
                                     size="icon"
-                                    className="hover:bg-slate-100 dark:hover:bg-slate-800 h-10 w-10"
+                                    className="glass-button h-10 w-10"
                                 >
-                                    <MoreHorizontal className="h-5 w-5 text-slate-500" />
+                                    <MoreHorizontal className="h-5 w-5 text-black/60 dark:text-white/60" />
                                 </Button>
                             </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end" className="w-56">
+                            <DropdownMenuContent align="end" className="w-56 glass-card">
                                 <DropdownMenuItem
                                     onClick={() => setIsEditing(true)}
                                     className="action-dropdown-item"
@@ -321,7 +321,7 @@ export default function PostCard({ post, session, onUpdate, isReply = false, sho
                         <Textarea
                             value={editContent}
                             onChange={(e) => setEditContent(e.target.value)}
-                            className="min-h-[100px] mb-4"
+                            className="min-h-[100px] mb-4 glass-input focus-ring"
                         />
                         {(keepMediaUrls.length > 0 || editMediaFiles.length > 0) && (
                             <div className="grid grid-cols-2 gap-2">
@@ -343,7 +343,7 @@ export default function PostCard({ post, session, onUpdate, isReply = false, sho
                                         <Button
                                             variant="destructive"
                                             size="icon"
-                                            className="absolute top-2 right-2 h-6 w-6"
+                                            className="absolute top-2 right-2 h-6 w-6 rounded-full"
                                             onClick={() => setKeepMediaUrls(prev => prev.filter(u => u !== url))}
                                         >
                                             <X className="h-4 w-4" />
@@ -407,12 +407,13 @@ export default function PostCard({ post, session, onUpdate, isReply = false, sho
                                         setKeepMediaUrls(post.mediaAttachments || [])
                                         setEditMediaFiles([])
                                     }}
+                                    className="glass-button"
                                 >
                                     Cancel
                                 </Button>
                                 <Button
                                     onClick={handleEdit}
-                                    className="bg-blue-500 hover:bg-blue-600 text-white"
+                                    className="primary-button"
                                 >
                                     Save Changes
                                 </Button>
@@ -421,14 +422,14 @@ export default function PostCard({ post, session, onUpdate, isReply = false, sho
                     </div>
                 ) : (
                     <>
-                        <p className="text-slate-800 dark:text-slate-200">
+                        <p className="text-black dark:text-white">
                             {showFullContent ? post.content : post.content.slice(0, 280)}
                             {!showFullContent && post.content.length > 280 && (
                                 <>
                                     ...{' '}
                                     <Button
                                         variant="link"
-                                        className="p-0 h-auto text-blue-500"
+                                        className="p-0 h-auto text-primary-500 hover:text-primary-600"
                                         onClick={() => router.push(`/post/${post.id}`)}
                                     >
                                         Show more
@@ -444,7 +445,7 @@ export default function PostCard({ post, session, onUpdate, isReply = false, sho
                                             <img
                                                 src={url}
                                                 alt={`Media ${index + 1}`}
-                                                className={`w-full h-full ${post.mediaAttachments?.length === 1 ? 'object-contain' : 'object-cover'} rounded-lg`}
+                                                className={`w-full h-full ${post.mediaAttachments?.length === 1 ? 'object-contain' : 'object-cover'} rounded-2xl`}
                                             />
                                         ) : url.match(/\.(mp4|webm|ogg)$/i) && (
                                             <video
@@ -460,16 +461,16 @@ export default function PostCard({ post, session, onUpdate, isReply = false, sho
                     </>
                 )}
             </CardContent>
-            <CardFooter className="flex justify-between border-t border-slate-100 dark:border-slate-800 mt-4 pt-4">
+            <CardFooter className="flex justify-between border-t border-glass-border dark:border-glass-border-dark mt-4 pt-4">
                 <Sheet>
                     <div className="flex items-center space-x-1">
                         <Button
                             variant="ghost"
                             onClick={handleLike}
-                            className={`post-action-button flex items-center space-x-2 ${
+                            className={`glass-button flex items-center space-x-2 transition-all duration-200 ${
                                 post.reactions.some(r => r.userId === session?.user?.id && r.type === 'LIKE') 
-                                    ? 'text-blue-600 hover:text-blue-700' 
-                                    : 'text-slate-600 hover:text-slate-700'
+                                    ? 'text-primary-500 bg-primary-500/10' 
+                                    : 'text-black/60 dark:text-white/60'
                             }`}
                         >
                             <ThumbsUp className={`h-5 w-5 ${
@@ -486,7 +487,7 @@ export default function PostCard({ post, session, onUpdate, isReply = false, sho
                                 <Button
                                     variant="ghost"
                                     size="sm"
-                                    className="like-trigger-button"
+                                    className="glass-button p-2"
                                     onClick={(e) => {
                                         e.stopPropagation()
                                         if (!isLoadingReactions && reactionUsers.length === 0) {
@@ -501,32 +502,32 @@ export default function PostCard({ post, session, onUpdate, isReply = false, sho
                     </div>
                     <SheetContent 
                         side="bottom" 
-                        className="p-0 h-[85vh] sm:max-w-none rounded-t-[20px]"
+                        className="p-0 h-[85vh] sm:max-w-none rounded-t-[20px] glass-card"
                     >
                         <div className="p-6">
-                            <div className="w-12 h-1.5 bg-slate-300 dark:bg-slate-600 rounded-full mx-auto mb-6" />
+                            <div className="w-12 h-1.5 bg-black/20 dark:bg-white/20 rounded-full mx-auto mb-6" />
                             <SheetHeader>
-                                <SheetTitle>People who liked this</SheetTitle>
+                                <SheetTitle className="text-black dark:text-white">People who liked this</SheetTitle>
                             </SheetHeader>
                             <div className="mt-4 space-y-4 overflow-y-auto max-h-[calc(85vh-120px)]">
                                 {isLoadingReactions ? (
-                                    <div className="text-center py-4 text-sm text-slate-500">
+                                    <div className="text-center py-4 text-sm text-black/60 dark:text-white/60">
                                         Loading...
                                     </div>
                                 ) : reactionUsers.length > 0 ? (
                                     reactionUsers.map((user) => (
                                         <div key={user.id} className="flex items-center space-x-3">
-                                            <Avatar>
+                                            <Avatar className="border-2 border-glass-border dark:border-glass-border-dark">
                                                 <AvatarImage src={user.image || undefined} />
-                                                <AvatarFallback>{user.name?.[0]}</AvatarFallback>
+                                                <AvatarFallback className="bg-primary-500/20 text-primary-500">{user.name?.[0]}</AvatarFallback>
                                             </Avatar>
                                             <div>
-                                                <p className="font-medium text-sm">{user.name}</p>
+                                                <p className="font-medium text-sm text-black dark:text-white">{user.name}</p>
                                             </div>
                                         </div>
                                     ))
                                 ) : (
-                                    <div className="text-center py-4 text-sm text-slate-500">
+                                    <div className="text-center py-4 text-sm text-black/60 dark:text-white/60">
                                         No likes yet
                                     </div>
                                 )}
@@ -539,7 +540,7 @@ export default function PostCard({ post, session, onUpdate, isReply = false, sho
                     variant="ghost"
                     size="sm"
                     onClick={() => router.push(`/post/${post.id}`)}
-                    className="flex items-center space-x-2"
+                    className="glass-button flex items-center space-x-2 text-black/60 dark:text-white/60"
                 >
                     <MessageSquare className="h-4 w-4" />
                     <span>{post._count.replies}</span>
@@ -548,28 +549,28 @@ export default function PostCard({ post, session, onUpdate, isReply = false, sho
                     variant="ghost"
                     size="sm"
                     onClick={handleShare}
-                    className="flex items-center space-x-2"
+                    className="glass-button flex items-center space-x-2 text-black/60 dark:text-white/60"
                 >
                     <Share2 className="h-4 w-4" />
                 </Button>
             </CardFooter>
             <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
-                <AlertDialogContent>
+                <AlertDialogContent className="glass-card">
                     <AlertDialogHeader>
-                        <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-                        <AlertDialogDescription>
+                        <AlertDialogTitle className="text-black dark:text-white">Are you sure?</AlertDialogTitle>
+                        <AlertDialogDescription className="text-black/60 dark:text-white/60">
                             This action cannot be undone. This will permanently delete your post
                             and remove all associated data.
                         </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
-                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogCancel className="glass-button">Cancel</AlertDialogCancel>
                         <AlertDialogAction
                             onClick={() => {
                                 handleDelete()
                                 setIsDeleteDialogOpen(false)
                             }}
-                            className="bg-red-600 text-white hover:bg-red-700"
+                            className="bg-red-500 text-white hover:bg-red-600 rounded-2xl shadow-lg shadow-red-500/25"
                         >
                             Delete
                         </AlertDialogAction>

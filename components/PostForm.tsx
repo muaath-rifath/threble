@@ -100,7 +100,7 @@ export default function PostForm({ onPostCreated }: PostFormProps) {
   }
 
   return (
-    <Card className="border-none bg-white dark:bg-slate-900 shadow-sm">
+    <Card className="glass-card shadow-lg">
       <CardContent className="p-6">
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
@@ -112,7 +112,7 @@ export default function PostForm({ onPostCreated }: PostFormProps) {
                   <FormControl>
                     <Textarea
                       placeholder="What's on your mind?"
-                      className="min-h-[100px] resize-none"
+                      className="min-h-[100px] resize-none glass-input focus-ring"
                       {...field}
                     />
                   </FormControl>
@@ -127,19 +127,19 @@ export default function PostForm({ onPostCreated }: PostFormProps) {
                       <img
                         src={URL.createObjectURL(file)}
                         alt={`Preview ${index}`}
-                        className="rounded-lg w-full h-32 object-cover"
+                        className="rounded-2xl w-full h-32 object-cover"
                       />
                     ) : file.type.startsWith('video/') && (
                       <video
                         src={URL.createObjectURL(file)}
-                        className="rounded-lg w-full h-32 object-cover"
+                        className="rounded-2xl w-full h-32 object-cover"
                         controls
                       />
                     )}
                     <Button
                       variant="destructive"
                       size="icon"
-                      className="absolute top-2 right-2 h-6 w-6"
+                      className="absolute top-2 right-2 h-6 w-6 rounded-full"
                       onClick={() => handleRemoveMedia(index)}
                     >
                       <span className="sr-only">Remove</span>
@@ -155,6 +155,7 @@ export default function PostForm({ onPostCreated }: PostFormProps) {
                   type="button"
                   variant="ghost"
                   onClick={() => handleFileSelect('image/*')}
+                  className="glass-button text-black/60 dark:text-white/60"
                 >
                   <Image className="mr-2 h-4 w-4" />
                   Photo
@@ -163,12 +164,13 @@ export default function PostForm({ onPostCreated }: PostFormProps) {
                   type="button"
                   variant="ghost"
                   onClick={() => handleFileSelect('video/*')}
+                  className="glass-button text-black/60 dark:text-white/60"
                 >
                   <Video className="mr-2 h-4 w-4" />
                   Video
                 </Button>
               </div>
-              <Button type="submit" disabled={isSubmitting}>
+              <Button type="submit" disabled={isSubmitting} className="primary-button">
                 {isSubmitting ? 'Posting...' : 'Post'}
               </Button>
             </div>

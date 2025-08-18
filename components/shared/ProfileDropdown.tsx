@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import { useTheme } from "next-themes";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
-import { useRouter } from "next/navigation";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -12,12 +11,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-} from "@/components/ui/collapsible";
-import { User, Settings, LogOut, Moon, Sun, Monitor, Palette, ChevronRight, ChevronDown } from 'lucide-react';
+import { User, Settings, LogOut, Moon, Sun, Monitor, Palette } from 'lucide-react';
 
 interface ProfileDropdownProps {
   user: {
@@ -25,96 +19,123 @@ interface ProfileDropdownProps {
     email: string;
     image?: string;
   };
+  onProfile: () => void;
   onSettings: () => void;
   onLogout: () => void;
 }
 
 const ProfileDropdown: React.FC<ProfileDropdownProps> = ({
   user,
+  onProfile,
   onSettings,
   onLogout,
 }) => {
   const { theme, setTheme } = useTheme();
-  const [isThemeOpen, setIsThemeOpen] = useState(false);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-  const handleThemeToggle = (e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setIsThemeOpen(!isThemeOpen);
-  };
+
   const handleThemeChange = (newTheme: string) => {
     setTheme(newTheme);
-    setIsThemeOpen(false);
   };
-  const router = useRouter();
-    
- const onProfile = () => {
-       router.push('/profile');
-    };
+
   return (
     <DropdownMenu open={isDropdownOpen} onOpenChange={setIsDropdownOpen}>
       <DropdownMenuTrigger asChild>
-        <Button variant="ghost" className="relative h-8 w-8 rounded-full">
-          <Avatar className="h-8 w-8">
+        <Button variant="ghost" className="relative h-10 w-10 rounded-full glass-button p-0">
+          <Avatar className="h-10 w-10 border-2 border-glass-border dark:border-glass-border-dark">
             <AvatarImage src={user.image} alt={user.name} />
-            <AvatarFallback>
-              <User className="h-4 w-4" />
+            <AvatarFallback className="bg-primary-500/20 text-primary-500">
+              <User className="h-5 w-5" />
             </AvatarFallback>
           </Avatar>
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent className="w-56 dark:bg-dark-1 backdrop-blur-lg border" align="end">
-        <DropdownMenuLabel className="font-normal">
-          <div className="flex flex-col space-y-1">
-            <p className="text-sm font-medium leading-none">{user.name}</p>
-            <p className="text-xs leading-none text-muted-foreground">
-              {user.email}
-            </p>
+      <DropdownMenuContent className="w-72 glass-card shadow-xl" align="end">
+        <DropdownMenuLabel className="font-normal p-4">
+          <div className="flex items-center space-x-3">
+            <Avatar className="h-12 w-12 border-2 border-glass-border dark:border-glass-border-dark">
+              <AvatarImage src={user.image} alt={user.name} />
+              <AvatarFallback className="bg-primary-500/20 text-primary-500">
+                <User className="h-6 w-6" />
+              </AvatarFallback>
+            </Avatar>
+            <div className="flex flex-col space-y-1">
+              <p className="text-sm font-medium leading-none text-black dark:text-white">{user.name}</p>
+              <p className="text-xs leading-none text-black/60 dark:text-white/60">
+                {user.email}
+              </p>
+            </div>
           </div>
         </DropdownMenuLabel>
-        <DropdownMenuSeparator />
-        <DropdownMenuGroup>
-            <DropdownMenuItem onClick={onProfile}>
-                <User className="mr-2 h-4 w-4" />
-                <span>Profile</span>
-            </DropdownMenuItem>
-          <DropdownMenuItem onClick={onSettings}>
-            <Settings className="mr-2 h-4 w-4" />
-            <span>Settings</span>
+        <DropdownMenuSeparator className="bg-glass-border dark:bg-glass-border-dark" />
+        <DropdownMenuGroup className="p-2">
+          <DropdownMenuItem 
+            onClick={onProfile}
+            className="glass-button cursor-pointer p-3 mb-1"
+          >
+            <User className="mr-3 h-4 w-4" />
+            <span className="font-medium">View Profile</span>
           </DropdownMenuItem>
-          <Collapsible open={isThemeOpen} onOpenChange={setIsThemeOpen}>
-            <CollapsibleTrigger asChild>
-              <DropdownMenuItem onClick={handleThemeToggle}>
-                <Palette className="mr-2 h-4 w-4" />
-                <span>Theme</span>
-                {isThemeOpen ? (
-                  <ChevronDown className="ml-auto h-4 w-4" />
-                ) : (
-                  <ChevronRight className="ml-auto h-4 w-4" />
-                )}
-              </DropdownMenuItem>
-            </CollapsibleTrigger>
-            <CollapsibleContent className="px-2 py-1">
-              <DropdownMenuItem onClick={() => handleThemeChange('light')}>
-                <Sun className="mr-2 h-4 w-4" />
-                <span>Light</span>
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => handleThemeChange('dark')}>
-                <Moon className="mr-2 h-4 w-4" />
-                <span>Dark</span>
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => handleThemeChange('system')}>
-                <Monitor className="mr-2 h-4 w-4" />
-                <span>System</span>
-              </DropdownMenuItem>
-            </CollapsibleContent>
-          </Collapsible>
+          <DropdownMenuItem 
+            onClick={onSettings}
+            className="glass-button cursor-pointer p-3 mb-1"
+          >
+            <Settings className="mr-3 h-4 w-4" />
+            <span className="font-medium">Settings</span>
+          </DropdownMenuItem>
+          
+          {/* Theme Section */}
+          <div className="glass-card p-2 mt-2 mb-2">
+            <div className="flex items-center space-x-2 mb-2">
+              <Palette className="h-4 w-4 text-primary-500" />
+              <span className="text-sm font-medium text-black dark:text-white">Theme</span>
+            </div>
+            <div className="grid grid-cols-3 gap-1">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => handleThemeChange('light')}
+                className={`glass-button p-2 h-auto flex flex-col items-center space-y-1 ${
+                  theme === 'light' ? 'bg-primary-500/20 text-primary-500' : ''
+                }`}
+              >
+                <Sun className="h-4 w-4" />
+                <span className="text-xs">Light</span>
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => handleThemeChange('dark')}
+                className={`glass-button p-2 h-auto flex flex-col items-center space-y-1 ${
+                  theme === 'dark' ? 'bg-primary-500/20 text-primary-500' : ''
+                }`}
+              >
+                <Moon className="h-4 w-4" />
+                <span className="text-xs">Dark</span>
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => handleThemeChange('system')}
+                className={`glass-button p-2 h-auto flex flex-col items-center space-y-1 ${
+                  theme === 'system' ? 'bg-primary-500/20 text-primary-500' : ''
+                }`}
+              >
+                <Monitor className="h-4 w-4" />
+                <span className="text-xs">System</span>
+              </Button>
+            </div>
+          </div>
         </DropdownMenuGroup>
-        <DropdownMenuSeparator />
-        <DropdownMenuItem onClick={onLogout}>
-          <LogOut className="mr-2 h-4 w-4" />
-          <span>Log out</span>
-        </DropdownMenuItem>
+        <DropdownMenuSeparator className="bg-glass-border dark:bg-glass-border-dark" />
+        <div className="p-2">
+          <DropdownMenuItem 
+            onClick={onLogout}
+            className="glass-button cursor-pointer p-3 text-red-500 hover:bg-red-50/20 dark:hover:bg-red-950/20 focus:bg-red-50/20 dark:focus:bg-red-950/20"
+          >
+            <LogOut className="mr-3 h-4 w-4" />
+            <span className="font-medium">Log out</span>
+          </DropdownMenuItem>
+        </div>
       </DropdownMenuContent>
     </DropdownMenu>
   );
