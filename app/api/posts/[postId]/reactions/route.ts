@@ -3,7 +3,8 @@ import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/app/api/auth/[...nextauth]/options';
 import prisma from '@/lib/prisma';
 
-export async function GET(req: NextRequest, { params }: { params: { postId: string } }) {
+export async function GET(req: NextRequest, { params }: { params: Promise<{ postId: string }> }) {
+  const { postId } = await params
   const session = await getServerSession(authOptions);
 
   if (!session) {
@@ -14,7 +15,7 @@ export async function GET(req: NextRequest, { params }: { params: { postId: stri
     // Get all reactions for the post with user details
     const reactions = await prisma.reaction.findMany({
       where: { 
-        postId: params.postId,
+        postId: postId,
         type: 'LIKE'  // Only get LIKE reactions
       },
       include: {
@@ -34,7 +35,7 @@ export async function GET(req: NextRequest, { params }: { params: { postId: stri
     // Get reaction counts by type
     const reactionCounts = await prisma.reaction.groupBy({
       by: ['type'],
-      where: { postId: params.postId },
+      where: { postId: postId },
       _count: true
     });
 
@@ -54,8 +55,9 @@ export async function GET(req: NextRequest, { params }: { params: { postId: stri
   }
 }
 
-export async function POST(req: NextRequest, { params }: { params: { postId: string } }) {
+export async function POST(req: NextRequest, { params }: { params: Promise<{ postId: string }> }) {
   try {
+    const { postId } = await params
     const session = await getServerSession(authOptions);
 
     if (!session) {
@@ -73,7 +75,7 @@ export async function POST(req: NextRequest, { params }: { params: { postId: str
     const existingReaction = await prisma.reaction.findFirst({
       where: {
         userId: session.user.id,
-        postId: params.postId,
+        postId: postId,
         type
       }
     });
@@ -86,7 +88,7 @@ export async function POST(req: NextRequest, { params }: { params: { postId: str
     const reaction = await prisma.reaction.create({
       data: {
         type,
-        postId: params.postId,
+        postId: postId,
         userId: session.user.id,
       },
       include: {
@@ -103,7 +105,7 @@ export async function POST(req: NextRequest, { params }: { params: { postId: str
     // Get updated reaction counts
     const reactionCounts = await prisma.reaction.groupBy({
       by: ['type'],
-      where: { postId: params.postId },
+      where: { postId: postId },
       _count: true
     });
 
@@ -120,8 +122,9 @@ export async function POST(req: NextRequest, { params }: { params: { postId: str
   }
 }
 
-export async function DELETE(req: NextRequest, { params }: { params: { postId: string } }) {
+export async function DELETE(req: NextRequest, { params }: { params: Promise<{ postId: string }> }) {
   try {
+    const { postId } = await params
     const session = await getServerSession(authOptions);
 
     if (!session) {
@@ -139,7 +142,7 @@ export async function DELETE(req: NextRequest, { params }: { params: { postId: s
     await prisma.reaction.deleteMany({
       where: {
         userId: session.user.id,
-        postId: params.postId,
+        postId: postId,
         type
       }
     });
@@ -147,7 +150,7 @@ export async function DELETE(req: NextRequest, { params }: { params: { postId: s
     // Get updated reaction counts
     const reactionCounts = await prisma.reaction.groupBy({
       by: ['type'],
-      where: { postId: params.postId },
+      where: { postId: postId },
       _count: true
     });
 

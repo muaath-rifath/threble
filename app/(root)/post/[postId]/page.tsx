@@ -4,7 +4,8 @@ import prisma from '@/lib/prisma'
 import PostDetailView from '@/components/post/PostDetailView'
 import { transformPost } from '@/lib/utils'
 
-export default async function PostDetailPage({ params }: { params: { postId: string } }) {
+export default async function PostDetailPage({ params }: { params: Promise<{ postId: string }> }) {
+    const { postId } = await params
     const session = await getServerSession(authOptions)
 
     if (!session) {
@@ -12,7 +13,7 @@ export default async function PostDetailPage({ params }: { params: { postId: str
     }
 
     const post = await prisma.post.findUnique({
-        where: { id: params.postId },
+        where: { id: postId },
         include: {
             author: {
                 select: {

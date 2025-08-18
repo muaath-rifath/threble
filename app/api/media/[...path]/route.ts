@@ -60,9 +60,10 @@ async function checkAccess(path: string[], session: any) {
 
 export async function GET(
     req: NextRequest,
-    { params }: { params: { path: string[] } }
+    { params }: { params: Promise<{ path: string[] }> }
 ) {
     try {
+        const { path } = await params
         const session = await getServerSession(authOptions);
         const storageClients = getStorageClients();
         
@@ -71,7 +72,7 @@ export async function GET(
         }
 
         const { containerClient } = storageClients;
-        const blobPath = params.path.join('/');
+        const blobPath = path.join('/');
         const blockBlobClient = containerClient.getBlockBlobClient(blobPath);
 
         try {
@@ -82,7 +83,7 @@ export async function GET(
             }
 
             // Check access permissions
-            const hasAccess = await checkAccess(params.path, session);
+            const hasAccess = await checkAccess(path, session);
             if (!hasAccess) {
                 return new Response('Forbidden', { status: 403 });
             }
@@ -98,12 +99,12 @@ export async function GET(
             }
 
             // Set cache control based on content type
-            const cacheControl = params.path[2] === 'profile' 
+            const cacheControl = path[2] === 'profile' 
                 ? 'public, max-age=3600' // Cache profile pictures for 1 hour
                 : 'private, no-cache';    // No cache for other media
 
             // Return the blob content with appropriate headers
-            return new Response(response, {
+            return new Response(new Uint8Array(response), {
                 headers: new Headers({
                     'Content-Type': properties.contentType || 'application/octet-stream',
                     'Content-Length': properties.contentLength?.toString() || '0',

@@ -23,8 +23,9 @@ async function authorizeUser(postId: string, userId: string) {
 
 export async function GET(
     req: NextRequest,
-    { params }: { params: { postId: string } }
+    { params }: { params: Promise<{ postId: string }> }
 ) {
+    const { postId } = await params
     const session = await getServerSession(authOptions)
 
     if (!session) {
@@ -33,7 +34,7 @@ export async function GET(
 
     try {
         const post = await prisma.post.findUnique({
-            where: { id: params.postId },
+            where: { id: postId },
             select: {
                 id: true,
                 content: true,
@@ -103,9 +104,10 @@ export async function GET(
 
 export async function DELETE(
     req: NextRequest,
-    { params }: { params: { postId: string } }
+    { params }: { params: Promise<{ postId: string }> }
 ) {
     try {
+        const { postId } = await params
         const session = await getServerSession(authOptions);
         if (!session?.user?.id) {
             return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
@@ -113,14 +115,14 @@ export async function DELETE(
 
         // Authorize user
         try {
-            await authorizeUser(params.postId, session.user.id);
+            await authorizeUser(postId, session.user.id);
         } catch (error: any) {
             return NextResponse.json({ error: error.message }, { status: error.message === 'Post not found' ? 404 : 403 });
         }
 
         // Get post media attachments
         const post = await prisma.post.findUnique({
-            where: { id: params.postId },
+            where: { id: postId },
             select: { mediaAttachments: true }
         });
 
@@ -139,7 +141,7 @@ export async function DELETE(
 
         // Delete the post and all associated data
         await prisma.post.delete({
-            where: { id: params.postId },
+            where: { id: postId },
         });
 
         return NextResponse.json({ message: 'Post deleted successfully' });
@@ -151,9 +153,10 @@ export async function DELETE(
 
 export async function PATCH(
     req: NextRequest,
-    { params }: { params: { postId: string } }
+    { params }: { params: Promise<{ postId: string }> }
 ) {
     try {
+        const { postId } = await params
         const session = await getServerSession(authOptions);
         if (!session?.user?.id) {
             return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
@@ -161,7 +164,7 @@ export async function PATCH(
 
         // Authorize user
         try {
-            await authorizeUser(params.postId, session.user.id);
+            await authorizeUser(postId, session.user.id);
         } catch (error: any) {
             return NextResponse.json({ error: error.message }, { status: error.message === 'Post not found' ? 404 : 403 });
         }
@@ -173,7 +176,7 @@ export async function PATCH(
 
         // Get existing post media
         const existingPost = await prisma.post.findUnique({
-            where: { id: params.postId },
+            where: { id: postId },
             select: { mediaAttachments: true }
         });
 
@@ -193,7 +196,7 @@ export async function PATCH(
 
             // Move files to final location
             const finalUrls = await Promise.all(
-                newMediaUrls.map(url => moveFile(url, session.user.id, params.postId))
+                newMediaUrls.map(url => moveFile(url, session.user.id, postId))
             );
 
             mediaAttachments = [...mediaAttachments, ...finalUrls];
@@ -201,7 +204,7 @@ export async function PATCH(
 
         // Update the post
         const updatedPost = await prisma.post.update({
-            where: { id: params.postId },
+            where: { id: postId },
             data: {
                 content,
                 mediaAttachments

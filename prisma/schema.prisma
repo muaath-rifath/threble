@@ -102,6 +102,7 @@ model Post {
   community        Community? @relation(fields: [communityId], references: [id])
   parent           Post?      @relation("PostReplies", fields: [parentId], references: [id], onDelete: Cascade)
   replies          Post[]     @relation("PostReplies")
+  comments         Comment[]
   reactions        Reaction[]
 
   @@index([authorId, createdAt])
@@ -161,15 +162,19 @@ model Reaction {
   id        String   @id @default(cuid())
   type      String   // e.g., "LIKE", "LOVE", etc.
   userId    String
-  postId    String
+  postId    String?
+  commentId String?
   createdAt DateTime @default(now())
 
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+  post      Post?    @relation(fields: [postId], references: [id], onDelete: Cascade)
+  comment   Comment? @relation(fields: [commentId], references: [id], onDelete: Cascade)
 
   @@unique([userId, postId, type])
+  @@unique([userId, commentId, type])
   @@index([userId, type])
   @@index([postId, type])
+  @@index([commentId, type])
 }
 
 model Activity {
