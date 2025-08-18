@@ -13,7 +13,6 @@ import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuIte
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Textarea } from "@/components/ui/textarea"
-import { DebugAvatar } from "@/components/DebugAvatar"
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog"
 
 export interface Post {
@@ -282,7 +281,6 @@ export default function PostCard({ post, session, onUpdate, isReply = false, sho
                             <AvatarImage src={post.author.image || undefined} alt={post.author.name || 'User'} />
                             <AvatarFallback className="bg-primary-500/20 text-primary-500">{post.author.name?.[0]}</AvatarFallback>
                         </Avatar>
-                        <DebugAvatar src={post.author.image || undefined} alt={post.author.name || 'User'} fallback={post.author.name?.[0]} />
                         <div className="flex-1 space-y-1">
                             <div className="flex items-center gap-2">
                                 <p className="text-sm font-medium cursor-pointer text-black dark:text-white hover:text-primary-500 transition-colors" onClick={() => router.push(`/profile/${post.author.id}`)}>{post.author.name}</p>
