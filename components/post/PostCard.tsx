@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { Session } from 'next-auth'
 import { useRouter } from 'next/navigation'
 import { Card, CardContent, CardFooter, CardHeader } from '@/components/ui/card'
@@ -69,6 +69,11 @@ export default function PostCard({ post, session, onUpdate, isReply = false, sho
     const [editContent, setEditContent] = useState(post.content)
     const [keepMediaUrls, setKeepMediaUrls] = useState<string[]>(post.mediaAttachments || [])
     const [editMediaFiles, setEditMediaFiles] = useState<File[]>([])
+    const [isReplying, setIsReplying] = useState(false)
+    const [replyContent, setReplyContent] = useState('')
+    const [replyMediaFiles, setReplyMediaFiles] = useState<File[]>([])
+    const [isSubmittingReply, setIsSubmittingReply] = useState(false)
+    const replyTextareaRef = useRef<HTMLTextAreaElement>(null)
 
     const isAuthor = session?.user?.id === post.author.id
     const isLiked = post.reactions.some(r => r.userId === session?.user?.id && r.type === 'LIKE')
@@ -166,7 +171,7 @@ export default function PostCard({ post, session, onUpdate, isReply = false, sho
     }
 
     const navigateToPost = () => {
-        if (!isReply) {
+        if (!isReply && !isReplying) {
             router.push(`/thread/${post.id}`)
         }
     }
@@ -266,11 +271,91 @@ export default function PostCard({ post, session, onUpdate, isReply = false, sho
         input.click();
     };
 
+    const handleReplyFileSelect = (acceptedTypes: string) => {
+        const input = document.createElement('input');
+        input.type = 'file';
+        input.accept = acceptedTypes;
+        input.multiple = true;
+        input.onchange = (e: Event) => {
+            const files = Array.from((e.target as HTMLInputElement).files || []);
+            if (files.length > 0) {
+                const invalidFiles = files.filter(file => file.size > 20 * 1024 * 1024);
+                if (invalidFiles.length > 0) {
+                    toast({
+                        title: "Error",
+                        description: "Files must be less than 20MB",
+                        variant: "destructive",
+                    });
+                    return;
+                }
+                setReplyMediaFiles(prev => [...prev, ...files]);
+            }
+        };
+        input.click();
+    };
+
+    const handleSubmitReply = async () => {
+        if (!replyContent.trim() && replyMediaFiles.length === 0) {
+            toast({
+                title: "Error",
+                description: "Please write something or add media to reply",
+                variant: "destructive",
+            });
+            return;
+        }
+
+        setIsSubmittingReply(true);
+        try {
+            const formData = new FormData();
+            formData.append('content', replyContent);
+            formData.append('parentId', post.id);
+            
+            replyMediaFiles.forEach(file => {
+                formData.append('mediaAttachments', file);
+            });
+
+            const response = await fetch('/api/posts', {
+                method: 'POST',
+                body: formData,
+            });
+
+            if (!response.ok) {
+                throw new Error('Failed to submit reply');
+            }
+
+            toast({
+                title: "Success",
+                description: "Reply posted successfully!",
+            });
+
+            // Reset reply form
+            setReplyContent('');
+            setReplyMediaFiles([]);
+            setIsReplying(false);
+            onUpdate(); // Refresh the parent component
+        } catch (error: any) {
+            console.error('Error submitting reply:', error);
+            toast({
+                title: "Error",
+                description: error.message || "Failed to submit reply. Please try again.",
+                variant: "destructive",
+            });
+        } finally {
+            setIsSubmittingReply(false);
+        }
+    };
+
     useEffect(() => {
         if (showLikes) {
             fetchLikedUsers()
         }
     }, [showLikes, post.id])
+
+    useEffect(() => {
+        if (isReplying && replyTextareaRef.current) {
+            replyTextareaRef.current.focus()
+        }
+    }, [isReplying])
 
     return (
         <Card className={`${isReply ? 'mt-4' : 'mb-8'} glass-card shadow-lg hover:shadow-xl transition-all duration-300`}>
@@ -430,7 +515,10 @@ export default function PostCard({ post, session, onUpdate, isReply = false, sho
                         </div>
                     </div>
                 ) : (
-                    <>
+                    <div 
+                        className="cursor-pointer"
+                        onClick={navigateToPost}
+                    >
                         <p className="text-black dark:text-white">
                             {showFullContent ? post.content : post.content.slice(0, 280)}
                             {!showFullContent && post.content.length > 280 && (
@@ -439,7 +527,10 @@ export default function PostCard({ post, session, onUpdate, isReply = false, sho
                                     <Button
                                         variant="link"
                                         className="p-0 h-auto text-primary-500 hover:text-primary-600"
-                                        onClick={() => router.push(`/thread/${post.id}`)}
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            router.push(`/thread/${post.id}`)
+                                        }}
                                     >
                                         Show more
                                     </Button>
@@ -461,15 +552,17 @@ export default function PostCard({ post, session, onUpdate, isReply = false, sho
                                                 src={url}
                                                 className={`w-full h-full ${post.mediaAttachments?.length === 1 ? 'object-contain' : 'object-cover'} rounded-lg`}
                                                 controls
+                                                onClick={(e) => e.stopPropagation()}
                                             />
                                         )}
                                     </div>
                                 ))}
                             </div>
                         )}
-                    </>
+                    </div>
                 )}
             </CardContent>
+            
             <CardFooter className="flex justify-between border-t border-glass-border dark:border-glass-border-dark mt-4 pt-4">
                 <Sheet>
                     <div className="flex items-center space-x-1">
@@ -548,10 +641,17 @@ export default function PostCard({ post, session, onUpdate, isReply = false, sho
                 <Button
                     variant="ghost"
                     size="sm"
-                    onClick={() => router.push(`/thread/${post.id}`)}
-                    className="glass-button flex items-center space-x-2 text-black/60 dark:text-white/60"
+                    onClick={(e) => {
+                        e.stopPropagation();
+                        setIsReplying(!isReplying);
+                    }}
+                    className={`glass-button flex items-center space-x-2 transition-all duration-200 ${
+                        isReplying 
+                            ? 'text-primary-500 bg-primary-500/10' 
+                            : 'text-black/60 dark:text-white/60'
+                    }`}
                 >
-                    <MessageSquare className="h-4 w-4" />
+                    <MessageSquare className={`h-4 w-4 ${isReplying ? 'fill-current' : ''}`} />
                     <span>{post._count.replies}</span>
                 </Button>
                 <Button
@@ -563,6 +663,123 @@ export default function PostCard({ post, session, onUpdate, isReply = false, sho
                     <Share2 className="h-4 w-4" />
                 </Button>
             </CardFooter>
+            
+            {/* Inline Reply Form */}
+            {isReplying && (
+                <div 
+                    className="p-6 glass-card border-t border-glass-border dark:border-glass-border-dark bg-white/30 dark:bg-black/30 backdrop-blur-md"
+                    onClick={(e) => e.stopPropagation()}
+                >
+                    <div className="flex items-start space-x-4">
+                        <Avatar className="h-10 w-10 border-2 border-glass-border dark:border-glass-border-dark">
+                            <AvatarImage src={session?.user?.image || undefined} alt={session?.user?.name || 'You'} />
+                            <AvatarFallback className="bg-primary-500/20 text-primary-500">{session?.user?.name?.[0]}</AvatarFallback>
+                        </Avatar>
+                        <div className="flex-1 space-y-4">
+                            <Textarea
+                                ref={replyTextareaRef}
+                                value={replyContent}
+                                onChange={(e) => setReplyContent(e.target.value)}
+                                placeholder="Write your reply..."
+                                className="min-h-[100px] glass-input focus-ring resize-none bg-white/50 dark:bg-black/50 backdrop-blur-sm border-glass-border dark:border-glass-border-dark"
+                                disabled={isSubmittingReply}
+                                onKeyDown={(e) => {
+                                    if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
+                                        e.preventDefault()
+                                        if (!isSubmittingReply && (replyContent.trim() || replyMediaFiles.length > 0)) {
+                                            handleSubmitReply()
+                                        }
+                                    }
+                                }}
+                            />
+                            
+                            {/* Reply Media Preview */}
+                            {replyMediaFiles.length > 0 && (
+                                <div className="grid grid-cols-2 gap-3">
+                                    {replyMediaFiles.map((file, index) => (
+                                        <div key={index} className="relative aspect-square glass-card p-2">
+                                            {file.type.startsWith('image/') ? (
+                                                <img
+                                                    src={URL.createObjectURL(file)}
+                                                    alt={`Reply media ${index + 1}`}
+                                                    className="w-full h-full object-cover rounded-xl"
+                                                />
+                                            ) : file.type.startsWith('video/') && (
+                                                <video
+                                                    src={URL.createObjectURL(file)}
+                                                    className="w-full h-full object-cover rounded-xl"
+                                                    controls
+                                                />
+                                            )}
+                                            <Button
+                                                variant="destructive"
+                                                size="icon"
+                                                className="absolute -top-2 -right-2 h-6 w-6 rounded-full shadow-lg"
+                                                onClick={() => setReplyMediaFiles(prev => prev.filter((_, i) => i !== index))}
+                                                disabled={isSubmittingReply}
+                                            >
+                                                <X className="h-3 w-3" />
+                                            </Button>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+                            
+                            <div className="flex justify-between items-center pt-2">
+                                <div className="flex space-x-3">
+                                    <Button
+                                        type="button"
+                                        variant="ghost"
+                                        size="sm"
+                                        className="glass-button text-green-500 hover:bg-green-500/10 hover:text-green-600"
+                                        onClick={() => handleReplyFileSelect('image/*')}
+                                        disabled={isSubmittingReply}
+                                    >
+                                        <Image className="mr-2 h-4 w-4" />
+                                        Photo
+                                    </Button>
+                                    <Button
+                                        type="button"
+                                        variant="ghost"
+                                        size="sm"
+                                        className="glass-button text-blue-500 hover:bg-blue-500/10 hover:text-blue-600"
+                                        onClick={() => handleReplyFileSelect('video/*')}
+                                        disabled={isSubmittingReply}
+                                    >
+                                        <Video className="mr-2 h-4 w-4" />
+                                        Video
+                                    </Button>
+                                </div>
+                                <div className="flex space-x-3">
+                                    <Button
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={() => {
+                                            setIsReplying(false)
+                                            setReplyContent('')
+                                            setReplyMediaFiles([])
+                                        }}
+                                        className="glass-button"
+                                        disabled={isSubmittingReply}
+                                    >
+                                        Cancel
+                                    </Button>
+                                    <Button
+                                        onClick={handleSubmitReply}
+                                        size="sm"
+                                        className="primary-button"
+                                        disabled={isSubmittingReply || (!replyContent.trim() && replyMediaFiles.length === 0)}
+                                        title="Cmd/Ctrl + Enter to post"
+                                    >
+                                        {isSubmittingReply ? 'Posting...' : 'Reply'}
+                                    </Button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+            
             <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
                 <AlertDialogContent className="glass-card">
                     <AlertDialogHeader>
