@@ -103,20 +103,33 @@ export default function ThreadReply({
         setShowReadMore(reply.content.length > CONTENT_LIMIT)
     }, [reply.content])
 
-    // Build the "Replied to" text
+    // Navigate to parent post/reply
+    const navigateToParent = () => {
+        if (reply.parent) {
+            router.push(`/thread/${reply.parent.id}`)
+        }
+    }
+
+    // Build the "Replied to" text as JSX with clickable username
     const buildRepliedToText = () => {
         if (!reply.parent) return null
         
-        const allAuthors = [...parentAuthors, reply.parent.author.username || reply.parent.author.name || 'unknown']
-        const uniqueAuthors = Array.from(new Set(allAuthors))
+        const parentUsername = reply.parent.author.username || reply.parent.author.name || 'unknown'
         
-        if (uniqueAuthors.length === 1) {
-            return `Replied to @${uniqueAuthors[0]}`
-        } else if (uniqueAuthors.length === 2) {
-            return `Replied to @${uniqueAuthors[0]} and @${uniqueAuthors[1]}`
-        } else {
-            return `Replied to @${uniqueAuthors[0]}, @${uniqueAuthors[1]} and ${uniqueAuthors.length - 2} other${uniqueAuthors.length - 2 > 1 ? 's' : ''}`
-        }
+        return (
+            <span>
+                Replied to{' '}
+                <span 
+                    className="text-primary-500 hover:text-primary-600 cursor-pointer font-medium transition-colors"
+                    onClick={(e) => {
+                        e.stopPropagation()
+                        navigateToParent()
+                    }}
+                >
+                    @{parentUsername}
+                </span>
+            </span>
+        )
     }
 
     const handleLike = async () => {
@@ -428,8 +441,8 @@ export default function ThreadReply({
             <div className="flex-1">
                 <Card className="mb-4 glass-card shadow-lg hover:shadow-xl transition-all duration-300">
                     <CardHeader className="pb-3">
-                        {/* Replied to indicator */}
-                        {buildRepliedToText() && (
+                        {/* Replied to indicator - only show for nested replies */}
+                        {reply.parent && depth > 0 && (
                             <div className="text-xs text-gray-500 mb-2 flex items-center gap-1">
                                 <ChevronRight className="h-3 w-3" />
                                 {buildRepliedToText()}

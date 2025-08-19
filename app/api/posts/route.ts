@@ -72,6 +72,18 @@ export async function GET(req: NextRequest) {
                         userId: session.user.id
                     }
                 },
+                parent: {
+                    include: {
+                        author: {
+                            select: { 
+                                id: true,
+                                name: true, 
+                                username: true,
+                                image: true 
+                            },
+                        },
+                    },
+                },
                 _count: {
                     select: { 
                         replies: true,

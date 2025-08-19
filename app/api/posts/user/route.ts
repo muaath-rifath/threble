@@ -19,6 +19,7 @@ export async function GET(req: NextRequest) {
                     select: {
                         id: true,
                         name: true,
+                        username: true,
                         image: true,
                     },
                 },
@@ -29,6 +30,7 @@ export async function GET(req: NextRequest) {
                             select: { 
                                 id: true,
                                 name: true, 
+                                username: true,
                                 image: true 
                             },
                         },
@@ -40,6 +42,7 @@ export async function GET(req: NextRequest) {
                             select: { 
                                 id: true,
                                 name: true, 
+                                username: true,
                                 image: true 
                             },
                         },

@@ -6,12 +6,38 @@ import { Session } from 'next-auth'
 import { useToast } from '@/hooks/use-toast'
 import { Card, CardContent, CardHeader } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { MessageSquare, ArrowLeft, Users, RefreshCw, ChevronLeft } from 'lucide-react'
+import { MessageSquare, Users, ChevronLeft } from 'lucide-react'
 import { ExtendedPost } from '@/lib/types'
-import { format } from 'date-fns'
 
-import PostCard from './PostCard'
+import PostCard, { Post } from './PostCard'
 import ThreadReply from './ThreadReply'
+
+// Helper function to transform ExtendedPost to Post interface
+const transformExtendedPostToPost = (extendedPost: ExtendedPost): Post => {
+    return {
+        id: extendedPost.id,
+        content: extendedPost.content,
+        author: {
+            id: extendedPost.author.id,
+            name: extendedPost.author.name,
+            username: extendedPost.author.username,
+            image: extendedPost.author.image,
+        },
+        createdAt: extendedPost.createdAt,
+        updatedAt: extendedPost.updatedAt,
+        reactions: extendedPost.reactions,
+        _count: extendedPost._count,
+        mediaAttachments: extendedPost.mediaAttachments,
+        parent: extendedPost.parent ? {
+            id: extendedPost.parent.id,
+            author: {
+                id: extendedPost.parent.author.id,
+                name: extendedPost.parent.author.name,
+                username: extendedPost.parent.author.username,
+            }
+        } : undefined
+    }
+}
 
 interface ThreadViewProps {
     initialPost: ExtendedPost
@@ -73,33 +99,6 @@ export default function ThreadView({ initialPost, session }: ThreadViewProps) {
         <div className="min-h-screen bg-white dark:bg-black">
             <div className="container max-w-4xl mx-auto p-4 md:p-6">
 
-                {/* Thread Breadcrumb for nested replies */}
-                {post.parent && (
-                    <Card className="mb-6 glass-card shadow-lg">
-                        <CardHeader className="pb-2">
-                            <div className="flex items-center gap-2 text-sm text-primary-500">
-                                <ArrowLeft className="h-4 w-4" />
-                                <span>In reply to</span>
-                            </div>
-                        </CardHeader>
-                        <CardContent>
-                            <PostCard
-                                post={post.parent}
-                                session={session}
-                                onUpdate={fetchPost}
-                                isReply={false}
-                                showFullContent={false}
-                            />
-                            <div className="mt-4 p-3 glass-card rounded-lg">
-                                <div className="text-sm text-gray-600 dark:text-gray-400 flex items-center gap-2">
-                                    <div className="w-8 border-t border-glass-border dark:border-glass-border-dark" />
-                                    <span>Replying to @{post.parent.author.name || 'user'}</span>
-                                </div>
-                            </div>
-                        </CardContent>
-                    </Card>
-                )}
-
                 {/* Back Button */}
                 <div className="mb-4">
                     <button
@@ -113,11 +112,12 @@ export default function ThreadView({ initialPost, session }: ThreadViewProps) {
                 {/* Main Post */}
                 <div className="mb-8">
                     <PostCard
-                        post={post}
+                        post={transformExtendedPostToPost(post)}
                         session={session}
                         onUpdate={fetchPost}
                         isReply={!!post.parent}
                         showFullContent={true}
+                        hideRepliedTo={true} // Hide "Replied to" in thread view
                     />
                 </div>
 

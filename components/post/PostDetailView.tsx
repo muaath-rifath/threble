@@ -21,11 +21,38 @@ import { Textarea } from '@/components/ui/textarea'
 import { Image, Video, X } from 'lucide-react'
 import { ExtendedPost } from '@/lib/types'
 
-import PostCard from './PostCard'
+import PostCard, { Post } from './PostCard'
 
 const replyFormSchema = z.object({
     content: z.string().min(1, "Reply cannot be empty"),
 })
+
+// Helper function to transform ExtendedPost to Post interface
+const transformExtendedPostToPost = (extendedPost: ExtendedPost): Post => {
+    return {
+        id: extendedPost.id,
+        content: extendedPost.content,
+        author: {
+            id: extendedPost.author.id,
+            name: extendedPost.author.name,
+            username: extendedPost.author.username,
+            image: extendedPost.author.image,
+        },
+        createdAt: extendedPost.createdAt,
+        updatedAt: extendedPost.updatedAt,
+        reactions: extendedPost.reactions,
+        _count: extendedPost._count,
+        mediaAttachments: extendedPost.mediaAttachments,
+        parent: extendedPost.parent ? {
+            id: extendedPost.parent.id,
+            author: {
+                id: extendedPost.parent.author.id,
+                name: extendedPost.parent.author.name,
+                username: extendedPost.parent.author.username,
+            }
+        } : undefined
+    }
+}
 
 interface PostDetailViewProps {
     initialPost: ExtendedPost
@@ -127,10 +154,11 @@ export default function PostDetailView({ initialPost, session }: PostDetailViewP
     return (
         <div className="max-w-2xl mx-auto mt-8">
             <PostCard 
-                post={post} 
+                post={transformExtendedPostToPost(post)} 
                 session={session} 
                 onUpdate={fetchPost}
                 showFullContent={true}
+                hideRepliedTo={true} // Hide "Replied to" in detail view
             />
             
             {/* Reply Form */}
@@ -231,7 +259,7 @@ export default function PostDetailView({ initialPost, session }: PostDetailViewP
                 {post.replies.map((reply) => (
                     <PostCard
                         key={reply.id}
-                        post={reply}
+                        post={transformExtendedPostToPost(reply)}
                         session={session}
                         onUpdate={fetchPost}
                         isReply={true}

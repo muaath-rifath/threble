@@ -44,7 +44,9 @@ export async function GET(
                 mediaAttachments: true,
                 author: {
                     select: {
+                        id: true,
                         name: true,
+                        username: true,
                         image: true,
                     },
                 },
@@ -61,7 +63,12 @@ export async function GET(
                         parentId: true,
                         mediaAttachments: true,
                         author: {
-                            select: { name: true, image: true },
+                            select: { 
+                                id: true,
+                                name: true, 
+                                username: true,
+                                image: true 
+                            },
                         },
                         reactions: true,
                         _count: {
@@ -76,7 +83,12 @@ export async function GET(
                         createdAt: true,
                         mediaAttachments: true,
                         author: {
-                            select: { name: true, image: true },
+                            select: { 
+                                id: true,
+                                name: true, 
+                                username: true,
+                                image: true 
+                            },
                         },
                         reactions: true,
                         _count: {

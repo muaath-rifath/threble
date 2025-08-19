@@ -21,6 +21,7 @@ export interface Post {
     author: {
         id: string
         name: string | null
+        username?: string | null
         image: string | null
     }
     createdAt: string
@@ -40,6 +41,14 @@ export interface Post {
         reactions?: number
     }
     mediaAttachments?: string[]
+    parent?: {
+        id: string
+        author: {
+            id: string
+            name: string | null
+            username?: string | null
+        }
+    }
 }
 
 interface PostCardProps {
@@ -48,9 +57,10 @@ interface PostCardProps {
     onUpdate: () => void
     isReply?: boolean
     showFullContent?: boolean
+    hideRepliedTo?: boolean // New prop to hide "Replied to" indicator
 }
 
-export default function PostCard({ post, session, onUpdate, isReply = false, showFullContent = false }: PostCardProps) {
+export default function PostCard({ post, session, onUpdate, isReply = false, showFullContent = false, hideRepliedTo = false }: PostCardProps) {
     const router = useRouter()
     const { toast } = useToast()
     const [isUpdating, setIsUpdating] = useState(false)
@@ -294,6 +304,35 @@ export default function PostCard({ post, session, onUpdate, isReply = false, sho
         input.click();
     };
 
+    // Navigate to parent post/reply
+    const navigateToParent = () => {
+        if (post.parent) {
+            router.push(`/thread/${post.parent.id}`)
+        }
+    }
+
+    // Build the "Replied to" text as JSX with clickable username
+    const buildRepliedToText = () => {
+        if (!post.parent) return null
+        
+        const parentUsername = post.parent.author.username || post.parent.author.name || 'unknown'
+        
+        return (
+            <span>
+                Replied to{' '}
+                <span 
+                    className="text-primary-500 hover:text-primary-600 cursor-pointer font-medium transition-colors"
+                    onClick={(e) => {
+                        e.stopPropagation()
+                        navigateToParent()
+                    }}
+                >
+                    @{parentUsername}
+                </span>
+            </span>
+        )
+    }
+
     const handleSubmitReply = async () => {
         if (!replyContent.trim() && replyMediaFiles.length === 0) {
             toast({
@@ -360,6 +399,14 @@ export default function PostCard({ post, session, onUpdate, isReply = false, sho
     return (
         <Card className={`${isReply ? 'mt-4' : 'mb-8'} glass-card shadow-lg hover:shadow-xl transition-all duration-300`}>
             <CardHeader className="pb-3">
+                {/* Replied to indicator */}
+                {post.parent && !hideRepliedTo && (
+                    <div className="text-xs text-gray-500 mb-2 flex items-center gap-1">
+                        <ChevronRight className="h-3 w-3" />
+                        {buildRepliedToText()}
+                    </div>
+                )}
+                
                 <div className="flex items-center justify-between">
                     <div className="flex items-center space-x-4">
                         <Avatar className="h-10 w-10 cursor-pointer border-2 border-glass-border dark:border-glass-border-dark" onClick={() => router.push(`/profile/${post.author.id}`)}>
