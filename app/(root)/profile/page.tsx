@@ -21,6 +21,7 @@ import ReactCrop, { Crop } from 'react-image-crop'
 import 'react-image-crop/dist/ReactCrop.css'
 import { uploadFileToBlobStorage } from '@/lib/azure-storage'
 import { profileUpdateSchema, type ProfileUpdateInput } from '@/lib/validations/username'
+import UserPostList from '@/components/post/UserPostList'
 
 interface ProfileData {
   name?: string;
@@ -56,7 +57,9 @@ export default function ProfilePage() {
   })
   const [imageRef, setImageRef] = useState<HTMLImageElement | null>(null)
   const [croppedProfileImage, setCroppedProfileImage] = useState<File | null>(null)
-    const [croppedCoverImage, setCroppedCoverImage] = useState<File | null>(null)
+  const [croppedCoverImage, setCroppedCoverImage] = useState<File | null>(null)
+  const [posts, setPosts] = useState<any[]>([])
+  const [isLoadingPosts, setIsLoadingPosts] = useState(false)
 
   const form = useForm<ProfileUpdateInput>({
     resolver: zodResolver(formSchema),
@@ -76,6 +79,7 @@ export default function ProfilePage() {
       router.push('/signin')
     } else if (status === 'authenticated' && session?.user) {
       fetchProfile()
+      fetchPosts()
     }
   }, [status, session, router])
 
@@ -103,6 +107,26 @@ export default function ProfilePage() {
                 description: "Failed to fetch profile. Please try again.",
                 variant: "destructive",
             })
+        }
+    }
+
+    const fetchPosts = async () => {
+        try {
+            setIsLoadingPosts(true)
+            const response = await fetch('/api/posts/user')
+            if (response.ok) {
+                const data = await response.json()
+                setPosts(data.posts || [])
+            }
+        } catch (error) {
+            console.error('Error fetching posts:', error)
+            toast({
+                title: "Error",
+                description: "Failed to fetch posts. Please try again.",
+                variant: "destructive",
+            })
+        } finally {
+            setIsLoadingPosts(false)
         }
     }
 
@@ -473,11 +497,46 @@ export default function ProfilePage() {
 
         {/* Posts Tab */}
         <TabsContent value="posts">
-          <Card>
-            <CardContent>
-              <p className="text-center py-4">Your posts will appear here.</p>
-            </CardContent>
-          </Card>
+          {session ? (
+            <>
+              {isLoadingPosts ? (
+                <Card>
+                  <CardContent>
+                    <div className="flex items-center justify-center py-8">
+                      <div className="animate-spin rounded-full h-8 w-8 border-2 border-primary-500 border-t-transparent"></div>
+                      <span className="ml-2 text-gray-600">Loading posts...</span>
+                    </div>
+                  </CardContent>
+                </Card>
+              ) : posts.length > 0 ? (
+                <UserPostList initialPosts={posts} session={session} />
+              ) : (
+                <Card>
+                  <CardContent>
+                    <div className="text-center py-12">
+                      <div className="mb-4">
+                        <div className="w-16 h-16 bg-gray-100 dark:bg-gray-800 rounded-full flex items-center justify-center mx-auto mb-4">
+                          <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                          </svg>
+                        </div>
+                        <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-2">No posts yet</h3>
+                        <p className="text-gray-500 max-w-sm mx-auto">
+                          Share your thoughts and ideas with the community. Your posts will appear here once you start creating content.
+                        </p>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+            </>
+          ) : (
+            <Card>
+              <CardContent>
+                <p className="text-center py-4">Please sign in to view your posts.</p>
+              </CardContent>
+            </Card>
+          )}
         </TabsContent>
 
         {/* Photos Tab */}
