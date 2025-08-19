@@ -41,9 +41,6 @@ export default function UserPostList({ session, initialPosts }: UserPostListProp
                         onUpdate={handlePostUpdate}
                         showFullContent={true}
                     />
-                    {index < posts.length - 1 && (
-                        <div className="border-b border-gray-100 dark:border-gray-800 mt-6" />
-                    )}
                 </div>
             ))}
         </div>
