@@ -153,7 +153,7 @@ export default function UserProfilePage() {
                 {userProfile.name?.charAt(0) || userProfile.username.charAt(0).toUpperCase()}
               </AvatarFallback>
             </Avatar>
-            <div className="pb-4">
+            <div className="flex flex-col justify-end h-32 mb-4">
               <h1 className="text-2xl font-bold">{userProfile.name}</h1>
               <p className="text-gray-600">@{userProfile.username}</p>
             </div>
@@ -237,27 +237,15 @@ export default function UserProfilePage() {
         </TabsList>
 
         <TabsContent value="posts">
-          <Card>
-            <CardContent className="pt-6">
-              <UserPostsByUsername username={username} session={session} type="posts" />
-            </CardContent>
-          </Card>
+          <UserPostsByUsername username={username} session={session} type="posts" />
         </TabsContent>
 
         <TabsContent value="media">
-          <Card>
-            <CardContent className="pt-6">
-              <UserPostsByUsername username={username} session={session} type="media" />
-            </CardContent>
-          </Card>
+          <UserPostsByUsername username={username} session={session} type="media" />
         </TabsContent>
 
         <TabsContent value="likes">
-          <Card>
-            <CardContent className="pt-6">
-              <UserPostsByUsername username={username} session={session} type="likes" />
-            </CardContent>
-          </Card>
+          <UserPostsByUsername username={username} session={session} type="likes" />
         </TabsContent>
       </Tabs>
     </div>

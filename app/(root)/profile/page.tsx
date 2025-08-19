@@ -56,10 +56,12 @@ export default function ProfilePage() {
     height: 50
   })
   const [imageRef, setImageRef] = useState<HTMLImageElement | null>(null)
-  const [croppedProfileImage, setCroppedProfileImage] = useState<File | null>(null)
-  const [croppedCoverImage, setCroppedCoverImage] = useState<File | null>(null)
   const [posts, setPosts] = useState<any[]>([])
   const [isLoadingPosts, setIsLoadingPosts] = useState(false)
+  const [selectedProfileImage, setSelectedProfileImage] = useState<string | null>(null)
+  const [selectedCoverImage, setSelectedCoverImage] = useState<string | null>(null)
+  const fileInputRef = useRef<HTMLInputElement>(null)
+  const coverFileInputRef = useRef<HTMLInputElement>(null)
 
   const form = useForm<ProfileUpdateInput>({
     resolver: zodResolver(formSchema),
@@ -133,16 +135,30 @@ export default function ProfilePage() {
 
   const handleImageUpload = async (file: File, type: 'profile' | 'cover') => {
     const reader = new FileReader()
-      reader.onload = () => {
-        if (type === 'profile') {
-            setCroppedProfileImage(file)
-          setIsProfileUploadOpen(true)
-        } else {
-             setCroppedCoverImage(file)
-          setIsCoverUploadOpen(true)
-        }
+    reader.onload = () => {
+      if (type === 'profile') {
+        setSelectedProfileImage(reader.result as string)
+        setIsProfileUploadOpen(true)
+      } else {
+        setSelectedCoverImage(reader.result as string)
+        setIsCoverUploadOpen(true)
       }
+    }
     reader.readAsDataURL(file)
+  }
+
+  const handleFileSelect = (type: 'profile' | 'cover') => {
+    const input = type === 'profile' ? fileInputRef.current : coverFileInputRef.current
+    if (input) {
+      input.click()
+    }
+  }
+
+  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>, type: 'profile' | 'cover') => {
+    const file = event.target.files?.[0]
+    if (file) {
+      handleImageUpload(file, type)
+    }
   }
 
   const handleCropComplete = async (crop: Crop, type: 'profile' | 'cover') => {
@@ -169,19 +185,87 @@ export default function ProfilePage() {
       )
     }
 
-      // Convert canvas to blob and upload
-      canvas.toBlob(async (blob) => {
-          if (blob) {
-              if(type === 'profile') {
-                  setCroppedProfileImage(blob as File)
-                  setIsProfileUploadOpen(false)
-                } else {
-                   setCroppedCoverImage(blob as File)
-                   setIsCoverUploadOpen(false)
-              }
-          }
+    // Convert canvas to blob and upload
+    canvas.toBlob(async (blob) => {
+      if (blob) {
+        const file = new File([blob], `${type}-image.jpg`, { type: 'image/jpeg' })
+        
+        // Close the dialog
+        if (type === 'profile') {
+          setIsProfileUploadOpen(false)
+        } else {
+          setIsCoverUploadOpen(false)
+        }
+        
+        // Immediately save the image
+        await saveImage(file, type)
+      }
+    }, 'image/jpeg', 0.8)
+  }
+
+  const saveImage = async (file: File, type: 'profile' | 'cover') => {
+    try {
+      console.log('Starting image save:', { type, fileName: file.name, fileSize: file.size })
+      
+      const formData = new FormData()
+      if (type === 'profile') {
+        formData.append('image', file)
+      } else {
+        formData.append('coverImage', file)
+      }
+
+      console.log('Sending request to /api/user/profile...')
+      const response = await fetch('/api/user/profile', {
+        method: 'PUT',
+        body: formData,
+      })
+
+      console.log('Response received:', { status: response.status, statusText: response.statusText })
+
+      if (response.ok) {
+        const data = await response.json()
+        console.log('Update successful:', data)
+        toast({
+          title: `${type === 'profile' ? 'Profile' : 'Cover'} image updated`,
+          description: `Your ${type} image has been successfully updated.`,
+        })
+        // Refresh profile data to show new image
+        await fetchProfile()
+      } else {
+        const errorData = await response.json()
+        console.error('Update failed:', errorData)
+        throw new Error(errorData.error || `Failed to update ${type} image`)
+      }
+    } catch (error) {
+      console.error(`Error updating ${type} image:`, error)
+      toast({
+        title: "Error",
+        description: error instanceof Error ? error.message : `Failed to update ${type} image. Please try again.`,
+        variant: "destructive",
       })
     }
+  }
+
+  const handleDialogClose = (type: 'profile' | 'cover', isOpen: boolean) => {
+    if (!isOpen) {
+      // Reset selected images when dialog closes
+      if (type === 'profile') {
+        setSelectedProfileImage(null)
+        setIsProfileUploadOpen(false)
+      } else {
+        setSelectedCoverImage(null)
+        setIsCoverUploadOpen(false)
+      }
+      // Reset crop
+      setCrop({
+        unit: '%',
+        x: 25,
+        y: 25,
+        width: 50,
+        height: 50
+      })
+    }
+  }
 
     const onSubmit = async (values: ProfileUpdateInput) => {
          try {
@@ -206,14 +290,6 @@ export default function ProfilePage() {
             if(values.birthDate){
                 formData.append('birthDate', values.birthDate)
             }
-
-
-        if (croppedProfileImage) {
-            formData.append('image', croppedProfileImage);
-          }
-         if (croppedCoverImage) {
-             formData.append('coverImage', croppedCoverImage);
-         }
 
         const response = await fetch('/api/user/profile', {
             method: 'PUT',
@@ -244,27 +320,26 @@ export default function ProfilePage() {
     return <div>Loading...</div>
   }
 
-  const profileImage = profileData?.profile?.image || profileData?.image || '/default-avatar.png'
-  const coverImage = profileData?.profile?.coverImage || profileData?.coverImage || '/default-cover.jpg'
+  const profileImage = profileData?.profile?.image || profileData?.image || '/default-avatar.svg'
+  const coverImage = profileData?.profile?.coverImage || profileData?.coverImage || '/default-cover.svg'
 
   return (
     <div className="flex flex-col space-y-4 p-4">
       <Card className="w-full">
         <CardContent className="p-0 rounded-t-lg">
           {/* Cover Image Section */}
-          <div className="relative h-64">
+          <div className="relative h-64 overflow-hidden">
             <Image
               src={coverImage}
               alt="Cover Photo"
               layout="fill"
               objectFit="cover"
               className="rounded-t-lg"
-                onLoadingComplete={(image) => setImageRef(image)}
             />
             <Button
               variant="ghost"
-              className="absolute bottom-4 right-4 bg-white/80 hover:bg-white"
-              onClick={() => setIsCoverUploadOpen(true)}
+              className="absolute bottom-4 right-4 bg-white/80 hover:bg-white dark:bg-black/80 dark:hover:bg-black dark:text-white z-10 pointer-events-auto"
+              onClick={() => handleFileSelect('cover')}
             >
               <Camera className="mr-2 h-4 w-4" />
               Change Cover
@@ -280,8 +355,8 @@ export default function ProfilePage() {
               </Avatar>
               <Button
                 variant="ghost"
-                className="absolute bottom-0 right-0 opacity-0 group-hover:opacity-100 transition-opacity"
-                  onClick={() => setIsProfileUploadOpen(true)}
+                className="absolute bottom-0 right-0 bg-white/80 hover:bg-white dark:bg-black/80 dark:hover:bg-black dark:text-white opacity-0 group-hover:opacity-100 transition-opacity"
+                onClick={() => handleFileSelect('profile')}
               >
                 <Pencil className="h-4 w-4" />
               </Button>
@@ -295,28 +370,48 @@ export default function ProfilePage() {
         </CardContent>
       </Card>
 
+      {/* Hidden file input elements */}
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="image/*"
+        onChange={(e) => handleFileChange(e, 'profile')}
+        className="hidden"
+      />
+      <input
+        ref={coverFileInputRef}
+        type="file"
+        accept="image/*"
+        onChange={(e) => handleFileChange(e, 'cover')}
+        className="hidden"
+      />
+
       {/* Image Upload Dialogs */}
-      <Dialog open={isProfileUploadOpen} onOpenChange={setIsProfileUploadOpen}>
+      <Dialog open={isProfileUploadOpen} onOpenChange={(isOpen) => handleDialogClose('profile', isOpen)}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle>Upload Profile Picture</DialogTitle>
           </DialogHeader>
           <div className="mt-4">
-            <ReactCrop
+            {selectedProfileImage && (
+              <ReactCrop
                 crop={crop}
-              onChange={c => setCrop(c)}
-              aspect={1}
+                onChange={c => setCrop(c)}
+                aspect={1}
                 circularCrop
-            >
-                <Image
-                    ref={setImageRef}
-                    src={profileData?.profile?.image || profileData?.image || '/default-avatar.png'}
-                    alt="Profile"
-                    width={300}
-                    height={300}
+              >
+                <img
+                  ref={setImageRef}
+                  src={selectedProfileImage}
+                  alt="Profile"
+                  style={{ maxWidth: '100%', maxHeight: '400px' }}
                 />
-            </ReactCrop>
+              </ReactCrop>
+            )}
             <div className="mt-4 flex justify-end space-x-2">
+              <Button variant="outline" onClick={() => handleDialogClose('profile', false)}>
+                Cancel
+              </Button>
               <Button onClick={() => handleCropComplete(crop, 'profile')}>
                 Save
               </Button>
@@ -325,27 +420,32 @@ export default function ProfilePage() {
         </DialogContent>
       </Dialog>
 
-        {/* Similar dialog for cover image */}
-        <Dialog open={isCoverUploadOpen} onOpenChange={setIsCoverUploadOpen}>
+        {/* Cover image dialog */}
+        <Dialog open={isCoverUploadOpen} onOpenChange={(isOpen) => handleDialogClose('cover', isOpen)}>
             <DialogContent className="sm:max-w-md">
                 <DialogHeader>
                     <DialogTitle>Upload Cover Image</DialogTitle>
                 </DialogHeader>
                 <div className="mt-4">
-                    <ReactCrop
-                        crop={crop}
-                        onChange={c => setCrop(c)}
-                    >
-                         <Image
-                            ref={setImageRef}
-                             src={profileData?.profile?.coverImage || profileData?.coverImage || '/default-cover.jpg'}
-                            alt="Cover"
-                            width={300}
-                             height={100}
-                            />
-                    </ReactCrop>
+                    {selectedCoverImage && (
+                      <ReactCrop
+                          crop={crop}
+                          onChange={c => setCrop(c)}
+                          aspect={16/9}
+                      >
+                           <img
+                              ref={setImageRef}
+                               src={selectedCoverImage}
+                              alt="Cover"
+                              style={{ maxWidth: '100%', maxHeight: '400px' }}
+                              />
+                      </ReactCrop>
+                    )}
                     <div className="mt-4 flex justify-end space-x-2">
-                      <Button onClick={() => handleCropComplete(crop, 'cover')}>
+                        <Button variant="outline" onClick={() => handleDialogClose('cover', false)}>
+                          Cancel
+                        </Button>
+                        <Button onClick={() => handleCropComplete(crop, 'cover')}>
                             Save
                         </Button>
                     </div>
@@ -358,19 +458,19 @@ export default function ProfilePage() {
         <TabsList className="w-full">
           <TabsTrigger
             value="about"
-            className="flex-1 relative after:absolute after:bottom-0 after:left-1/2 after:transform after:-translate-x-1/2 after:w-1/2 after:h-0.5 after:bg-primary-500 after:transition-all after:duration-300 data-[state=active]:after:w-1/2 data-[state=active]:after:opacity-100 after:opacity-0"
+            className="flex-1"
           >
             About
           </TabsTrigger>
           <TabsTrigger
             value="posts"
-            className="flex-1 relative after:absolute after:bottom-0 after:left-1/2 after:transform after:-translate-x-1/2 after:w-1/2 after:h-0.5 after:bg-primary-500 after:transition-all after:duration-300 data-[state=active]:after:w-1/2 data-[state=active]:after:opacity-100 after:opacity-0"
+            className="flex-1"
           >
             Posts
           </TabsTrigger>
           <TabsTrigger
             value="photos"
-            className="flex-1 relative after:absolute after:bottom-0 after:left-1/2 after:transform after:-translate-x-1/2 after:w-1/2 after:h-0.5 after:bg-primary-500 after:transition-all after:duration-300 data-[state=active]:after:w-1/2 data-[state=active]:after:opacity-100 after:opacity-0"
+            className="flex-1"
           >
             Photos
           </TabsTrigger>
