@@ -377,6 +377,7 @@ export default function ProfilePage() {
         accept="image/*"
         onChange={(e) => handleFileChange(e, 'profile')}
         className="hidden"
+        aria-label="Select profile image"
       />
       <input
         ref={coverFileInputRef}
@@ -384,6 +385,7 @@ export default function ProfilePage() {
         accept="image/*"
         onChange={(e) => handleFileChange(e, 'cover')}
         className="hidden"
+        aria-label="Select cover image"
       />
 
       {/* Image Upload Dialogs */}
@@ -404,7 +406,7 @@ export default function ProfilePage() {
                   ref={setImageRef}
                   src={selectedProfileImage}
                   alt="Profile"
-                  style={{ maxWidth: '100%', maxHeight: '400px' }}
+                  className="max-w-full max-h-[400px]"
                 />
               </ReactCrop>
             )}
@@ -437,7 +439,7 @@ export default function ProfilePage() {
                               ref={setImageRef}
                                src={selectedCoverImage}
                               alt="Cover"
-                              style={{ maxWidth: '100%', maxHeight: '400px' }}
+                              className="max-w-full max-h-[400px]"
                               />
                       </ReactCrop>
                     )}

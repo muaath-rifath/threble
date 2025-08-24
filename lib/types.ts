@@ -36,7 +36,7 @@ export interface ExtendedPost {
     author: User;
     reactions: Reaction[];
     parentId: string | null;
-    parent: ExtendedPost | null;
+    parent?: ExtendedPost;
     replies: ExtendedPost[];
     _count: {
         replies: number;

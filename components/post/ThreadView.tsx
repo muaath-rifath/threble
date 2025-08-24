@@ -6,38 +6,12 @@ import { Session } from 'next-auth'
 import { useToast } from '@/hooks/use-toast'
 import { Card, CardContent, CardHeader } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { MessageSquare, Users, ChevronLeft } from 'lucide-react'
+import { MessageSquare, ArrowLeft, Users, RefreshCw, ChevronLeft } from 'lucide-react'
 import { ExtendedPost } from '@/lib/types'
+import { format } from 'date-fns'
 
-import PostCard, { Post } from './PostCard'
+import PostCard from './PostCard'
 import ThreadReply from './ThreadReply'
-
-// Helper function to transform ExtendedPost to Post interface
-const transformExtendedPostToPost = (extendedPost: ExtendedPost): Post => {
-    return {
-        id: extendedPost.id,
-        content: extendedPost.content,
-        author: {
-            id: extendedPost.author.id,
-            name: extendedPost.author.name,
-            username: extendedPost.author.username,
-            image: extendedPost.author.image,
-        },
-        createdAt: extendedPost.createdAt,
-        updatedAt: extendedPost.updatedAt,
-        reactions: extendedPost.reactions,
-        _count: extendedPost._count,
-        mediaAttachments: extendedPost.mediaAttachments,
-        parent: extendedPost.parent ? {
-            id: extendedPost.parent.id,
-            author: {
-                id: extendedPost.parent.author.id,
-                name: extendedPost.parent.author.name,
-                username: extendedPost.parent.author.username,
-            }
-        } : undefined
-    }
-}
 
 interface ThreadViewProps {
     initialPost: ExtendedPost
@@ -104,6 +78,7 @@ export default function ThreadView({ initialPost, session }: ThreadViewProps) {
                     <button
                         onClick={() => router.back()}
                         className="p-2 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 transition-colors"
+                        aria-label="Go back to previous page"
                     >
                         <ChevronLeft className="h-5 w-5" />
                     </button>
@@ -112,12 +87,11 @@ export default function ThreadView({ initialPost, session }: ThreadViewProps) {
                 {/* Main Post */}
                 <div className="mb-8">
                     <PostCard
-                        post={transformExtendedPostToPost(post)}
+                        post={post}
                         session={session}
                         onUpdate={fetchPost}
                         isReply={!!post.parent}
                         showFullContent={true}
-                        hideRepliedTo={true} // Hide "Replied to" in thread view
                     />
                 </div>
 
