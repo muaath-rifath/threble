@@ -10,8 +10,44 @@ import { MessageSquare, ArrowLeft, Users, RefreshCw, ChevronLeft } from 'lucide-
 import { ExtendedPost } from '@/lib/types'
 import { format } from 'date-fns'
 
-import PostCard from './PostCard'
+import PostCard, { Post } from './PostCard'
 import ThreadReply from './ThreadReply'
+
+// Helper function to transform ExtendedPost to Post interface
+const transformExtendedPostToPost = (extendedPost: ExtendedPost): Post => {
+    return {
+        id: extendedPost.id,
+        content: extendedPost.content,
+        author: {
+            id: extendedPost.author.id,
+            name: extendedPost.author.name,
+            username: extendedPost.author.username,
+            image: extendedPost.author.image,
+        },
+        createdAt: extendedPost.createdAt,
+        updatedAt: extendedPost.updatedAt,
+        reactions: extendedPost.reactions.map(r => ({
+            id: r.id,
+            type: r.type,
+            userId: r.userId,
+            user: {
+                id: r.userId,
+                name: null,
+                image: null
+            }
+        })),
+        _count: extendedPost._count,
+        mediaAttachments: extendedPost.mediaAttachments,
+        parent: extendedPost.parent ? {
+            id: extendedPost.parent.id,
+            author: {
+                id: extendedPost.parent.author.id,
+                name: extendedPost.parent.author.name,
+                username: extendedPost.parent.author.username,
+            }
+        } : undefined
+    }
+}
 
 interface ThreadViewProps {
     initialPost: ExtendedPost
@@ -30,7 +66,11 @@ export default function ThreadView({ initialPost, session }: ThreadViewProps) {
             const response = await fetch(`/api/posts/${post.id}`)
             if (response.ok) {
                 const data = await response.json()
-                setPost(data)
+                // Preserve nested replies structure while updating main post data
+                setPost(prev => ({
+                    ...data,
+                    replies: prev.replies || data.replies || [] // Keep existing nested structure
+                }))
             }
         } catch (error) {
             console.error('Error fetching post:', error)
@@ -87,11 +127,12 @@ export default function ThreadView({ initialPost, session }: ThreadViewProps) {
                 {/* Main Post */}
                 <div className="mb-8">
                     <PostCard
-                        post={post}
+                        post={transformExtendedPostToPost(post)}
                         session={session}
                         onUpdate={fetchPost}
                         isReply={!!post.parent}
                         showFullContent={true}
+                        hideRepliedTo={true} // Hide "Replied to" in thread view
                     />
                 </div>
 

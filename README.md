@@ -18,6 +18,9 @@ A modern, open-source social media platform built for the tech community, licens
 - **Real-Time Updates**: Instant feedback and live interactions
 - **Responsive Design**: Seamless experience across all devices
 - **Community Tools**: Posts, comments, and user interaction features
+- **Professional Networking**: LinkedIn-style connection system with requests and suggestions
+- **Connection Management**: Send, accept, reject, and manage professional connections
+- **Smart Suggestions**: AI-powered connection recommendations based on mutual connections and communities
 - **Developer-First**: Built with modern development practices
 
 ## Quick Start
@@ -89,6 +92,52 @@ Leverages NextAuth with Prisma, it authentication provides:
 - **Type Safety**: Full TypeScript support
 
 For setup instructions, check `/docs/auth.md`.
+
+## Notification System
+
+Threble features a comprehensive notification system with mobile-responsive design:
+
+### Features
+- **Smart Notification Button**: Automatically detects device type
+  - **Desktop**: Shows dropdown with recent notifications
+  - **Mobile**: Navigates to dedicated notifications page
+- **Real-time Updates**: Live notification count and status updates
+- **Interactive Notifications**: Click to navigate to relevant content
+- **Mark as Read**: Individual and bulk mark-as-read functionality
+- **Notification Types**: Support for connections, posts, communities, and more
+
+### Mobile-First Design
+- **Responsive Dropdown**: Full-featured dropdown on desktop
+- **Dedicated Page**: Full-screen notification page on mobile devices
+- **Tab Navigation**: Separate tabs for all and unread notifications
+- **Pull-to-Refresh**: Easy refresh mechanism on mobile
+
+### API Integration
+- `GET /api/notifications` - Fetch notifications with filtering
+- `PATCH /api/notifications` - Mark notifications as read
+- Real-time badge count updates
+- Pagination support for large notification lists
+
+## Connection System
+
+Threble includes a comprehensive LinkedIn-style connection system:
+
+### Features
+- **Connection Requests**: Send and receive connection requests with proper notifications
+- **Connection Management**: Accept, reject, or remove connections
+- **Smart Suggestions**: Get connection recommendations based on:
+  - Mutual connections
+  - Shared communities
+  - Profile similarity
+- **Connection Status Tracking**: Real-time status updates (pending, connected, rejected)
+- **Mutual Connection Display**: See shared connections with other users
+
+### API Endpoints
+- `GET/POST /api/user/connections` - Manage connections
+- `GET /api/user/connections/requests` - Handle connection requests  
+- `GET /api/user/connections/suggestions` - Get connection suggestions
+- `GET /api/user/connections/status/[userId]` - Check connection status
+- `GET /api/user/connections/mutual/[userId]` - Get mutual connections
 
 ## Contributing
 

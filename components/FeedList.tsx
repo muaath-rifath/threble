@@ -4,6 +4,8 @@ import { useState, useEffect } from 'react'
 import { Session } from 'next-auth'
 import { useInView } from 'react-intersection-observer'
 import PostCard, { Post } from './post/PostCard'
+import { useAppDispatch, useAppSelector } from '@/lib/redux/hooks'
+import { fetchPosts, setInitialPosts } from '@/lib/redux/slices/postsSlice'
 
 interface FeedListProps {
     session: Session
@@ -11,60 +13,50 @@ interface FeedListProps {
 }
 
 export default function FeedList({ session, initialPosts = [] }: FeedListProps) {
-    const [posts, setPosts] = useState<Post[]>(initialPosts)
-    const [nextCursor, setNextCursor] = useState<string | null>(null)
-    const [isLoading, setIsLoading] = useState(false)
+    const dispatch = useAppDispatch()
+    const { posts, loading, hasMore, cursor } = useAppSelector((state) => state.posts)
     const { ref, inView } = useInView()
-    const [forceUpdateKey, setForceUpdateKey] = useState(0)
+    const [initialized, setInitialized] = useState(false)
 
-    const fetchPosts = async (cursor?: string | null) => {
-        try {
-            setIsLoading(true)
-            const url = `/api/posts${cursor ? `?cursor=${cursor}` : ''}`
-            const response = await fetch(url)
-            
-            if (!response.ok) {
-                throw new Error('Failed to fetch posts')
-            }
-            
-            const data = await response.json()
-            
-            if (cursor) {
-                setPosts(prev => [...prev, ...data.posts])
-            } else {
-                setPosts(data.posts)
-            }
-            
-            setNextCursor(data.nextCursor)
-        } catch (error) {
-            console.error('Error fetching posts:', error)
-        } finally {
-            setIsLoading(false)
+    // Utility function to deep serialize post dates
+    const serializePost = (post: any): any => {
+        return {
+            ...post,
+            createdAt: typeof post.createdAt === 'string' ? post.createdAt : (post.createdAt as any)?.toISOString?.() || post.createdAt,
+            updatedAt: typeof post.updatedAt === 'string' ? post.updatedAt : (post.updatedAt as any)?.toISOString?.() || post.updatedAt,
+            reactions: post.reactions?.map((r: any) => ({
+                ...r,
+                createdAt: typeof r.createdAt === 'string' ? r.createdAt : (r.createdAt as any)?.toISOString?.() || r.createdAt
+            })) || [],
+            parent: post.parent ? serializePost(post.parent) : null,
+            replies: post.replies?.map((reply: any) => serializePost(reply)) || []
         }
     }
 
-    const refreshFeed = () => {
-        setForceUpdateKey(prev => prev + 1)
-        fetchPosts()
-    }
-
+    // Initialize Redux state with server-side posts
     useEffect(() => {
-        if (initialPosts.length === 0 || forceUpdateKey > 0) {
-            fetchPosts()
+        if (initialPosts.length > 0 && !initialized) {
+            const serializedPosts = initialPosts.map(serializePost)
+            dispatch(setInitialPosts(serializedPosts))
+            setInitialized(true)
         }
-    }, [initialPosts.length, forceUpdateKey])
+    }, [dispatch, initialPosts, initialized])
 
+    // Load more posts when scrolling
     useEffect(() => {
-        if (inView && nextCursor && !isLoading) {
-            fetchPosts(nextCursor)
+        if (inView && hasMore && !loading && cursor) {
+            dispatch(fetchPosts({ cursor }))
         }
-    }, [inView, nextCursor, isLoading])
+    }, [inView, hasMore, loading, cursor, dispatch])
+
+    // Use Redux posts if available, otherwise use initial posts
+    const displayPosts = posts.length > 0 ? posts : initialPosts
 
     const handlePostUpdate = () => {
-        fetchPosts()
+        // No longer needed - Redux handles updates automatically
     }
 
-    if (!posts.length && !isLoading) {
+    if (!displayPosts.length && !loading) {
         return (
             <div className="text-center py-10">
                 <p className="text-gray-500">No posts yet. Be the first to post!</p>
@@ -74,7 +66,7 @@ export default function FeedList({ session, initialPosts = [] }: FeedListProps) 
 
     return (
         <div className="space-y-4">
-            {posts.map((post) => (
+            {displayPosts.map((post) => (
                 <PostCard
                     key={post.id}
                     post={post}
@@ -82,7 +74,7 @@ export default function FeedList({ session, initialPosts = [] }: FeedListProps) 
                     onUpdate={handlePostUpdate}
                 />
             ))}
-            {isLoading && (
+            {loading && (
                 <div className="text-center py-4">
                     <p className="text-gray-500">Loading more posts...</p>
                 </div>

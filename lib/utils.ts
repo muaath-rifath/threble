@@ -9,6 +9,7 @@ export function transformPost(post: any): any {
     return {
         ...post,
         createdAt: post.createdAt.toISOString(),
+        updatedAt: post.updatedAt.toISOString(),
         mediaAttachments: post.mediaAttachments || [],
         reactions: post.reactions?.map((r: any) => ({
             ...r,
@@ -17,6 +18,7 @@ export function transformPost(post: any): any {
         parent: post.parent ? {
             ...post.parent,
             createdAt: post.parent.createdAt.toISOString(),
+            updatedAt: post.parent.updatedAt.toISOString(),
             author: post.parent.author,
             reactions: post.parent.reactions?.map((r: any) => ({
                 ...r,

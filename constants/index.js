@@ -19,7 +19,7 @@ export const topbarNav = [
 },
 {
   imgURL:"/assets/bell.svg",
-  route: "notification",
+  route: "notifications",
   label: "Notification",
 },
 ];
@@ -38,6 +38,11 @@ export const sidebarLinks = [
       imgURL: "/assets/heart.svg",
       route: "/activity",
       label: "Activity",
+    },
+    {
+      imgURL: "/assets/members.svg",
+      route: "/connections",
+      label: "Connections",
     },
     {
       imgURL: "/assets/community.svg",

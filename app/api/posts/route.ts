@@ -30,25 +30,73 @@ export async function GET(req: NextRequest) {
     const { searchParams } = new URL(req.url)
     const limit = parseInt(searchParams.get('limit') || '20')
     const cursor = searchParams.get('cursor')
+    const communityId = searchParams.get('communityId')
 
     try {
         console.log('Fetching posts for user:', session.user.id)
         
-        const posts = await prisma.post.findMany({
-            where: {
-                parentId: null, // Only top-level posts, no replies
-                OR: [
-                    { authorId: session.user.id },
-                    {
-                        author: {
-                            followers: {
-                                some: { followerId: session.user.id },
-                            },
+        // Base where clause for posts
+        let whereClause: any = {
+            parentId: null, // Only top-level posts, no replies
+        }
+
+        // If communityId is specified, filter for that community
+        if (communityId) {
+            // Check if user has access to this community
+            const community = await prisma.community.findUnique({
+                where: { id: communityId },
+                include: {
+                    members: {
+                        where: { userId: session.user.id }
+                    }
+                }
+            })
+
+            if (!community) {
+                return NextResponse.json({ error: 'Community not found' }, { status: 404 })
+            }
+
+            // For private communities, user must be a member
+            if (community.visibility === 'PRIVATE' && community.members.length === 0) {
+                return NextResponse.json({ error: 'Access denied to private community' }, { status: 403 })
+            }
+
+            whereClause.communityId = communityId
+        } else {
+            // Regular feed logic - posts user has access to
+            whereClause.OR = [
+                { authorId: session.user.id },
+                {
+                    author: {
+                        followers: {
+                            some: { followerId: session.user.id },
                         },
                     },
-                    { visibility: 'public' },
-                ],
-            },
+                },
+                { visibility: 'public' },
+            ]
+            // Only include posts from communities the user is a member of or public posts not in communities
+            whereClause.OR.push({
+                AND: [
+                    { communityId: { not: null } },
+                    {
+                        community: {
+                            OR: [
+                                { visibility: 'PUBLIC' },
+                                {
+                                    members: {
+                                        some: { userId: session.user.id }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                ]
+            })
+        }
+        
+        const posts = await prisma.post.findMany({
+            where: whereClause,
             orderBy: { createdAt: 'desc' },
             include: {
                 author: {
@@ -58,6 +106,14 @@ export async function GET(req: NextRequest) {
                         image: true,
                         username: true
                     },
+                },
+                community: {
+                    select: {
+                        id: true,
+                        name: true,
+                        image: true,
+                        visibility: true
+                    }
                 },
                 reactions: {
                     include: {
@@ -82,6 +138,13 @@ export async function GET(req: NextRequest) {
                                 image: true 
                             },
                         },
+                        community: {
+                            select: {
+                                id: true,
+                                name: true,
+                                image: true
+                            }
+                        }
                     },
                 },
                 _count: {
@@ -175,6 +238,54 @@ export async function POST(req: NextRequest) {
             }, { status: 400 });
         }
 
+        // If posting to a community, validate membership
+        if (communityId) {
+            const membership = await prisma.communityMember.findUnique({
+                where: {
+                    userId_communityId: {
+                        userId: session.user.id,
+                        communityId: communityId
+                    }
+                }
+            });
+
+            if (!membership) {
+                return NextResponse.json({ 
+                    error: 'You must be a member of the community to post in it.' 
+                }, { status: 403 });
+            }
+        }
+
+        // If replying to a post, ensure the reply goes to the same community
+        let finalCommunityId = communityId;
+        if (parentId) {
+            const parentPost = await prisma.post.findUnique({
+                where: { id: parentId },
+                select: { communityId: true, authorId: true }
+            });
+
+            if (parentPost) {
+                finalCommunityId = parentPost.communityId;
+                // If replying to a community post, user must be a member
+                if (finalCommunityId) {
+                    const membership = await prisma.communityMember.findUnique({
+                        where: {
+                            userId_communityId: {
+                                userId: session.user.id,
+                                communityId: finalCommunityId
+                            }
+                        }
+                    });
+
+                    if (!membership) {
+                        return NextResponse.json({ 
+                            error: 'You must be a member of the community to reply to posts in it.' 
+                        }, { status: 403 });
+                    }
+                }
+            }
+        }
+
         // First upload files to temporary location
         if (mediaFiles.length > 0) {
             mediaAttachments = await Promise.all(
@@ -189,15 +300,25 @@ export async function POST(req: NextRequest) {
                 authorId: session.user.id,
                 visibility: visibility as Visibility,
                 parentId,
-                communityId,
+                communityId: finalCommunityId,
                 mediaAttachments
             },
             include: {
                 author: {
                     select: {
+                        id: true,
                         name: true,
                         image: true,
+                        username: true
                     },
+                },
+                community: {
+                    select: {
+                        id: true,
+                        name: true,
+                        image: true,
+                        visibility: true
+                    }
                 },
                 reactions: true,
                 _count: {
@@ -206,7 +327,19 @@ export async function POST(req: NextRequest) {
                 parent: {
                     include: {
                         author: {
-                            select: { name: true, image: true },
+                            select: { 
+                                id: true,
+                                name: true, 
+                                image: true,
+                                username: true
+                            },
+                        },
+                        community: {
+                            select: {
+                                id: true,
+                                name: true,
+                                image: true
+                            }
                         }
                     }
                 }

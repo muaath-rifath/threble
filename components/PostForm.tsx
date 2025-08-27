@@ -11,18 +11,23 @@ import { Textarea } from '@/components/ui/textarea';
 import { Form, FormControl, FormField, FormItem } from '@/components/ui/form';
 import { useToast } from '@/hooks/use-toast';
 import { Image, Video, X } from 'lucide-react';
+import { Post } from '@/lib/types';
+import { useAppDispatch } from '@/lib/redux/hooks';
+import { createPost } from '@/lib/redux/slices/postsSlice';
 
 const postFormSchema = z.object({
   content: z.string().min(1, "Post content cannot be empty"),
 });
 
 interface PostFormProps {
-  onPostCreated?: () => void;
+  onPostCreated?: (post: any) => void;
+  communityId?: string; // Optional community ID for community posts
 }
 
-export default function PostForm({ onPostCreated }: PostFormProps) {
+export default function PostForm({ onPostCreated, communityId }: PostFormProps) {
   const router = useRouter();
   const { toast } = useToast();
+  const dispatch = useAppDispatch();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [mediaFiles, setMediaFiles] = useState<File[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -70,20 +75,28 @@ export default function PostForm({ onPostCreated }: PostFormProps) {
         formData.append('mediaAttachments', file);
       });
 
-      const response = await fetch('/api/posts', {
+      // Use community endpoint if communityId is provided
+      const endpoint = communityId ? `/api/communities/${communityId}/posts` : '/api/posts';
+
+      const response = await fetch(endpoint, {
         method: 'POST',
         body: formData,
       });
 
       if (response.ok) {
+        const responseData = await response.json();
+        
+        // Add the new post to Redux store immediately
+        dispatch(createPost.fulfilled(responseData, '', { content: values.content }));
+        
         toast({ 
           title: "Success", 
           description: "Your post has been created successfully." 
         });
         form.reset();
         setMediaFiles([]);
-        router.refresh();
-        onPostCreated?.();  // Call the callback when post is created successfully
+        // Remove router.refresh() since Redux handles the update
+        onPostCreated?.(responseData);  // Call the callback with the created post
       } else {
         throw new Error('Failed to create post');
       }

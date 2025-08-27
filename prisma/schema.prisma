@@ -23,6 +23,14 @@ model User {
   activities         Activity[]
   createdCommunities Community[]       @relation("CommunityCreator")
   communities        CommunityMember[]
+  joinRequests       JoinRequest[]     @relation("JoinRequests")
+  sentInvitations    CommunityInvitation[] @relation("SentInvitations")
+  receivedInvitations CommunityInvitation[] @relation("ReceivedInvitations")
+  notificationsReceived Notification[] @relation("NotificationsReceived")
+  notificationsSent     Notification[] @relation("NotificationsSent")
+  createdEvents         CommunityEvent[] @relation("CreatedEvents")
+  eventAttendances      EventAttendee[] @relation("EventAttendances")
+  moderationActions     ModerationAction[] @relation("ModeratorActions")
   connectedTo        Connection[]      @relation("Connections")
   connections        Connection[]
   following          Follow[]          @relation("Following")
@@ -102,6 +110,7 @@ model Post {
   parent           Post?      @relation("PostReplies", fields: [parentId], references: [id], onDelete: Cascade)
   replies          Post[]     @relation("PostReplies")
   reactions        Reaction[]
+  notifications    Notification[] @relation("PostNotifications")
 
   @@index([authorId, createdAt])
   @@index([communityId, createdAt])
@@ -114,15 +123,22 @@ model Community {
   description String?           @db.Text
   image       String?
   coverImage  String?
+  visibility  CommunityVisibility @default(PUBLIC)
   creatorId   String
   createdAt   DateTime          @default(now())
   updatedAt   DateTime          @updatedAt
   creator     User              @relation("CommunityCreator", fields: [creatorId], references: [id])
   members     CommunityMember[]
   posts       Post[]
+  joinRequests JoinRequest[]
+  invitations  CommunityInvitation[]
+  notifications Notification[] @relation("CommunityNotifications")
+  events       CommunityEvent[] @relation("CommunityEvents")
+  moderations  ModerationAction[] @relation("CommunityModerations")
 
   @@index([name])
   @@index([creatorId])
+  @@index([visibility])
 }
 
 model CommunityMember {
@@ -178,10 +194,13 @@ model Follow {
 }
 
 model Connection {
-  id              String   @id @default(cuid())
-  userId          String
-  connectedUserId String
-  createdAt       DateTime @default(now())
+  id              String            @id @default(cuid())
+  userId          String            // requester
+  connectedUserId String            // recipient
+  status          ConnectionStatus  @default(PENDING)
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+  
   connectedUser   User     @relation("Connections", fields: [connectedUserId], references: [id], onDelete: Cascade)
   user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
@@ -196,8 +215,181 @@ enum Role {
   ADMIN
 }
 
+enum ConnectionStatus {
+  PENDING
+  ACCEPTED
+  REJECTED
+  BLOCKED
+}
+
 enum Visibility {
   public
   private
   followers
+}
+
+enum CommunityVisibility {
+  PUBLIC
+  PRIVATE
+}
+
+enum RequestStatus {
+  PENDING
+  ACCEPTED
+  REJECTED
+}
+
+enum NotificationType {
+  NEW_FOLLOWER
+  POST_REACTION
+  POST_REPLY
+  MENTION
+  CONNECTION_REQUEST
+  CONNECTION_ACCEPTED
+  CONNECTION_REJECTED
+  COMMUNITY_INVITATION
+  COMMUNITY_REQUEST_APPROVED
+  COMMUNITY_REQUEST_REJECTED
+  COMMUNITY_NEW_MEMBER
+  COMMUNITY_POST
+  COMMUNITY_ROLE_CHANGED
+  COMMUNITY_EVENT_CREATED
+  COMMUNITY_EVENT_UPDATED
+  COMMUNITY_EVENT_CANCELLED
+  COMMUNITY_EVENT_REMINDER
+  EVENT_REMINDER
+  EVENT_CANCELLED
+  SYSTEM_ANNOUNCEMENT
+}
+
+model JoinRequest {
+  id          String        @id @default(cuid())
+  communityId String
+  userId      String
+  status      RequestStatus @default(PENDING)
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  community   Community @relation(fields: [communityId], references: [id], onDelete: Cascade)
+  user        User      @relation("JoinRequests", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([communityId, userId])
+  @@index([communityId])
+  @@index([userId])
+}
+
+model CommunityInvitation {
+  id          String        @id @default(cuid())
+  communityId String
+  inviterId   String
+  inviteeId   String
+  status      RequestStatus @default(PENDING)
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  community Community @relation(fields: [communityId], references: [id], onDelete: Cascade)
+  inviter   User      @relation("SentInvitations", fields: [inviterId], references: [id], onDelete: Cascade)
+  invitee   User      @relation("ReceivedInvitations", fields: [inviteeId], references: [id], onDelete: Cascade)
+
+  @@unique([communityId, inviteeId])
+  @@index([communityId])
+  @@index([inviteeId])
+}
+
+model Notification {
+  id          String   @id @default(cuid())
+  type        NotificationType
+  userId      String   // recipient
+  actorId     String?  // who performed the action
+  communityId String?  // related community
+  postId      String?  // related post
+  data        Json?    @default("{}")
+  message     String?  @db.Text
+  read        Boolean  @default(false)
+  readAt      DateTime?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  user        User       @relation("NotificationsReceived", fields: [userId], references: [id], onDelete: Cascade)
+  actor       User?      @relation("NotificationsSent", fields: [actorId], references: [id], onDelete: Cascade)
+  community   Community? @relation("CommunityNotifications", fields: [communityId], references: [id], onDelete: Cascade)
+  post        Post?      @relation("PostNotifications", fields: [postId], references: [id], onDelete: Cascade)
+
+  @@index([userId, read])
+  @@index([userId, createdAt])
+  @@index([type, createdAt])
+}
+
+model CommunityEvent {
+  id               String   @id @default(cuid())
+  title            String
+  description      String?  @db.Text
+  startTime        DateTime
+  endTime          DateTime
+  location         String?
+  isVirtual        Boolean  @default(false)
+  virtualLink      String?
+  maxAttendees     Int?
+  rsvpDeadline     DateTime?
+  tags             String[] @default([])
+  isRecurring      Boolean  @default(false)
+  recurrencePattern Json?   @default("{}")
+  communityId      String
+  creatorId        String
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  community        Community @relation("CommunityEvents", fields: [communityId], references: [id], onDelete: Cascade)
+  creator          User      @relation("CreatedEvents", fields: [creatorId], references: [id], onDelete: Cascade)
+  attendees        EventAttendee[]
+
+  @@index([communityId, startTime])
+  @@index([creatorId])
+  @@index([startTime])
+}
+
+model EventAttendee {
+  id        String        @id @default(cuid())
+  eventId   String
+  userId    String
+  status    AttendeeStatus @default(PENDING)
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
+
+  event     CommunityEvent @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  user      User          @relation("EventAttendances", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([eventId, userId])
+  @@index([eventId])
+  @@index([userId])
+}
+
+model ModerationAction {
+  id          String        @id @default(cuid())
+  content     String
+  contentType String
+  itemId      String?       // ID of the moderated item (post, comment, etc.)
+  communityId String?
+  moderatorId String
+  action      String        // FLAG, APPROVE, REMOVE, etc.
+  reason      String?
+  metadata    Json?
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  moderator   User          @relation("ModeratorActions", fields: [moderatorId], references: [id], onDelete: Cascade)
+  community   Community?    @relation("CommunityModerations", fields: [communityId], references: [id], onDelete: Cascade)
+
+  @@index([communityId])
+  @@index([moderatorId])
+  @@index([contentType])
+  @@index([action])
+  @@index([createdAt])
+}
+
+enum AttendeeStatus {
+  PENDING
+  ATTENDING
+  NOT_ATTENDING
+  MAYBE
 }

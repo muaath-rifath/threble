@@ -1,5 +1,10 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  experimental: {
+    serverActions: {
+      bodySizeLimit: '5mb', // Increase body size limit for file uploads
+    },
+  },
   async rewrites() {
     return [
       {

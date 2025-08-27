@@ -11,6 +11,8 @@ import { useSession } from 'next-auth/react'
 import Link from 'next/link'
 import UserPostsByUsername from '@/components/post/UserPostsByUsername'
 import PublicUserPostList from '@/components/post/PublicUserPostList'
+import { ConnectionButton } from '@/components/shared/ConnectionButton'
+import { MutualConnections } from '@/components/shared/MutualConnections'
 
 interface UserProfile {
   id: string;
@@ -30,6 +32,7 @@ interface UserProfile {
     posts: number;
     followers: number;
     following: number;
+    connections: number;
   };
 }
 
@@ -41,6 +44,7 @@ export default function UserProfilePage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [isFollowing, setIsFollowing] = useState(false)
+  const [connectionStatus, setConnectionStatus] = useState<string | null>(null)
 
   const username = params.username as string
 
@@ -69,6 +73,7 @@ export default function UserProfilePage() {
       const data = await response.json()
       setUserProfile(data.user)
       setIsFollowing(data.isFollowing || false)
+      setConnectionStatus(data.connectionStatus || null)
     } catch (error) {
       console.error('Error fetching user profile:', error)
       setError('Failed to load profile')
@@ -166,12 +171,19 @@ export default function UserProfilePage() {
               </Button>
             ) : (
               session && (
-                <Button
-                  variant={isFollowing ? "outline" : "default"}
-                  onClick={handleFollow}
-                >
-                  {isFollowing ? 'Unfollow' : 'Follow'}
-                </Button>
+                <div className="flex gap-2">
+                  <ConnectionButton 
+                    userId={userProfile.id}
+                    initialStatus={connectionStatus}
+                    username={userProfile.username}
+                  />
+                  <Button
+                    variant={isFollowing ? "outline" : "default"}
+                    onClick={handleFollow}
+                  >
+                    {isFollowing ? 'Unfollow' : 'Follow'}
+                  </Button>
+                </div>
               )
             )}
           </div>
@@ -181,6 +193,11 @@ export default function UserProfilePage() {
           {/* Bio */}
           {userProfile.profile?.bio && (
             <p className="text-gray-700 mb-4">{userProfile.profile.bio}</p>
+          )}
+
+          {/* Mutual Connections */}
+          {!isOwnProfile && session && (
+            <MutualConnections userId={userProfile.id} />
           )}
 
           {/* Profile Info */}
@@ -215,6 +232,10 @@ export default function UserProfilePage() {
             <div>
               <span className="font-bold">{userProfile._count?.posts || 0}</span>{' '}
               <span className="text-gray-600">Posts</span>
+            </div>
+            <div>
+              <span className="font-bold">{userProfile._count?.connections || 0}</span>{' '}
+              <span className="text-gray-600">Connections</span>
             </div>
             <div>
               <span className="font-bold">{userProfile._count?.following || 0}</span>{' '}

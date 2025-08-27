@@ -1,11 +1,15 @@
 "use client"
 import Link from "next/link"
 import Image from "next/image"
-import { usePathname, useRouter } from "next/navigation"
+import { usePathname } from "next/navigation"
 import { topbarNav } from '@/constants/'
-import ProfileMenu from "./ProfileMenu";
+import ProfileMenu from "./ProfileMenu"
+import { NotificationDropdown } from "./NotificationDropdown"
+import { useIsMobile } from "@/hooks/use-mobile"
+
 function Topbar() {
-    const pathname = usePathname();
+    const pathname = usePathname()
+    const isMobile = useIsMobile()
 
     return (
         <nav className="topbar">
@@ -16,10 +20,20 @@ function Topbar() {
 
             <div className="flex flex-right gap-4 items-center">
                 {topbarNav.map((link) => {
-                    const isActive = pathname === link.route;
+                    const isActive = pathname === `/${link.route}`
+                    
+                    // Special handling for notifications
+                    if (link.label === "Notification") {
+                        return (
+                            <div className="flex w-10" key={link.label}>
+                                <NotificationDropdown isMobile={isMobile} />
+                            </div>
+                        )
+                    }
+                    
                     return (
                         <div className="flex w-10" key={link.label}>
-                            <Link href={link.route} className="flex items-center glass-button rounded-xl p-2">
+                            <Link href={`/${link.route}`} className="flex items-center glass-button rounded-xl p-2">
                                 <Image 
                                     src={link.imgURL} 
                                     className={`transition-all duration-200 ${isActive ? 'invert-0 dark:invert brightness-0 saturate-100' : 'opacity-60 dark:invert hover:opacity-100'}`}

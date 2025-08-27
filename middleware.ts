@@ -9,7 +9,8 @@ const RESERVED_PATHS = [
   'profile', 'settings', 'admin', 'dashboard', 'feed', 'explore',
   'notifications', 'messages', 'search', 'trending', 'thread',
   'post', 'posts', 'user', 'users', 'home', 'about', 'contact',
-  'terms', 'privacy', 'help', 'support', 'media', 'upload', 'download'
+  'terms', 'privacy', 'help', 'support', 'media', 'upload', 'download',
+  'communities', 'community', 'create'
 ]
 
 export async function middleware(request: NextRequest) {

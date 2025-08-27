@@ -3,7 +3,7 @@ import { authOptions } from '@/app/api/auth/[...nextauth]/options'
 import prisma from '@/lib/prisma'
 import FeedListContainer from '@/components/FeedListContainer'
 import { transformPost } from '@/lib/utils'
-import { Post } from '@/lib/types'
+import { Post } from '@/components/post/PostCard'
 
 export default async function Home() {
     const session = await getServerSession(authOptions)

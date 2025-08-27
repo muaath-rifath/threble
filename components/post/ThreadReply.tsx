@@ -71,7 +71,6 @@ export default function ThreadReply({
     const [isUpdating, setIsUpdating] = useState(false)
     const [isDeleting, setIsDeleting] = useState(false)
     const [isEditing, setIsEditing] = useState(false)
-    const [likeCount, setLikeCount] = useState(reply.reactions.filter(r => r.type === 'LIKE').length)
     const [isLoadingReactions, setIsLoadingReactions] = useState(false)
     const [reactionUsers, setReactionUsers] = useState<Array<{
         id: string
@@ -89,14 +88,21 @@ export default function ThreadReply({
     const [isExpanded, setIsExpanded] = useState(true)
     const [showReadMore, setShowReadMore] = useState(false)
     const [isContentExpanded, setIsContentExpanded] = useState(false)
+    const [localReactions, setLocalReactions] = useState(reply.reactions || [])
     const replyTextareaRef = useRef<HTMLTextAreaElement>(null)
 
     const isAuthor = session?.user?.id === reply.author.id
-    const isLiked = reply.reactions.some(r => r.userId === session?.user?.id && r.type === 'LIKE')
+    const isLiked = localReactions.some(r => r.userId === session?.user?.id && r.type === 'LIKE')
+    const likeCount = localReactions.filter(r => r.type === 'LIKE').length
     const isEdited = new Date(reply.updatedAt) > new Date(reply.createdAt)
 
     // Character limit for read more functionality
     const CONTENT_LIMIT = 280
+
+    // Sync local reactions with reply prop changes
+    useEffect(() => {
+        setLocalReactions(reply.reactions || [])
+    }, [reply.reactions])
 
     // Check if content needs read more
     useEffect(() => {
@@ -138,10 +144,26 @@ export default function ThreadReply({
         setIsUpdating(true)
         const currentLikeState = isLiked
         const currentCount = likeCount
+        const currentReactions = [...localReactions]
 
-        try {
-            // Optimistic update
-            setLikeCount(prev => currentLikeState ? prev - 1 : prev + 1)
+        try {            
+            // Optimistic update for reactions array
+            if (currentLikeState) {
+                // Remove reaction
+                setLocalReactions(prev => prev.filter(r => !(r.userId === session.user.id && r.type === 'LIKE')))
+            } else {
+                // Add reaction
+                setLocalReactions(prev => [...prev, {
+                    id: `temp-${Date.now()}`,
+                    type: 'LIKE',
+                    userId: session.user.id,
+                    user: {
+                        id: session.user.id,
+                        name: session.user.name || null,
+                        image: session.user.image || null
+                    }
+                }])
+            }
 
             const method = currentLikeState ? 'DELETE' : 'POST'
             const url = `/api/posts/${reply.id}/reactions${currentLikeState ? '?type=LIKE' : ''}`
@@ -156,12 +178,25 @@ export default function ThreadReply({
 
             if (!response.ok) {
                 // Revert optimistic updates
-                setLikeCount(currentCount)
+                setLocalReactions(currentReactions)
                 const errorData = await response.json()
+                
+                // Handle specific error cases more gracefully
+                if (response.status === 400 && errorData.error?.includes('already reacted')) {
+                    // If already reacted, just show a gentle message and don't throw error
+                    toast({
+                        title: "Already reacted",
+                        description: "You have already reacted to this post.",
+                    })
+                    return
+                }
+                
                 throw new Error(errorData.error || 'Failed to update reaction')
             }
 
-            onUpdate()
+            // Don't call onUpdate() to avoid losing nested replies structure
+            // The optimistic update should be sufficient
+            // onUpdate()
         } catch (error) {
             console.error('Error updating reaction:', error)
             toast({
@@ -289,7 +324,8 @@ export default function ThreadReply({
                 description: "Reply updated successfully." 
             });
             setIsEditing(false);
-            onUpdate();
+            // Don't call onUpdate() for edits to avoid losing nested replies structure
+            // onUpdate();
         } catch (error: any) {
             console.error('Error updating reply:', error);
             toast({
@@ -662,10 +698,10 @@ export default function ThreadReply({
                                 >
                                     <ThumbsUp className={`h-5 w-5 ${isLiked ? 'fill-current' : ''}`} />
                                     <span>
-                                        {reply._count.reactions || reply.reactions.filter(r => r.type === 'LIKE').length}
+                                        {likeCount}
                                     </span>
                                 </Button>
-                                {(reply._count.reactions || reply.reactions.filter(r => r.type === 'LIKE').length) > 0 && (
+                                {likeCount > 0 && (
                                     <SheetTrigger asChild>
                                         <Button
                                             variant="ghost"

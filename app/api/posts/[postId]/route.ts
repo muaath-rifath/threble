@@ -4,21 +4,74 @@ import { authOptions } from '@/app/api/auth/[...nextauth]/options'
 import prisma from '@/lib/prisma'
 import { deleteFileFromBlobStorage, uploadFileToBlobStorage, moveFile } from '@/lib/azure-storage'
 
-async function authorizeUser(postId: string, userId: string) {
+async function authorizeUser(postId: string, userId: string, action: 'read' | 'edit' | 'delete' = 'edit') {
     const post = await prisma.post.findUnique({
         where: { id: postId },
-        select: { authorId: true }
+        select: { 
+            authorId: true,
+            communityId: true,
+            community: {
+                select: {
+                    id: true,
+                    name: true,
+                    visibility: true
+                }
+            }
+        }
     });
     
     if (!post) {
         throw new Error('Post not found');
     }
-    
-    if (post.authorId !== userId) {
-        throw new Error('Unauthorized');
+
+    // For read access, check community visibility
+    if (action === 'read') {
+        if (post.communityId && post.community) {
+            // For private communities, user must be a member
+            if (post.community.visibility === 'PRIVATE') {
+                const membership = await prisma.communityMember.findUnique({
+                    where: {
+                        userId_communityId: {
+                            userId: userId,
+                            communityId: post.communityId
+                        }
+                    }
+                });
+
+                if (!membership) {
+                    throw new Error('Access denied to private community post');
+                }
+            }
+        }
+        return post;
+    }
+
+    // For edit/delete actions
+    const isAuthor = post.authorId === userId;
+
+    // If user is the author, they can edit/delete
+    if (isAuthor) {
+        return post;
+    }
+
+    // For community posts, check if user is admin/moderator
+    if (post.communityId && action === 'delete') {
+        const membership = await prisma.communityMember.findUnique({
+            where: {
+                userId_communityId: {
+                    userId: userId,
+                    communityId: post.communityId
+                }
+            }
+        });
+
+        // Only admins and moderators can delete others' posts
+        if (membership && (membership.role === 'ADMIN' || membership.role === 'MODERATOR')) {
+            return post;
+        }
     }
     
-    return post;
+    throw new Error('Unauthorized');
 }
 
 export async function GET(
@@ -33,6 +86,13 @@ export async function GET(
     }
 
     try {
+        // Check read authorization first
+        try {
+            await authorizeUser(postId, session.user.id, 'read');
+        } catch (error: any) {
+            return NextResponse.json({ error: error.message }, { status: error.message === 'Post not found' ? 404 : 403 });
+        }
+
         const post = await prisma.post.findUnique({
             where: { id: postId },
             select: {
@@ -41,6 +101,7 @@ export async function GET(
                 createdAt: true,
                 authorId: true,
                 parentId: true,
+                communityId: true,
                 mediaAttachments: true,
                 author: {
                     select: {
@@ -49,6 +110,14 @@ export async function GET(
                         username: true,
                         image: true,
                     },
+                },
+                community: {
+                    select: {
+                        id: true,
+                        name: true,
+                        image: true,
+                        visibility: true
+                    }
                 },
                 reactions: true,
                 _count: {
@@ -61,6 +130,7 @@ export async function GET(
                         createdAt: true,
                         authorId: true,
                         parentId: true,
+                        communityId: true,
                         mediaAttachments: true,
                         author: {
                             select: { 
@@ -69,6 +139,13 @@ export async function GET(
                                 username: true,
                                 image: true 
                             },
+                        },
+                        community: {
+                            select: {
+                                id: true,
+                                name: true,
+                                image: true
+                            }
                         },
                         reactions: true,
                         _count: {
@@ -81,6 +158,8 @@ export async function GET(
                         id: true,
                         content: true,
                         createdAt: true,
+                        authorId: true,
+                        communityId: true,
                         mediaAttachments: true,
                         author: {
                             select: { 
@@ -89,6 +168,13 @@ export async function GET(
                                 username: true,
                                 image: true 
                             },
+                        },
+                        community: {
+                            select: {
+                                id: true,
+                                name: true,
+                                image: true
+                            }
                         },
                         reactions: true,
                         _count: {
@@ -125,9 +211,9 @@ export async function DELETE(
             return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
         }
 
-        // Authorize user
+        // Authorize user for deletion (supports community moderation)
         try {
-            await authorizeUser(postId, session.user.id);
+            await authorizeUser(postId, session.user.id, 'delete');
         } catch (error: any) {
             return NextResponse.json({ error: error.message }, { status: error.message === 'Post not found' ? 404 : 403 });
         }
@@ -174,9 +260,9 @@ export async function PATCH(
             return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
         }
 
-        // Authorize user
+        // Authorize user for editing (only author can edit)
         try {
-            await authorizeUser(postId, session.user.id);
+            await authorizeUser(postId, session.user.id, 'edit');
         } catch (error: any) {
             return NextResponse.json({ error: error.message }, { status: error.message === 'Post not found' ? 404 : 403 });
         }

@@ -14,6 +14,8 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/co
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Textarea } from "@/components/ui/textarea"
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog"
+import { useAppDispatch, useAppSelector } from '@/lib/redux/hooks'
+import { addReaction, removeReaction, updatePostReactions as updateReactionsInSlice } from '@/lib/redux/slices/reactionsSlice'
 
 export interface Post {
     id: string
@@ -63,10 +65,39 @@ interface PostCardProps {
 export default function PostCard({ post, session, onUpdate, isReply = false, showFullContent = false, hideRepliedTo = false }: PostCardProps) {
     const router = useRouter()
     const { toast } = useToast()
+    const dispatch = useAppDispatch()
+    
+    // Get reactions from Redux store, fallback to post reactions
+    const postReactions = useAppSelector(state => state.reactions.reactions[post.id] || post.reactions)
+    const reactionCounts = useAppSelector(state => state.reactions.reactionCounts[post.id])
+    const isReactionLoading = useAppSelector(state => state.reactions.loading[post.id] || false)
+    
+    // Initialize reactions in Redux store if not already there
+    useEffect(() => {
+        const reduxReactions = postReactions
+        const postHasReactions = post.reactions && post.reactions.length > 0
+        const reduxHasReactions = reduxReactions && reduxReactions.length > 0
+        
+        // Only initialize if Redux doesn't have reactions for this post
+        if (!reduxHasReactions && postHasReactions) {
+            // Calculate reaction counts from post reactions
+            const counts: Record<string, number> = {}
+            post.reactions?.forEach(reaction => {
+                counts[reaction.type] = (counts[reaction.type] || 0) + 1
+            })
+            
+            // Initialize Redux state with post reactions
+            dispatch(updateReactionsInSlice({
+                postId: post.id,
+                reactions: post.reactions || [],
+                reactionCounts: counts
+            }))
+        }
+    }, [dispatch, post.id, post.reactions, postReactions])
+    
     const [isUpdating, setIsUpdating] = useState(false)
     const [isDeleting, setIsDeleting] = useState(false)
     const [isEditing, setIsEditing] = useState(false)
-    const [likeCount, setLikeCount] = useState(post.reactions.filter(r => r.type === 'LIKE').length)
     const [showLikes, setShowLikes] = useState(false)
     const [likedUsers, setLikedUsers] = useState<Array<{ id: string; name: string; image: string | null }>>([])
     const [isLoadingReactions, setIsLoadingReactions] = useState(false)
@@ -75,6 +106,9 @@ export default function PostCard({ post, session, onUpdate, isReply = false, sho
         name: string | null
         image: string | null
     }>>([])
+    
+    // Calculate like count from Redux state or post reactions
+    const likeCount = reactionCounts?.LIKE || postReactions?.filter(r => r.type === 'LIKE').length || 0
     const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
     const [editContent, setEditContent] = useState(post.content)
     const [keepMediaUrls, setKeepMediaUrls] = useState<string[]>(post.mediaAttachments || [])
@@ -86,48 +120,43 @@ export default function PostCard({ post, session, onUpdate, isReply = false, sho
     const replyTextareaRef = useRef<HTMLTextAreaElement>(null)
 
     const isAuthor = session?.user?.id === post.author.id
-    const isLiked = post.reactions.some(r => r.userId === session?.user?.id && r.type === 'LIKE')
+    const isLiked = postReactions?.some(r => r.userId === session?.user?.id && r.type === 'LIKE') || false
     const isEdited = new Date(post.updatedAt) > new Date(post.createdAt)
 
     const handleLike = async () => {
-        if (!session?.user?.id || isUpdating) return
+        if (!session?.user?.id || isReactionLoading) return
 
-        setIsUpdating(true)
-        const currentLikeState = isLiked
-        const currentCount = likeCount
+        console.log('handleLike called', { 
+            isLiked, 
+            postId: post.id, 
+            userId: session.user.id, 
+            currentReactions: postReactions,
+            isLoading: isReactionLoading 
+        })
 
         try {
-            // Optimistic update
-            setLikeCount(prev => currentLikeState ? prev - 1 : prev + 1)
-
-            const method = currentLikeState ? 'DELETE' : 'POST'
-            const url = `/api/posts/${post.id}/reactions${currentLikeState ? '?type=LIKE' : ''}`
-
-            const response = await fetch(url, {
-                method,
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                ...(method === 'POST' && { body: JSON.stringify({ type: 'LIKE' }) })
-            })
-
-            if (!response.ok) {
-                // Revert optimistic updates
-                setLikeCount(currentCount)
-                const errorData = await response.json()
-                throw new Error(errorData.error || 'Failed to update reaction')
+            if (isLiked) {
+                console.log('Removing reaction...')
+                const result = await dispatch(removeReaction({ postId: post.id, type: 'LIKE', userId: session.user.id }))
+                console.log('Remove reaction result:', result)
+                if (removeReaction.rejected.match(result)) {
+                    throw new Error(result.error.message || 'Failed to remove reaction')
+                }
+            } else {
+                console.log('Adding reaction...')
+                const result = await dispatch(addReaction({ postId: post.id, type: 'LIKE' }))
+                console.log('Add reaction result:', result)
+                if (addReaction.rejected.match(result)) {
+                    throw new Error(result.error.message || 'Failed to add reaction')
+                }
             }
-
-            onUpdate()
         } catch (error) {
             console.error('Error updating reaction:', error)
             toast({
                 title: "Error",
-                description: error instanceof Error ? error.message : "Failed to update reaction. Please try again.",
+                description: "Failed to update reaction. Please try again.",
                 variant: "destructive",
             })
-        } finally {
-            setIsUpdating(false)
         }
     }
 

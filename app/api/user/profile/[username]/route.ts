@@ -29,6 +29,8 @@ export async function GET(
             posts: true,
             followers: true,
             following: true,
+            connectedTo: true,
+            connections: true,
           }
         }
       }
@@ -42,6 +44,7 @@ export async function GET(
 
     // Check if current user is following this user
     let isFollowing = false
+    let connectionStatus = null
     if (session?.user?.id && session.user.id !== user.id) {
       const followRecord = await prisma.follow.findUnique({
         where: {
@@ -52,7 +55,59 @@ export async function GET(
         }
       })
       isFollowing = !!followRecord
+
+      // Check connection status
+      const connection = await prisma.connection.findFirst({
+        where: {
+          OR: [
+            {
+              userId: session.user.id,
+              connectedUserId: user.id
+            },
+            {
+              userId: user.id,
+              connectedUserId: session.user.id
+            }
+          ]
+        }
+      })
+
+      if (connection) {
+        const isRequester = connection.userId === session.user.id
+        switch (connection.status) {
+          case 'PENDING':
+            connectionStatus = isRequester ? 'request_sent' : 'request_received'
+            break
+          case 'ACCEPTED':
+            connectionStatus = 'connected'
+            break
+          case 'REJECTED':
+            connectionStatus = 'rejected'
+            break
+          case 'BLOCKED':
+            connectionStatus = 'blocked'
+            break
+        }
+      } else {
+        connectionStatus = 'not_connected'
+      }
     }
+
+    // Calculate unique connection count
+    const connectionCount = await prisma.connection.count({
+      where: {
+        OR: [
+          {
+            userId: user.id,
+            status: 'ACCEPTED'
+          },
+          {
+            connectedUserId: user.id,
+            status: 'ACCEPTED'
+          }
+        ]
+      }
+    })
 
     // Format the response data
     const responseData = {
@@ -69,9 +124,13 @@ export async function GET(
           website: user.profile.website,
           birthDate: user.profile.birthDate?.toISOString(),
         } : null,
-        _count: user._count
+        _count: {
+          ...user._count,
+          connections: connectionCount
+        }
       },
-      isFollowing
+      isFollowing,
+      connectionStatus
     }
 
     return NextResponse.json(responseData)
