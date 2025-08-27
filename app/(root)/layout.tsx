@@ -13,7 +13,9 @@ export default function RootLayout({
     <Providers>
       <Topbar />
       <main className="flex flex-row">
-        <LeftSidebar />
+        <div className="leftsidebar-wrapper">
+          <LeftSidebar />
+        </div>
         <section className="main-container">
           <div className="w-full max-w-4xl">{children}</div>
         </section>

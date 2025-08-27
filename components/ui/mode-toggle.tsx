@@ -24,14 +24,14 @@ export function ModeToggle() {
           <span className="sr-only">Toggle theme</span>
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent className="bg-light-1 dark:bg-dark-1 border border-border shadow-md rounded-md" align="end">
-        <DropdownMenuItem onClick={() => setTheme("light")} className="cursor-pointer hover:bg-accent hover:text-accent-foreground">
+      <DropdownMenuContent align="end">
+        <DropdownMenuItem onClick={() => setTheme("light")}>
           Light
         </DropdownMenuItem>
-        <DropdownMenuItem onClick={() => setTheme("dark")} className="cursor-pointer hover:bg-accent hover:text-accent-foreground">
+        <DropdownMenuItem onClick={() => setTheme("dark")}>
           Dark
         </DropdownMenuItem>
-        <DropdownMenuItem onClick={() => setTheme("system")} className="cursor-pointer hover:bg-accent hover:text-accent-foreground">
+        <DropdownMenuItem onClick={() => setTheme("system")}>
           System
         </DropdownMenuItem>
       </DropdownMenuContent>

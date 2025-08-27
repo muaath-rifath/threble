@@ -153,11 +153,15 @@
   }
   
   .leftsidebar {
-    @apply sticky left-0 top-0 z-20 flex h-screen w-fit flex-col justify-between overflow-auto bg-glassmorphism dark:bg-glassmorphism-dark backdrop-blur-xl border-r border-glass-border dark:border-glass-border-dark pb-5 pt-28 max-md:hidden;
+    @apply z-20 w-fit h-fit bg-glassmorphism dark:bg-glassmorphism-dark backdrop-blur-xl border border-glass-border dark:border-glass-border-dark rounded-2xl p-4 max-md:hidden shadow-xl;
+  }
+
+  .leftsidebar-wrapper {
+    @apply sticky top-0 flex flex-col justify-center items-start h-screen pl-6 max-md:hidden;
   }
 
   .leftsidebar_link {
-    @apply relative flex justify-start gap-4 rounded-2xl p-4 mx-2 hover:bg-white/20 dark:hover:bg-white/10 transition-all duration-200;
+    @apply relative flex justify-center items-center w-14 h-14 rounded-xl transition-all duration-300 hover:scale-110;
   }
 
   .pagination {
