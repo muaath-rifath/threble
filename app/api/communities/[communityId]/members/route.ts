@@ -9,9 +9,32 @@ export async function GET(
 ) {
   try {
     const { communityId } = await params;
+    const { searchParams } = new URL(request.url);
+    
+    const cursor = searchParams.get('cursor');
+    const limit = parseInt(searchParams.get('limit') || '20');
+    const search = searchParams.get('search') || '';
+    
+    // Build where clause
+    const whereClause: any = { 
+      communityId,
+      ...(search && {
+        user: {
+          OR: [
+            { name: { contains: search, mode: 'insensitive' } },
+            { username: { contains: search, mode: 'insensitive' } }
+          ]
+        }
+      })
+    };
+
+    // Add cursor condition if provided
+    if (cursor) {
+      whereClause.id = { lt: cursor };
+    }
     
     const members = await prisma.communityMember.findMany({
-      where: { communityId },
+      where: whereClause,
       include: {
         user: {
           select: {
@@ -22,10 +45,20 @@ export async function GET(
           }
         }
       },
-      orderBy: { joinedAt: 'asc' }
+      orderBy: { joinedAt: 'desc' },
+      take: limit + 1
     });
 
-    return NextResponse.json(members);
+    // Check if there are more results
+    const hasMore = members.length > limit;
+    const data = hasMore ? members.slice(0, -1) : members;
+    const nextCursor = hasMore && data.length > 0 ? data[data.length - 1].id : null;
+
+    return NextResponse.json({
+      data,
+      nextCursor,
+      hasMore
+    });
   } catch (error) {
     console.error('Error fetching community members:', error);
     return NextResponse.json(

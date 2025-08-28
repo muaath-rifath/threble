@@ -10,6 +10,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { useToast } from '@/hooks/use-toast'
 import { useSession } from 'next-auth/react'
+import { useInView } from '@intersection-observer/next'
 
 interface NotificationActor {
   id: string
@@ -39,12 +40,22 @@ export default function NotificationsPage() {
   const [allNotifications, setAllNotifications] = useState<Notification[]>([])
   const [unreadNotifications, setUnreadNotifications] = useState<Notification[]>([])
   const [loading, setLoading] = useState(true)
+  const [loadingMore, setLoadingMore] = useState(false)
   const [refreshing, setRefreshing] = useState(false)
   const [unreadCount, setUnreadCount] = useState(0)
   const [activeTab, setActiveTab] = useState('all')
+  const [allCursor, setAllCursor] = useState<string | null>(null)
+  const [unreadCursor, setUnreadCursor] = useState<string | null>(null)
+  const [hasMoreAll, setHasMoreAll] = useState(true)
+  const [hasMoreUnread, setHasMoreUnread] = useState(true)
   const router = useRouter()
   const { toast } = useToast()
   const { data: session, status } = useSession()
+
+  // Intersection observer for infinite scroll
+  const { ref, inView } = useInView({
+    threshold: 0
+  })
 
   // Redirect to signin if not authenticated
   useEffect(() => {
@@ -55,12 +66,19 @@ export default function NotificationsPage() {
     }
   }, [status, router])
 
-  const fetchNotifications = async (unreadOnly = false) => {
+  const fetchNotifications = async (unreadOnly = false, isLoadMore = false) => {
     try {
-      setLoading(true)
+      if (!isLoadMore) {
+        setLoading(true)
+      } else {
+        setLoadingMore(true)
+      }
+      
+      const cursor = unreadOnly ? unreadCursor : allCursor
       const params = new URLSearchParams({ 
-        limit: '50',
-        ...(unreadOnly && { unread: 'true' })
+        limit: '20',
+        ...(unreadOnly && { unread: 'true' }),
+        ...(cursor && { cursor })
       })
       
       const response = await fetch(`/api/notifications?${params}`)
@@ -68,9 +86,21 @@ export default function NotificationsPage() {
 
       if (response.ok) {
         if (unreadOnly) {
-          setUnreadNotifications(data.notifications || [])
+          if (isLoadMore) {
+            setUnreadNotifications(prev => [...prev, ...(data.notifications || [])])
+          } else {
+            setUnreadNotifications(data.notifications || [])
+          }
+          setUnreadCursor(data.nextCursor)
+          setHasMoreUnread(data.hasMore)
         } else {
-          setAllNotifications(data.notifications || [])
+          if (isLoadMore) {
+            setAllNotifications(prev => [...prev, ...(data.notifications || [])])
+          } else {
+            setAllNotifications(data.notifications || [])
+          }
+          setAllCursor(data.nextCursor)
+          setHasMoreAll(data.hasMore)
         }
         setUnreadCount(data.unreadCount || 0)
       } else {
@@ -85,17 +115,34 @@ export default function NotificationsPage() {
       })
     } finally {
       setLoading(false)
+      setLoadingMore(false)
     }
   }
 
   const refreshNotifications = async () => {
     setRefreshing(true)
+    // Reset cursors and states
+    setAllCursor(null)
+    setUnreadCursor(null)
+    setHasMoreAll(true)
+    setHasMoreUnread(true)
+    
     await Promise.all([
-      fetchNotifications(false),
-      fetchNotifications(true)
+      fetchNotifications(false, false),
+      fetchNotifications(true, false)
     ])
     setRefreshing(false)
   }
+
+  // Load more when scrolling to bottom
+  useEffect(() => {
+    if (inView && !loading && !loadingMore) {
+      const currentHasMore = activeTab === 'unread' ? hasMoreUnread : hasMoreAll
+      if (currentHasMore) {
+        fetchNotifications(activeTab === 'unread', true)
+      }
+    }
+  }, [inView, loading, loadingMore, activeTab, hasMoreAll, hasMoreUnread])
 
   useEffect(() => {
     if (session) {
@@ -268,6 +315,17 @@ export default function NotificationsPage() {
           </CardContent>
         </Card>
       ))}
+      
+      {/* Infinite scroll trigger */}
+      {((activeTab === 'all' && hasMoreAll) || (activeTab === 'unread' && hasMoreUnread)) && (
+        <div ref={ref as any} className="py-4">
+          {loadingMore && (
+            <div className="flex justify-center">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+            </div>
+          )}
+        </div>
+      )}
     </div>
   )
 

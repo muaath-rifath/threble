@@ -1,8 +1,9 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
+import { useInView } from '@intersection-observer/next'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
@@ -17,7 +18,8 @@ import {
   ShieldCheck, 
   Crown,
   MessageCircle,
-  UserPlus
+  UserPlus,
+  Loader2
 } from 'lucide-react'
 import { CommunityMember } from '@/lib/types'
 import { updateMemberRole } from '@/lib/actions/community.actions'
@@ -42,7 +44,6 @@ import {
 } from '@/components/ui/alert-dialog'
 
 interface CommunityMemberListProps {
-  members: CommunityMember[]
   communityId: string
   communityName: string
   currentUserMembership?: CommunityMember | null
@@ -50,7 +51,6 @@ interface CommunityMemberListProps {
 }
 
 export default function CommunityMemberList({
-  members,
   communityId,
   communityName,
   currentUserMembership,
@@ -60,19 +60,103 @@ export default function CommunityMemberList({
   const { toast } = useToast()
   const dispatch = useAppDispatch()
   const router = useRouter()
+  
+  // Infinite scroll state
+  const [members, setMembers] = useState<CommunityMember[]>([])
+  const [loading, setLoading] = useState(true)
+  const [loadingMore, setLoadingMore] = useState(false)
+  const [hasMore, setHasMore] = useState(true)
+  const [cursor, setCursor] = useState<string | null>(null)
+  const [error, setError] = useState<string | null>(null)
+  
+  // UI state
   const [searchQuery, setSearchQuery] = useState('')
   const [selectedMember, setSelectedMember] = useState<CommunityMember | null>(null)
   const [actionLoading, setActionLoading] = useState<string | null>(null)
   const [showRemoveDialog, setShowRemoveDialog] = useState(false)
+  
+  // Intersection observer for infinite scroll
+  const { ref, inView } = useInView({
+    threshold: 0
+  })
 
   const isCurrentUserAdmin = currentUserMembership?.role === 'ADMIN'
   const isCurrentUserModerator = currentUserMembership?.role === 'MODERATOR'
   const canManageMembers = isCurrentUserAdmin || isCurrentUserModerator
 
-  const filteredMembers = members.filter(member =>
-    member.user?.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    member.user?.username?.toLowerCase().includes(searchQuery.toLowerCase())
-  )
+  // Fetch members function
+  const fetchMembers = useCallback(async (isLoadMore = false, searchTerm = '') => {
+    try {
+      if (!isLoadMore) {
+        setLoading(true)
+        setError(null)
+      } else {
+        setLoadingMore(true)
+      }
+
+      const params = new URLSearchParams({
+        limit: '20',
+        ...(searchTerm && { search: searchTerm }),
+        ...(isLoadMore && cursor && { cursor })
+      })
+
+      const response = await fetch(`/api/communities/${communityId}/members?${params}`)
+      if (!response.ok) throw new Error('Failed to fetch members')
+      
+      const result = await response.json()
+      
+      if (!isLoadMore) {
+        setMembers(result.data)
+      } else {
+        setMembers(prev => [...prev, ...result.data])
+      }
+      
+      setCursor(result.nextCursor)
+      setHasMore(result.hasMore)
+    } catch (error) {
+      console.error('Error fetching members:', error)
+      setError('Failed to load members')
+      toast({
+        title: "Error",
+        description: "Failed to load community members",
+        variant: "destructive",
+      })
+    } finally {
+      setLoading(false)
+      setLoadingMore(false)
+    }
+  }, [communityId, cursor, toast])
+
+  // Search-specific fetch with debounce
+  const searchMembers = useCallback(async (searchTerm: string) => {
+    // Reset pagination for search
+    setCursor(null)
+    setHasMore(true)
+    await fetchMembers(false, searchTerm)
+  }, [fetchMembers])
+
+  // Initial load
+  useEffect(() => {
+    fetchMembers()
+  }, [])
+
+  // Search effect with debounce
+  useEffect(() => {
+    const timeoutId = setTimeout(() => {
+      searchMembers(searchQuery)
+    }, 300)
+
+    return () => clearTimeout(timeoutId)
+  }, [searchQuery, searchMembers])
+
+  // Infinite scroll effect
+  useEffect(() => {
+    if (inView && hasMore && !loading && !loadingMore) {
+      fetchMembers(true, searchQuery)
+    }
+  }, [inView, hasMore, loading, loadingMore, fetchMembers, searchQuery])
+
+  const filteredMembers = members // No client-side filtering since server handles search
 
   const handleUpdateRole = async (memberId: string, newRole: 'USER' | 'MODERATOR' | 'ADMIN') => {
     setActionLoading(memberId)
@@ -172,7 +256,7 @@ export default function CommunityMemberList({
         <div className="flex items-center justify-between">
           <CardTitle className="flex items-center gap-2">
             <Shield className="h-5 w-5" />
-            Community Members ({members.length})
+            Community Members
           </CardTitle>
           
           <div className="flex items-center gap-3">
@@ -203,96 +287,141 @@ export default function CommunityMemberList({
       </CardHeader>
 
       <CardContent className="space-y-4">
-        {filteredMembers.map((member) => (
-          <div
-            key={member.id}
-            className="flex items-center justify-between p-4 border rounded-lg hover:bg-muted/50"
-          >
-            <div className="flex items-center space-x-4">
-              <Avatar>
-                <AvatarImage src={member.user?.image || ''} alt={member.user?.name || ''} />
-                <AvatarFallback>
-                  {member.user?.name?.charAt(0).toUpperCase() || 'U'}
-                </AvatarFallback>
-              </Avatar>
-              
-              <div className="space-y-1">
-                <div className="flex items-center gap-2">
-                  <span className="font-medium">{member.user?.name}</span>
-                  {getRoleIcon(member.role)}
-                </div>
-                <div className="flex items-center gap-2">
-                  <span className="text-sm text-muted-foreground">
-                    @{member.user?.username}
-                  </span>
-                  {getRoleBadge(member.role)}
-                </div>
-                <span className="text-xs text-muted-foreground">
-                  Joined {new Date(member.joinedAt).toLocaleDateString()}
-                </span>
-              </div>
-            </div>
-
-            <div className="flex items-center space-x-2">
-              <Button variant="ghost" size="sm">
-                <MessageCircle className="h-4 w-4" />
-              </Button>
-
-              {canManageMember(member) && (
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button 
-                      variant="ghost" 
-                      size="sm"
-                      disabled={actionLoading === member.id}
-                    >
-                      <MoreVertical className="h-4 w-4" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
-                    {isCurrentUserAdmin && (
-                      <>
-                        {member.role === 'USER' && (
-                          <DropdownMenuItem
-                            onClick={() => handleUpdateRole(member.id, 'MODERATOR')}
-                          >
-                            <ShieldCheck className="h-4 w-4 mr-2" />
-                            Make Moderator
-                          </DropdownMenuItem>
-                        )}
-                        {member.role === 'MODERATOR' && (
-                          <DropdownMenuItem
-                            onClick={() => handleUpdateRole(member.id, 'USER')}
-                          >
-                            <Shield className="h-4 w-4 mr-2" />
-                            Remove Moderator
-                          </DropdownMenuItem>
-                        )}
-                        <DropdownMenuSeparator />
-                      </>
-                    )}
-                    <DropdownMenuItem
-                      onClick={() => {
-                        setSelectedMember(member)
-                        setShowRemoveDialog(true)
-                      }}
-                      className="text-destructive focus:text-destructive"
-                    >
-                      <UserMinus className="h-4 w-4 mr-2" />
-                      Remove Member
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              )}
-            </div>
-          </div>
-        ))}
-
-        {filteredMembers.length === 0 && (
-          <div className="text-center py-8 text-muted-foreground">
-            {searchQuery ? 'No members found matching your search.' : 'No members found.'}
+        {/* Error state */}
+        {error && (
+          <div className="text-center py-8">
+            <p className="text-destructive mb-4">{error}</p>
+            <Button onClick={() => fetchMembers()} variant="outline">
+              Try Again
+            </Button>
           </div>
         )}
+
+        {/* Loading initial state */}
+        {loading && members.length === 0 && (
+          <div className="space-y-4">
+            {Array.from({ length: 6 }).map((_, i) => (
+              <div key={i} className="flex items-center space-x-4 p-4 border rounded-lg animate-pulse">
+                <div className="w-10 h-10 bg-muted rounded-full" />
+                <div className="flex-1 space-y-2">
+                  <div className="h-4 bg-muted rounded w-1/3" />
+                  <div className="h-3 bg-muted rounded w-1/4" />
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Members list */}
+        {!loading || members.length > 0 ? (
+          <>
+            {members.map((member) => (
+              <div
+                key={member.id}
+                className="flex items-center justify-between p-4 border rounded-lg hover:bg-muted/50"
+              >
+                <div className="flex items-center space-x-4">
+                  <Avatar>
+                    <AvatarImage src={member.user?.image || ''} alt={member.user?.name || ''} />
+                    <AvatarFallback>
+                      {member.user?.name?.charAt(0).toUpperCase() || 'U'}
+                    </AvatarFallback>
+                  </Avatar>
+                  
+                  <div className="space-y-1">
+                    <div className="flex items-center gap-2">
+                      <span className="font-medium">{member.user?.name}</span>
+                      {getRoleIcon(member.role)}
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm text-muted-foreground">
+                        @{member.user?.username}
+                      </span>
+                      {getRoleBadge(member.role)}
+                    </div>
+                    <span className="text-xs text-muted-foreground">
+                      Joined {new Date(member.joinedAt).toLocaleDateString()}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="flex items-center space-x-2">
+                  <Button variant="ghost" size="sm">
+                    <MessageCircle className="h-4 w-4" />
+                  </Button>
+
+                  {canManageMember(member) && (
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button 
+                          variant="ghost" 
+                          size="sm"
+                          disabled={actionLoading === member.id}
+                        >
+                          <MoreVertical className="h-4 w-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        {isCurrentUserAdmin && (
+                          <>
+                            {member.role === 'USER' && (
+                              <DropdownMenuItem
+                                onClick={() => handleUpdateRole(member.id, 'MODERATOR')}
+                              >
+                                <ShieldCheck className="h-4 w-4 mr-2" />
+                                Make Moderator
+                              </DropdownMenuItem>
+                            )}
+                            {member.role === 'MODERATOR' && (
+                              <DropdownMenuItem
+                                onClick={() => handleUpdateRole(member.id, 'USER')}
+                              >
+                                <Shield className="h-4 w-4 mr-2" />
+                                Remove Moderator
+                              </DropdownMenuItem>
+                            )}
+                            <DropdownMenuSeparator />
+                          </>
+                        )}
+                        <DropdownMenuItem
+                          onClick={() => {
+                            setSelectedMember(member)
+                            setShowRemoveDialog(true)
+                          }}
+                          className="text-destructive focus:text-destructive"
+                        >
+                          <UserMinus className="h-4 w-4 mr-2" />
+                          Remove Member
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  )}
+                </div>
+              </div>
+            ))}
+
+            {/* Infinite scroll trigger */}
+            {hasMore && (
+              <div ref={ref as any} className="py-4">
+                {loadingMore && (
+                  <div className="flex justify-center">
+                    <div className="flex items-center gap-2 text-muted-foreground">
+                      <Loader2 className="h-5 w-5 animate-spin" />
+                      Loading more members...
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Empty state */}
+            {members.length === 0 && !loading && (
+              <div className="text-center py-8 text-muted-foreground">
+                {searchQuery ? 'No members found matching your search.' : 'No members found.'}
+              </div>
+            )}
+          </>
+        ) : null}
       </CardContent>
 
       {/* Remove Member Dialog */}

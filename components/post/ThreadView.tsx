@@ -4,14 +4,13 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Session } from 'next-auth'
 import { useToast } from '@/hooks/use-toast'
-import { Card, CardContent, CardHeader } from '@/components/ui/card'
+import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { MessageSquare, ArrowLeft, Users, RefreshCw, ChevronLeft } from 'lucide-react'
+import { MessageSquare, ChevronLeft, Users } from 'lucide-react'
 import { ExtendedPost } from '@/lib/types'
-import { format } from 'date-fns'
 
 import PostCard, { Post } from './PostCard'
-import ThreadReply from './ThreadReply'
+import PaginatedReplies from './PaginatedReplies'
 
 // Helper function to transform ExtendedPost to Post interface
 const transformExtendedPostToPost = (extendedPost: ExtendedPost): Post => {
@@ -66,11 +65,7 @@ export default function ThreadView({ initialPost, session }: ThreadViewProps) {
             const response = await fetch(`/api/posts/${post.id}`)
             if (response.ok) {
                 const data = await response.json()
-                // Preserve nested replies structure while updating main post data
-                setPost(prev => ({
-                    ...data,
-                    replies: prev.replies || data.replies || [] // Keep existing nested structure
-                }))
+                setPost(data)
             }
         } catch (error) {
             console.error('Error fetching post:', error)
@@ -84,30 +79,7 @@ export default function ThreadView({ initialPost, session }: ThreadViewProps) {
         }
     }
 
-    const getTotalRepliesCount = (replies: any[]): number => {
-        if (!replies) return 0
-        let count = replies.length
-        replies.forEach(reply => {
-            count += getTotalRepliesCount(reply.replies || [])
-        })
-        return count
-    }
-
-    const getUniqueParticipants = (replies: any[]): Set<string> => {
-        const participants = new Set<string>()
-        if (!replies) return participants
-        
-        replies.forEach(reply => {
-            participants.add(reply.author.id)
-            const nestedParticipants = getUniqueParticipants(reply.replies || [])
-            nestedParticipants.forEach(id => participants.add(id))
-        })
-        return participants
-    }
-
-    const totalReplies = getTotalRepliesCount(post.replies || [])
-    const participants = getUniqueParticipants(post.replies || [])
-    const participantCount = participants.size + 1 // +1 for original poster
+    const totalReplies = post._count?.replies || 0
 
     return (
         <div className="min-h-screen bg-white dark:bg-black">
@@ -132,12 +104,12 @@ export default function ThreadView({ initialPost, session }: ThreadViewProps) {
                         onUpdate={fetchPost}
                         isReply={!!post.parent}
                         showFullContent={true}
-                        hideRepliedTo={true} // Hide "Replied to" in thread view
+                        hideRepliedTo={true}
                     />
                 </div>
 
                 {/* Thread Replies Section */}
-                {post.replies && post.replies.length > 0 ? (
+                {totalReplies > 0 ? (
                     <div className="space-y-6">
                         {/* Replies Header */}
                         <div className="flex items-center justify-between">
@@ -155,34 +127,22 @@ export default function ThreadView({ initialPost, session }: ThreadViewProps) {
                             
                             {/* Thread Stats */}
                             <div className="hidden md:flex items-center gap-4 text-sm text-gray-500">
-                                <div className="flex items-center gap-1 px-2 py-1 glass-button rounded-lg">
-                                    <Users className="h-4 w-4" />
-                                    <span>{participantCount} participants</span>
-                                </div>
                                 <div className="px-2 py-1 glass-button text-gray-600 dark:text-gray-400 rounded-lg">
                                     <span>Active thread</span>
                                 </div>
                             </div>
                         </div>
 
-                        {/* Replies List */}
-                        <div className="space-y-4">
-                            {post.replies.map((reply: any, index) => (
-                                <div 
-                                    key={reply.id} 
-                                    className="transition-all duration-300"
-                                >
-                                    <ThreadReply
-                                        reply={reply}
-                                        session={session}
-                                        onUpdate={fetchPost}
-                                        depth={0}
-                                        maxDepth={4}
-                                        parentAuthors={[post.author.username || post.author.name || 'unknown']}
-                                    />
-                                </div>
-                            ))}
-                        </div>
+                        {/* Paginated Replies */}
+                        <PaginatedReplies
+                            parentId={post.id}
+                            session={session}
+                            onUpdate={fetchPost}
+                            depth={0}
+                            maxDepth={4}
+                            parentAuthors={[post.author.username || post.author.name || 'unknown']}
+                            initialRepliesCount={totalReplies}
+                        />
                     </div>
                 ) : (
                     /* Empty State for No Replies */

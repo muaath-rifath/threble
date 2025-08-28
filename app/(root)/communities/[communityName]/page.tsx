@@ -282,7 +282,6 @@ export default function CommunityPage() {
 
         <TabsContent value="members" className="mt-6">
           <CommunityMemberList
-            members={members}
             communityId={community?.id || ''}
             communityName={community?.name || ''}
             currentUserMembership={currentUserMembership}

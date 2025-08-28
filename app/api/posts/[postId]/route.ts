@@ -99,6 +99,7 @@ export async function GET(
                 id: true,
                 content: true,
                 createdAt: true,
+                updatedAt: true,
                 authorId: true,
                 parentId: true,
                 communityId: true,
@@ -128,6 +129,7 @@ export async function GET(
                         id: true,
                         content: true,
                         createdAt: true,
+                        updatedAt: true,
                         authorId: true,
                         parentId: true,
                         communityId: true,
@@ -153,36 +155,7 @@ export async function GET(
                         },
                     },
                 },
-                replies: {
-                    select: {
-                        id: true,
-                        content: true,
-                        createdAt: true,
-                        authorId: true,
-                        communityId: true,
-                        mediaAttachments: true,
-                        author: {
-                            select: { 
-                                id: true,
-                                name: true, 
-                                username: true,
-                                image: true 
-                            },
-                        },
-                        community: {
-                            select: {
-                                id: true,
-                                name: true,
-                                image: true
-                            }
-                        },
-                        reactions: true,
-                        _count: {
-                            select: { replies: true },
-                        },
-                    },
-                    orderBy: { createdAt: 'desc' },
-                },
+                // Don't include replies here - they'll be loaded via pagination
             },
         })
 

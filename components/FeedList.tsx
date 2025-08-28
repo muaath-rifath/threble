@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { Session } from 'next-auth'
-import { useInView } from 'react-intersection-observer'
+import { useInView } from '@intersection-observer/next'
 import PostCard, { Post } from './post/PostCard'
 import { useAppDispatch, useAppSelector } from '@/lib/redux/hooks'
 import { fetchPosts, setInitialPosts } from '@/lib/redux/slices/postsSlice'
@@ -79,7 +79,7 @@ export default function FeedList({ session, initialPosts = [] }: FeedListProps) 
                     <p className="text-gray-500">Loading more posts...</p>
                 </div>
             )}
-            <div ref={ref} className="h-[10px]" />
+            <div ref={ref as any} className="h-[10px]" />
         </div>
     )
 }

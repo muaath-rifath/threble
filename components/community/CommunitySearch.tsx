@@ -10,6 +10,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Search, Users, MessageSquare, Filter, Loader2 } from 'lucide-react'
 import { searchCommunities } from '@/lib/actions/community.actions'
 import { useToast } from '@/hooks/use-toast'
+import { useInView } from '@intersection-observer/next'
 import CommunityCard from './CommunityCard'
 
 interface SearchResult {
@@ -45,6 +46,7 @@ export default function CommunitySearch({ initialQuery = '' }: CommunitySearchPr
     const [visibility, setVisibility] = useState<'PUBLIC' | 'PRIVATE' | 'all'>('all')
     const [results, setResults] = useState<SearchResult[]>([])
     const [isLoading, setIsLoading] = useState(false)
+    const [isLoadingMore, setIsLoadingMore] = useState(false)
     const [totalCount, setTotalCount] = useState(0)
     const [currentPage, setCurrentPage] = useState(1)
     const [hasMore, setHasMore] = useState(false)
@@ -53,10 +55,20 @@ export default function CommunitySearch({ initialQuery = '' }: CommunitySearchPr
     const searchParamsRef = useRef({ query, sort, visibility })
     searchParamsRef.current = { query, sort, visibility }
 
+    // Intersection observer for infinite scroll
+    const { ref, inView } = useInView({
+        threshold: 0
+    })
+
     const limit = 12
 
     const performSearch = useCallback(async (searchQuery: string, page: number = 1) => {
-        setIsLoading(true)
+        if (page === 1) {
+            setIsLoading(true)
+        } else {
+            setIsLoadingMore(true)
+        }
+        
         try {
             const offset = (page - 1) * limit
             const { sort: currentSort, visibility: currentVisibility } = searchParamsRef.current
@@ -93,6 +105,7 @@ export default function CommunitySearch({ initialQuery = '' }: CommunitySearchPr
             })
         } finally {
             setIsLoading(false)
+            setIsLoadingMore(false)
         }
     }, [toast]) // Only depend on toast which is stable
 
@@ -112,11 +125,14 @@ export default function CommunitySearch({ initialQuery = '' }: CommunitySearchPr
         return () => clearTimeout(timer)
     }, [query, sort, visibility]) // Remove performSearch from dependencies
 
-    const handleLoadMore = () => {
-        const nextPage = currentPage + 1
-        setCurrentPage(nextPage)
-        performSearch(query, nextPage)
-    }
+    // Load more when scrolling to bottom
+    useEffect(() => {
+        if (inView && hasMore && !isLoading && !isLoadingMore) {
+            const nextPage = currentPage + 1
+            setCurrentPage(nextPage)
+            performSearch(query, nextPage)
+        }
+    }, [inView, hasMore, isLoading, isLoadingMore, currentPage, query, performSearch])
 
     const handleSearchSubmit = (e: React.FormEvent) => {
         e.preventDefault()
@@ -217,23 +233,17 @@ export default function CommunitySearch({ initialQuery = '' }: CommunitySearchPr
                         ))}
                     </div>
 
-                    {/* Load More */}
+                    {/* Infinite scroll trigger */}
                     {hasMore && (
-                        <div className="text-center">
-                            <Button
-                                onClick={handleLoadMore}
-                                disabled={isLoading}
-                                variant="outline"
-                            >
-                                {isLoading ? (
-                                    <>
-                                        <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                                        Loading...
-                                    </>
-                                ) : (
-                                    'Load More'
-                                )}
-                            </Button>
+                        <div ref={ref as any} className="py-4">
+                            {isLoadingMore && (
+                                <div className="flex justify-center">
+                                    <div className="flex items-center gap-2 text-muted-foreground">
+                                        <Loader2 className="h-5 w-5 animate-spin" />
+                                        Loading more results...
+                                    </div>
+                                </div>
+                            )}
                         </div>
                     )}
                 </div>

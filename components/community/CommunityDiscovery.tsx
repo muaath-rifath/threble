@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Loader2, Users, MessageSquare } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
+import { useInView } from '@intersection-observer/next'
 import CommunityCard from './CommunityCard'
 
 interface Community {
@@ -37,15 +38,42 @@ export default function CommunityDiscovery() {
     const { toast } = useToast()
     const [communities, setCommunities] = useState<Community[]>([])
     const [isLoading, setIsLoading] = useState(false)
+    const [isLoadingMore, setIsLoadingMore] = useState(false)
+    const [cursor, setCursor] = useState<string | null>(null)
+    const [hasMore, setHasMore] = useState(true)
 
-    const loadCommunities = async () => {
-        setIsLoading(true)
+    // Intersection observer for infinite scroll
+    const { ref, inView } = useInView({
+        threshold: 0
+    })
+
+    const loadCommunities = async (isLoadMore = false) => {
+        if (!isLoadMore) {
+            setIsLoading(true)
+        } else {
+            setIsLoadingMore(true)
+        }
+        
         try {
-            const response = await fetch('/api/communities')
+            const params = new URLSearchParams({
+                limit: '12',
+                ...(cursor && isLoadMore && { cursor })
+            })
+            
+            const response = await fetch(`/api/communities?${params}`)
             
             if (response.ok) {
                 const data = await response.json()
-                setCommunities(data.communities || [])
+                const newCommunities = data.communities || []
+                
+                if (isLoadMore) {
+                    setCommunities(prev => [...prev, ...newCommunities])
+                } else {
+                    setCommunities(newCommunities)
+                }
+                
+                setCursor(data.nextCursor)
+                setHasMore(data.hasNextPage)
             } else {
                 toast({
                     title: "Error",
@@ -61,16 +89,26 @@ export default function CommunityDiscovery() {
             })
         } finally {
             setIsLoading(false)
+            setIsLoadingMore(false)
         }
     }
 
     // Load communities on mount
     useEffect(() => {
-        loadCommunities()
+        loadCommunities(false)
     }, [])
 
+    // Load more when scrolling to bottom
+    useEffect(() => {
+        if (inView && hasMore && !isLoading && !isLoadingMore) {
+            loadCommunities(true)
+        }
+    }, [inView, hasMore, isLoading, isLoadingMore])
+
     const handleRefresh = () => {
-        loadCommunities()
+        setCursor(null)
+        setHasMore(true)
+        loadCommunities(false)
     }
 
     if (isLoading) {
@@ -106,15 +144,31 @@ export default function CommunityDiscovery() {
 
             {/* Communities List */}
             {communities.length > 0 ? (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {communities.map((community) => (
-                        <CommunityCard 
-                            key={community.id} 
-                            community={community}
-                            currentUserMembership={community.currentUserMembership}
-                            onMembershipChange={loadCommunities}
-                        />
-                    ))}
+                <div className="space-y-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                        {communities.map((community) => (
+                            <CommunityCard 
+                                key={community.id} 
+                                community={community}
+                                currentUserMembership={community.currentUserMembership}
+                                onMembershipChange={() => handleRefresh()}
+                            />
+                        ))}
+                    </div>
+                    
+                    {/* Infinite scroll trigger */}
+                    {hasMore && (
+                        <div ref={ref as any} className="py-4">
+                            {isLoadingMore && (
+                                <div className="flex justify-center">
+                                    <div className="flex items-center gap-2 text-muted-foreground">
+                                        <Loader2 className="h-5 w-5 animate-spin" />
+                                        Loading more communities...
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                    )}
                 </div>
             ) : (
                 <Card>
