@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useTheme } from "next-themes";
+import { useThemeWithDb } from "@/hooks/use-theme-with-db";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import {
@@ -11,7 +11,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { User, Settings, LogOut, Moon, Sun, Monitor, Palette } from 'lucide-react';
+import { User, Settings, LogOut, Moon, Sun, Monitor, Palette, Check } from 'lucide-react';
 
 interface ProfileDropdownProps {
   user: {
@@ -30,10 +30,10 @@ const ProfileDropdown: React.FC<ProfileDropdownProps> = ({
   onSettings,
   onLogout,
 }) => {
-  const { theme, setTheme } = useTheme();
+  const { theme, setTheme } = useThemeWithDb();
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
 
-  const handleThemeChange = (newTheme: string) => {
+  const handleThemeChange = (newTheme: 'light' | 'dark' | 'system') => {
     setTheme(newTheme);
   };
 
@@ -94,8 +94,10 @@ const ProfileDropdown: React.FC<ProfileDropdownProps> = ({
                 variant="ghost"
                 size="sm"
                 onClick={() => handleThemeChange('light')}
-                className={`glass-button p-2 h-auto flex flex-col items-center space-y-1 ${
-                  theme === 'light' ? 'bg-primary-500/20 text-primary-500' : ''
+                className={`p-2 h-auto flex flex-col items-center space-y-1 transition-all duration-200 ${
+                  theme === 'light' 
+                    ? 'bg-primary-500/20 border border-primary-500/30 text-primary-500 hover:!bg-primary-500/20 hover:!border-primary-500/30 hover:!text-primary-500' 
+                    : 'text-black/60 dark:text-white/60 border border-transparent hover:text-black dark:hover:text-white hover:bg-white/10 dark:hover:bg-white/5'
                 }`}
               >
                 <Sun className="h-4 w-4" />
@@ -105,8 +107,10 @@ const ProfileDropdown: React.FC<ProfileDropdownProps> = ({
                 variant="ghost"
                 size="sm"
                 onClick={() => handleThemeChange('dark')}
-                className={`glass-button p-2 h-auto flex flex-col items-center space-y-1 ${
-                  theme === 'dark' ? 'bg-primary-500/20 text-primary-500' : ''
+                className={`p-2 h-auto flex flex-col items-center space-y-1 transition-all duration-200 ${
+                  theme === 'dark' 
+                    ? 'bg-primary-500/20 border border-primary-500/30 text-primary-500 hover:!bg-primary-500/20 hover:!border-primary-500/30 hover:!text-primary-500' 
+                    : 'text-black/60 dark:text-white/60 border border-transparent hover:text-black dark:hover:text-white hover:bg-white/10 dark:hover:bg-white/5'
                 }`}
               >
                 <Moon className="h-4 w-4" />
@@ -116,8 +120,10 @@ const ProfileDropdown: React.FC<ProfileDropdownProps> = ({
                 variant="ghost"
                 size="sm"
                 onClick={() => handleThemeChange('system')}
-                className={`glass-button p-2 h-auto flex flex-col items-center space-y-1 ${
-                  theme === 'system' ? 'bg-primary-500/20 text-primary-500' : ''
+                className={`p-2 h-auto flex flex-col items-center space-y-1 transition-all duration-200 ${
+                  theme === 'system' 
+                    ? 'bg-primary-500/20 border border-primary-500/30 text-primary-500 hover:!bg-primary-500/20 hover:!border-primary-500/30 hover:!text-primary-500' 
+                    : 'text-black/60 dark:text-white/60 border border-transparent hover:text-black dark:hover:text-white hover:bg-white/10 dark:hover:bg-white/5'
                 }`}
               >
                 <Monitor className="h-4 w-4" />

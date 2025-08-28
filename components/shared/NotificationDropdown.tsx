@@ -8,7 +8,17 @@ import { Badge } from '@/components/ui/badge'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { useToast } from '@/hooks/use-toast'
+import { useDropdown } from './DropdownContext'
 import Link from 'next/link'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuGroup,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 interface NotificationActor {
   id: string
@@ -43,14 +53,13 @@ interface NotificationDropdownProps {
 }
 
 export function NotificationDropdown({ isMobile = false }: NotificationDropdownProps) {
-  const [isOpen, setIsOpen] = useState(false)
   const [notifications, setNotifications] = useState<Notification[]>([])
   const [unreadCount, setUnreadCount] = useState(0)
   const [loading, setLoading] = useState(false)
-  const [hasMore, setHasMore] = useState(true)
-  const dropdownRef = useRef<HTMLDivElement>(null)
   const router = useRouter()
   const { toast } = useToast()
+  const { activeDropdown, setActiveDropdown } = useDropdown()
+  const isOpen = activeDropdown === 'notifications'
 
   // Fetch notifications
   const fetchNotifications = async (cursor?: string) => {
@@ -69,7 +78,6 @@ export function NotificationDropdown({ isMobile = false }: NotificationDropdownP
           setNotifications(data.notifications || [])
         }
         setUnreadCount(data.unreadCount || 0)
-        setHasMore(data.hasMore || false)
       }
     } catch (error) {
       console.error('Failed to fetch notifications:', error)
@@ -98,23 +106,6 @@ export function NotificationDropdown({ isMobile = false }: NotificationDropdownP
   useEffect(() => {
     if (isOpen && notifications.length === 0) {
       fetchNotifications()
-    }
-  }, [isOpen])
-
-  // Close dropdown when clicking outside
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
-        setIsOpen(false)
-      }
-    }
-
-    if (isOpen) {
-      document.addEventListener('mousedown', handleClickOutside)
-    }
-
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside)
     }
   }, [isOpen])
 
@@ -203,7 +194,7 @@ export function NotificationDropdown({ isMobile = false }: NotificationDropdownP
         break
     }
     
-    setIsOpen(false)
+    setActiveDropdown(null)
   }
 
   const getNotificationIcon = (type: string) => {
@@ -231,60 +222,60 @@ export function NotificationDropdown({ isMobile = false }: NotificationDropdownP
     if (isMobile) {
       router.push('/notifications')
     } else {
-      setIsOpen(!isOpen)
+      setActiveDropdown(isOpen ? null : 'notifications')
     }
   }
 
-  return (
-    <div className="relative" ref={dropdownRef}>
-      <Button
-        variant="ghost"
-        size="sm"
-        className="relative p-2 h-10 w-10 glass-button"
-        onClick={handleBellClick}
-      >
-        <Bell className="h-5 w-5" />
-        {unreadCount > 0 && (
-          <Badge 
-            variant="destructive" 
-            className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 text-xs"
-          >
-            {unreadCount > 99 ? '99+' : unreadCount}
-          </Badge>
-        )}
-      </Button>
+  const handleOpenChange = (open: boolean) => {
+    setActiveDropdown(open ? 'notifications' : null)
+  }
 
-      {/* Desktop Dropdown */}
-      {isOpen && !isMobile && (
-        <div className="absolute right-0 top-12 w-80 glass-card shadow-xl z-50">
-          <div className="p-4 border-b border-glass-border dark:border-glass-border-dark">
-            <div className="flex items-center justify-between">
-              <h3 className="font-semibold text-lg text-black dark:text-white">Notifications</h3>
-              <div className="flex items-center gap-2">
-                {unreadCount > 0 && (
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={markAllAsRead}
-                    className="text-xs glass-button"
-                  >
-                    <Check className="h-3 w-3 mr-1" />
-                    Mark all read
-                  </Button>
-                )}
+  return (
+    <DropdownMenu open={isOpen} onOpenChange={handleOpenChange}>
+      <DropdownMenuTrigger asChild>
+        <Button
+          variant="ghost"
+          className="relative h-10 w-10 glass-button p-2"
+          onClick={handleBellClick}
+        >
+          <Bell className="h-5 w-5" />
+          {unreadCount > 0 && (
+            <Badge 
+              variant="destructive" 
+              className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 text-xs"
+            >
+              {unreadCount > 99 ? '99+' : unreadCount}
+            </Badge>
+          )}
+        </Button>
+      </DropdownMenuTrigger>
+      
+      <DropdownMenuContent className="w-80 glass-card shadow-xl max-h-96" align="end">
+        {/* Header */}
+        <DropdownMenuLabel className="font-normal p-2">
+          <div className="flex items-center justify-between">
+            <h3 className="font-semibold text-lg text-black dark:text-white">Notifications</h3>
+            <div className="flex items-center gap-2">
+              {unreadCount > 0 && (
                 <Button
                   variant="ghost"
                   size="sm"
-                  onClick={() => setIsOpen(false)}
-                  className="p-1 glass-button"
+                  onClick={markAllAsRead}
+                  className="text-xs glass-button"
                 >
-                  <X className="h-4 w-4" />
+                  <Check className="h-3 w-3 mr-1" />
+                  Mark all read
                 </Button>
-              </div>
+              )}
             </div>
           </div>
-
-          <ScrollArea className="max-h-96">
+        </DropdownMenuLabel>
+        
+        <DropdownMenuSeparator className="bg-glass-border dark:bg-glass-border-dark" />
+        
+        {/* Notifications List */}
+        <DropdownMenuGroup>
+          <ScrollArea className="max-h-80">
             <div className="p-2">
               {loading && notifications.length === 0 ? (
                 <div className="p-4 text-center text-gray-500 dark:text-gray-400">
@@ -296,16 +287,16 @@ export function NotificationDropdown({ isMobile = false }: NotificationDropdownP
                 </div>
               ) : (
                 notifications.map((notification) => (
-                  <div
+                  <DropdownMenuItem
                     key={notification.id}
-                    className={`p-3 rounded-lg cursor-pointer hover:bg-white/10 dark:hover:bg-white/5 transition-all duration-200 border-l-2 ${
+                    className={`glass-button cursor-pointer p-3 mb-1 border-l-2 ${
                       notification.read
                         ? 'border-transparent'
                         : 'border-primary-500 bg-primary-500/10'
                     }`}
                     onClick={() => handleNotificationClick(notification)}
                   >
-                    <div className="flex items-start gap-3">
+                    <div className="flex items-start gap-3 w-full">
                       <div className="flex-shrink-0">
                         {notification.actor ? (
                           <Avatar className="h-8 w-8">
@@ -335,23 +326,26 @@ export function NotificationDropdown({ isMobile = false }: NotificationDropdownP
                         </div>
                       )}
                     </div>
-                  </div>
+                  </DropdownMenuItem>
                 ))
               )}
             </div>
           </ScrollArea>
+        </DropdownMenuGroup>
 
-          <div className="p-3 border-t border-glass-border dark:border-glass-border-dark">
-            <Link
-              href="/notifications"
-              className="block text-center text-sm text-primary-500 hover:text-primary-600 dark:text-primary-400 dark:hover:text-primary-300 transition-colors"
-              onClick={() => setIsOpen(false)}
-            >
-              View all notifications
-            </Link>
-          </div>
+        <DropdownMenuSeparator className="bg-glass-border dark:bg-glass-border-dark" />
+        
+        {/* Footer */}
+        <div className="p-3">
+          <Link
+            href="/notifications"
+            className="block text-center text-sm text-primary-500 hover:text-primary-600 dark:text-primary-400 dark:hover:text-primary-300 transition-colors"
+            onClick={() => setActiveDropdown(null)}
+          >
+            View all notifications
+          </Link>
         </div>
-      )}
-    </div>
+      </DropdownMenuContent>
+    </DropdownMenu>
   )
 }

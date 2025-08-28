@@ -6,13 +6,15 @@ import { topbarNav } from '@/constants/'
 import ProfileMenu from "./ProfileMenu"
 import { NotificationDropdown } from "./NotificationDropdown"
 import { useIsMobile } from "@/hooks/use-mobile"
+import { DropdownProvider } from "./DropdownContext"
 
 function Topbar() {
     const pathname = usePathname()
     const isMobile = useIsMobile()
 
     return (
-        <nav className="topbar">
+        <DropdownProvider>
+            <nav className="topbar">
             <Link className="flex items-center gap-4" href="/">
                 <Image src="/assets/logo.svg" alt="logo" width={28} height={28} />
                 <p className="text-heading3-bold text-black dark:text-white max-xs:hidden">Threble</p>
@@ -53,6 +55,7 @@ function Topbar() {
                 <ProfileMenu />
             </div>
         </nav>
+        </DropdownProvider>
     )
 }
 

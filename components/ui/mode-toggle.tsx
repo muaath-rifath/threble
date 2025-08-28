@@ -2,7 +2,7 @@
 
 import * as React from "react"
 import { MoonIcon, SunIcon } from "@radix-ui/react-icons"
-import { useTheme } from "next-themes"
+import { useThemeWithDb } from "@/hooks/use-theme-with-db"
 
 import { Button } from "@/components/ui/button"
 import {
@@ -13,7 +13,7 @@ import {
 } from "@/components/ui/dropdown-menu"
 
 export function ModeToggle() {
-  const { setTheme } = useTheme()
+  const { setTheme } = useThemeWithDb()
 
   return (
     <DropdownMenu>

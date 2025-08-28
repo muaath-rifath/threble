@@ -8,6 +8,7 @@ declare module "next-auth" {
       id: string
       hasProfile: boolean
       username?: string | null
+      preferences?: Record<string, any>
     } & DefaultSession["user"]
   }
 
@@ -18,6 +19,7 @@ declare module "next-auth" {
     image?: string | null
     username?: string | null
     hasProfile?: boolean
+    preferences?: Record<string, any>
   }
 }
 interface ProfileData {
@@ -33,5 +35,6 @@ declare module "next-auth/jwt" {
   interface JWT {
     id?: string
     hasProfile?: boolean
+    preferences?: Record<string, any>
   }
 }

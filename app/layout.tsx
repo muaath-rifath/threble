@@ -2,7 +2,7 @@ import { ReactNode } from 'react'
 import { Providers } from './providers'
 import './globals.css'
 import { Inter } from 'next/font/google'
-import { ThemeProvider } from "@/components/theme-provider"
+import { DatabaseThemeProvider } from "@/components/database-theme-provider"
 import { Source_Sans_3, Source_Serif_4 } from 'next/font/google'
 import { Toaster } from "@/components/ui/toaster"
 
@@ -28,7 +28,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
     <html lang="en" suppressHydrationWarning>
       <body className={`${sourceSansPro.variable} ${sourceSerifPro.variable}`}>
         <Providers>
-          <ThemeProvider
+          <DatabaseThemeProvider
             attribute="class"
             defaultTheme="system"
             enableSystem
@@ -36,7 +36,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
           >
             {children}
             <Toaster />
-          </ThemeProvider>
+          </DatabaseThemeProvider>
         </Providers>
       </body>
     </html>

@@ -123,9 +123,12 @@ export const authOptions: NextAuthOptions = {
         // Always fetch fresh user data for the JWT
         const userData = await prisma.user.findUnique({
           where: { id: token.id as string },
-          include: { 
-            profile: true,
-            accounts: true
+          select: { 
+            id: true,
+            username: true,
+            image: true,
+            preferences: true,
+            profile: true
           }
         });
 
@@ -133,6 +136,7 @@ export const authOptions: NextAuthOptions = {
           token.hasProfile = !!userData.profile;
           token.username = userData.username;
           token.image = userData.image;
+          token.preferences = userData.preferences as Record<string, any> || {};
         }
 
         return token;
@@ -155,18 +159,26 @@ export const authOptions: NextAuthOptions = {
           // Get fresh user data for the session
           const userData = await prisma.user.findUnique({
             where: { id: token.id as string },
-            include: { profile: true }
+            select: { 
+              id: true,
+              username: true,
+              image: true,
+              preferences: true,
+              profile: true
+            }
           });
 
           session.user.id = token.id as string;
           session.user.hasProfile = !!userData?.profile;
           session.user.username = userData?.username;
           session.user.image = userData?.image;
+          session.user.preferences = userData?.preferences as Record<string, any> || {};
 
           console.log('Session updated with fresh data:', {
             userId: session.user.id,
             hasProfile: session.user.hasProfile,
-            username: session.user.username
+            username: session.user.username,
+            preferences: session.user.preferences
           });
         } catch (error) {
           console.error('Error in session callback:', error);
