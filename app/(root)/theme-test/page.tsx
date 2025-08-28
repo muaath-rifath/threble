@@ -1,7 +1,7 @@
 'use client'
 
 import { useSession } from 'next-auth/react'
-import { useThemeWithDb } from '@/hooks/use-theme-with-db'
+import { useTheme } from '@/lib/theme'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -9,7 +9,7 @@ import { Sun, Moon, Monitor, Database, HardDrive } from 'lucide-react'
 
 export default function ThemeTestPage() {
   const { data: session, status } = useSession()
-  const { theme, setTheme, resolvedTheme } = useThemeWithDb()
+  const { theme, setTheme, resolvedTheme } = useTheme()
 
   const themeButtons = [
     { value: 'light', label: 'Light', icon: Sun },

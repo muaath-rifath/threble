@@ -183,6 +183,12 @@ const uiSlice = createSlice({
     setTheme: (state, action: PayloadAction<'light' | 'dark' | 'system'>) => {
       state.theme = action.payload
     },
+    toggleTheme: (state) => {
+      // Cycle through light -> dark -> system
+      const themes: ('light' | 'dark' | 'system')[] = ['light', 'dark', 'system']
+      const currentIndex = themes.indexOf(state.theme)
+      state.theme = themes[(currentIndex + 1) % themes.length]
+    },
     
     // Feed options
     setFeedType: (state, action: PayloadAction<'home' | 'following' | 'community' | 'global'>) => {
@@ -350,6 +356,7 @@ export const {
   
   // Theme
   setTheme,
+  toggleTheme,
   
   // Feed
   setFeedType,

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useThemeWithDb } from "@/hooks/use-theme-with-db";
+import { useTheme } from "@/lib/theme";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import {
@@ -30,7 +30,7 @@ const ProfileDropdown: React.FC<ProfileDropdownProps> = ({
   onSettings,
   onLogout,
 }) => {
-  const { theme, setTheme } = useThemeWithDb();
+  const { theme, setTheme } = useTheme();
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
 
   const handleThemeChange = (newTheme: 'light' | 'dark' | 'system') => {
