@@ -5,12 +5,12 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { 
-    Search, 
-    Settings, 
-    Users, 
-    TrendingUp,
-    Plus
-} from 'lucide-react'
+    IconSearch, 
+    IconSettings, 
+    IconUsersGroup, 
+    IconTrendingUp,
+    IconPlus
+} from '@tabler/icons-react'
 import AdvancedCommunitySearch from './AdvancedCommunitySearch'
 import EnhancedCommunityManagement from './EnhancedCommunityManagement'
 
@@ -61,7 +61,7 @@ export default function CommunityHub({ user, userCommunities = [] }: CommunityHu
                 </div>
                 <div className="flex items-center gap-2">
                     <Button variant="outline">
-                        <Plus className="h-4 w-4 mr-2" />
+                        <IconPlus className="h-4 w-4 mr-2" />
                         Create Community
                     </Button>
                 </div>
@@ -76,7 +76,7 @@ export default function CommunityHub({ user, userCommunities = [] }: CommunityHu
                                 <p className="text-sm text-muted-foreground">My Communities</p>
                                 <p className="text-2xl font-bold">{userCommunities.length}</p>
                             </div>
-                            <Users className="h-8 w-8 text-blue-500" />
+                            <IconUsersGroup className="h-8 w-8 text-blue-500" />
                         </div>
                     </CardContent>
                 </Card>
@@ -88,7 +88,7 @@ export default function CommunityHub({ user, userCommunities = [] }: CommunityHu
                                 <p className="text-sm text-muted-foreground">Managing</p>
                                 <p className="text-2xl font-bold">{managedCommunities.length}</p>
                             </div>
-                            <Settings className="h-8 w-8 text-green-500" />
+                            <IconSettings className="h-8 w-8 text-green-500" />
                         </div>
                     </CardContent>
                 </Card>
@@ -102,7 +102,7 @@ export default function CommunityHub({ user, userCommunities = [] }: CommunityHu
                                     {userCommunities.reduce((sum, community) => sum + community.memberCount, 0)}
                                 </p>
                             </div>
-                            <TrendingUp className="h-8 w-8 text-purple-500" />
+                            <IconTrendingUp className="h-8 w-8 text-purple-500" />
                         </div>
                     </CardContent>
                 </Card>
@@ -112,19 +112,19 @@ export default function CommunityHub({ user, userCommunities = [] }: CommunityHu
             <Tabs value={activeTab} onValueChange={setActiveTab}>
                 <TabsList className="grid w-full grid-cols-4">
                     <TabsTrigger value="discover">
-                        <Search className="h-4 w-4 mr-2" />
+                        <IconSearch className="h-4 w-4 mr-2" />
                         Discover
                     </TabsTrigger>
                     <TabsTrigger value="my-communities">
-                        <Users className="h-4 w-4 mr-2" />
+                        <IconUsersGroup className="h-4 w-4 mr-2" />
                         My Communities
                     </TabsTrigger>
                     <TabsTrigger value="manage" disabled={!selectedCommunity && managedCommunities.length === 0}>
-                        <Settings className="h-4 w-4 mr-2" />
+                        <IconSettings className="h-4 w-4 mr-2" />
                         Manage
                     </TabsTrigger>
                     <TabsTrigger value="analytics" disabled={managedCommunities.length === 0}>
-                        <TrendingUp className="h-4 w-4 mr-2" />
+                        <IconTrendingUp className="h-4 w-4 mr-2" />
                         Analytics
                     </TabsTrigger>
                 </TabsList>
@@ -170,7 +170,7 @@ export default function CommunityHub({ user, userCommunities = [] }: CommunityHu
                                             className="w-full mt-3"
                                             onClick={() => handleCommunitySelect(community)}
                                         >
-                                            <Settings className="h-4 w-4 mr-2" />
+                                            <IconSettings className="h-4 w-4 mr-2" />
                                             Manage
                                         </Button>
                                     )}
@@ -181,13 +181,13 @@ export default function CommunityHub({ user, userCommunities = [] }: CommunityHu
                         {userCommunities.length === 0 && (
                             <Card className="col-span-full">
                                 <CardContent className="p-8 text-center">
-                                    <Users className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                                    <IconUsersGroup className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
                                     <h3 className="font-medium mb-2">No communities yet</h3>
                                     <p className="text-muted-foreground mb-4">
                                         Join some communities to get started, or create your own!
                                     </p>
                                     <Button onClick={() => setActiveTab('discover')}>
-                                        <Search className="h-4 w-4 mr-2" />
+                                        <IconSearch className="h-4 w-4 mr-2" />
                                         Discover Communities
                                     </Button>
                                 </CardContent>
@@ -234,7 +234,7 @@ export default function CommunityHub({ user, userCommunities = [] }: CommunityHu
                                                     size="sm"
                                                     onClick={() => handleCommunitySelect(community)}
                                                 >
-                                                    <Settings className="h-4 w-4 mr-2" />
+                                                    <IconSettings className="h-4 w-4 mr-2" />
                                                     Manage
                                                 </Button>
                                             </div>
@@ -246,7 +246,7 @@ export default function CommunityHub({ user, userCommunities = [] }: CommunityHu
                     ) : (
                         <Card>
                             <CardContent className="p-8 text-center">
-                                <Settings className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                                <IconSettings className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
                                 <h3 className="font-medium mb-2">No communities to manage</h3>
                                 <p className="text-muted-foreground">
                                     You need to be a creator, admin, or moderator to manage communities.
@@ -259,7 +259,7 @@ export default function CommunityHub({ user, userCommunities = [] }: CommunityHu
                 <TabsContent value="analytics" className="space-y-6">
                     <Card>
                         <CardContent className="p-8 text-center">
-                            <TrendingUp className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                            <IconTrendingUp className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
                             <h3 className="font-medium mb-2">Cross-Community Analytics</h3>
                             <p className="text-muted-foreground">
                                 Compare performance across all your managed communities. Coming soon!

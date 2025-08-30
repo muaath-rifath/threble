@@ -11,27 +11,27 @@ import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
 import { useToast } from '@/hooks/use-toast'
 import { 
-  Search, 
-  MoreVertical, 
-  UserMinus, 
-  Shield, 
-  ShieldCheck, 
-  Crown,
-  MessageCircle,
-  UserPlus,
-  Loader2
-} from 'lucide-react'
-import { CommunityMember } from '@/lib/types'
-import { updateMemberRole } from '@/lib/actions/community.actions'
-import { useAppDispatch } from '@/lib/redux/hooks'
-import { removeMember, updateMemberRole as updateMemberRoleRedux } from '@/lib/redux/slices/communitiesSlice'
-import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuSeparator,
-  DropdownMenuTrigger,
+  DropdownMenuTrigger
 } from '@/components/ui/dropdown-menu'
+import { 
+  IconSearch, 
+  IconDotsVertical, 
+  IconUserMinus, 
+  IconShield, 
+  IconShieldCheck, 
+  IconCrown,
+  IconMessageCircle,
+  IconUserPlus,
+  IconLoader2
+} from '@tabler/icons-react'
+import { CommunityMember } from '@/lib/types'
+import { updateMemberRole } from '@/lib/actions/community.actions'
+import { useAppDispatch } from '@/lib/redux/hooks'
+import { removeMember, updateMemberRole as updateMemberRoleRedux } from '@/lib/redux/slices/communitiesSlice'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -221,9 +221,9 @@ export default function CommunityMemberList({
   const getRoleIcon = (role: string) => {
     switch (role) {
       case 'ADMIN':
-        return <Crown className="h-4 w-4 text-yellow-500" />
+        return <IconCrown className="h-4 w-4 text-yellow-500" />
       case 'MODERATOR':
-        return <Shield className="h-4 w-4 text-blue-500" />
+        return <IconShield className="h-4 w-4 text-blue-500" />
       default:
         return null
     }
@@ -255,7 +255,7 @@ export default function CommunityMemberList({
       <CardHeader>
         <div className="flex items-center justify-between">
           <CardTitle className="flex items-center gap-2">
-            <Shield className="h-5 w-5" />
+            <IconShield className="h-5 w-5" />
             Community Members
           </CardTitle>
           
@@ -267,14 +267,14 @@ export default function CommunityMemberList({
                 size="sm"
                 className="flex items-center gap-2"
               >
-                <UserPlus className="h-4 w-4" />
+                <IconUserPlus className="h-4 w-4" />
                 Invite
               </Button>
             )}
             
             {/* Search Input */}
             <div className="relative w-64">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <IconSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
                 placeholder="Search members..."
                 value={searchQuery}
@@ -347,7 +347,7 @@ export default function CommunityMemberList({
 
                 <div className="flex items-center space-x-2">
                   <Button variant="ghost" size="sm">
-                    <MessageCircle className="h-4 w-4" />
+                    <IconMessageCircle className="h-4 w-4" />
                   </Button>
 
                   {canManageMember(member) && (
@@ -358,7 +358,7 @@ export default function CommunityMemberList({
                           size="sm"
                           disabled={actionLoading === member.id}
                         >
-                          <MoreVertical className="h-4 w-4" />
+                          <IconDotsVertical className="h-4 w-4" />
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
@@ -368,7 +368,7 @@ export default function CommunityMemberList({
                               <DropdownMenuItem
                                 onClick={() => handleUpdateRole(member.id, 'MODERATOR')}
                               >
-                                <ShieldCheck className="h-4 w-4 mr-2" />
+                                <IconShieldCheck className="h-4 w-4 mr-2" />
                                 Make Moderator
                               </DropdownMenuItem>
                             )}
@@ -376,7 +376,7 @@ export default function CommunityMemberList({
                               <DropdownMenuItem
                                 onClick={() => handleUpdateRole(member.id, 'USER')}
                               >
-                                <Shield className="h-4 w-4 mr-2" />
+                                <IconShield className="h-4 w-4 mr-2" />
                                 Remove Moderator
                               </DropdownMenuItem>
                             )}
@@ -390,7 +390,7 @@ export default function CommunityMemberList({
                           }}
                           className="text-destructive focus:text-destructive"
                         >
-                          <UserMinus className="h-4 w-4 mr-2" />
+                          <IconUserMinus className="h-4 w-4 mr-2" />
                           Remove Member
                         </DropdownMenuItem>
                       </DropdownMenuContent>
@@ -406,7 +406,7 @@ export default function CommunityMemberList({
                 {loadingMore && (
                   <div className="flex justify-center">
                     <div className="flex items-center gap-2 text-muted-foreground">
-                      <Loader2 className="h-5 w-5 animate-spin" />
+                      <IconLoader2 className="h-5 w-5 animate-spin" />
                       Loading more members...
                     </div>
                   </div>

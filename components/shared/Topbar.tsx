@@ -36,15 +36,9 @@ function Topbar() {
                     return (
                         <div className="flex w-10" key={link.label}>
                             <Link href={`/${link.route}`} className="flex items-center glass-button rounded-xl p-2">
-                                <Image 
-                                    src={link.imgURL} 
-                                    className={`transition-all duration-200 ${isActive ? 'invert-0 dark:invert brightness-0 saturate-100' : 'opacity-60 dark:invert hover:opacity-100'}`}
-                                    alt={link.label} 
-                                    height={24} 
-                                    width={24} 
-                                    style={{
-                                        filter: isActive ? 'brightness(0) saturate(100%) invert(39%) sepia(96%) saturate(318%) hue-rotate(130deg) brightness(96%) contrast(96%)' : ''
-                                    }}
+                                <link.icon
+                                    className={`transition-all duration-200 ${isActive ? 'text-green-500' : 'opacity-60 hover:opacity-100'}`}
+                                    size={24}
                                 />
                                 {link.label && <span className="sr-only">{link.label}</span>}
                             </Link>

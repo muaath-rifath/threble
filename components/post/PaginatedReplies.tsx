@@ -4,7 +4,7 @@ import { useState, useCallback } from 'react'
 import { Session } from 'next-auth'
 import { useInfiniteScroll } from '@/hooks/use-infinite-scroll'
 import { Button } from '@/components/ui/button'
-import { Loader2, MessageSquare } from 'lucide-react'
+import { IconLoader2, IconMessage } from '@tabler/icons-react'
 import ThreadReply from './ThreadReply'
 
 interface PaginatedRepliesProps {
@@ -108,7 +108,7 @@ export default function PaginatedReplies({
           onClick={() => setIsExpanded(true)}
           className="text-primary-500 hover:text-primary-600 hover:bg-primary-500/10 glass-button text-sm"
         >
-          <MessageSquare className="h-4 w-4 mr-2" />
+          <IconMessage className="h-4 w-4 mr-2" />
           Show {initialRepliesCount} {initialRepliesCount === 1 ? 'reply' : 'replies'}
         </Button>
       </div>
@@ -192,7 +192,7 @@ export default function PaginatedReplies({
         <div ref={ref as any} className="flex justify-center py-2">
           {loading ? (
             <div className="flex items-center text-gray-500 text-sm">
-              <Loader2 className="h-4 w-4 animate-spin mr-2" />
+              <IconLoader2 className="h-4 w-4 animate-spin mr-2" />
               Loading more replies...
             </div>
           ) : (

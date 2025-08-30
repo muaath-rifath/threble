@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { useToast } from '@/hooks/use-toast'
-import { UserCheck, UserPlus, Clock, X } from 'lucide-react'
+import { IconUserCheck, IconUserPlus, IconClock, IconX } from '@tabler/icons-react'
 
 interface ConnectionButtonProps {
   userId: string
@@ -94,7 +94,7 @@ export function ConnectionButton({
             disabled={isLoading}
             className={className}
           >
-            <UserPlus className="w-4 h-4 mr-2" />
+            <IconUserPlus className="w-4 h-4 mr-2" />
             Connect
           </Button>
         )
@@ -106,7 +106,7 @@ export function ConnectionButton({
             disabled={isLoading}
             className={className}
           >
-            <Clock className="w-4 h-4 mr-2" />
+            <IconClock className="w-4 h-4 mr-2" />
             Request Sent
           </Button>
         )
@@ -119,7 +119,7 @@ export function ConnectionButton({
               disabled={isLoading}
               className={className}
             >
-              <UserCheck className="w-4 h-4 mr-2" />
+              <IconUserCheck className="w-4 h-4 mr-2" />
               Accept
             </Button>
             <Button 
@@ -127,7 +127,7 @@ export function ConnectionButton({
               onClick={() => handleConnectionAction('reject')}
               disabled={isLoading}
             >
-              <X className="w-4 h-4" />
+              <IconX className="w-4 h-4" />
             </Button>
           </div>
         )
@@ -140,7 +140,7 @@ export function ConnectionButton({
             disabled={isLoading}
             className={className}
           >
-            <UserCheck className="w-4 h-4 mr-2" />
+            <IconUserCheck className="w-4 h-4 mr-2" />
             Connected
           </Button>
         )
@@ -174,7 +174,7 @@ export function ConnectionButton({
             disabled={isLoading}
             className={className}
           >
-            <UserPlus className="w-4 h-4 mr-2" />
+            <IconUserPlus className="w-4 h-4 mr-2" />
             Connect
           </Button>
         )

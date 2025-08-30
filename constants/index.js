@@ -1,56 +1,77 @@
+import {
+  IconCompass,
+  IconBookmark,
+  IconMessage,
+  IconBell,
+  IconHome,
+  IconSearch,
+  IconHeart,
+  IconUsers,
+  IconUsersGroup,
+  IconUser,
+  IconMessageCircle,
+  IconTag,
+  IconUserPlus
+} from '@tabler/icons-react';
+
 export const topbarLinks = [
   {
-    imgURL: "/assets/explore.svg",
+    icon: IconCompass,
     route: "/explore",
     label: "Explore",
   },
-  
+
   {
-    imgURL: "/assets/bookmark.svg",
+    icon: IconBookmark,
     route: "/bookmarks",
     label: "Bookmarks",
   },
 ];
 export const topbarNav = [
   {
-  imgURL:"/assets/dm.svg",
+  icon: IconMessage,
   route: "messages",
   label: "Messages",
 },
 {
-  imgURL:"/assets/bell.svg",
+  icon: IconBell,
   route: "notifications",
   label: "Notification",
 },
 ];
 export const sidebarLinks = [
     {
-      imgURL: "/assets/home.svg",
+      icon: IconHome,
       route: "/",
       label: "Home",
     },
     {
-      imgURL: "/assets/search.svg",
+      icon: IconSearch,
       route: "/search",
       label: "Search",
     },
     {
-      imgURL: "/assets/heart.svg",
+      icon: IconBookmark,
+      route: "/bookmarks",
+      label: "Bookmarks",
+    },
+    {
+      icon: IconHeart,
       route: "/activity",
       label: "Activity",
     },
     {
-      imgURL: "/assets/members.svg",
+      icon: IconUsers,
       route: "/connections",
       label: "Connections",
     },
     {
-      imgURL: "/assets/community.svg",
+      icon: IconUsersGroup,
       route: "/communities",
       label: "Communities",
     },
     {
-      imgURL: "/assets/user.svg",
+      icon: IconUser,
       route: "/profile",
       label: "Profile",
     },
@@ -58,41 +79,46 @@ export const sidebarLinks = [
 
   export const leftSidebarLinks = [
     {
-      imgURL: "/assets/home.svg",
+      icon: IconHome,
       route: "/",
       label: "Home",
     },
     {
-      imgURL: "/assets/search.svg",
+      icon: IconSearch,
       route: "/search",
       label: "Search",
     },
     {
-      imgURL: "/assets/community.svg",
+      icon: IconBookmark,
+      route: "/bookmarks",
+      label: "Bookmarks",
+    },
+    {
+      icon: IconUsersGroup,
       route: "/communities",
       label: "Communities",
     },
     {
-      imgURL: "/assets/user.svg",
+      icon: IconUser,
       route: "/profile",
       label: "Profile",
     },
   ];
-  
+
   export const profileTabs = [
-    { value: "threads", label: "Threads", icon: "/assets/reply.svg" },
-    { value: "replies", label: "Replies", icon: "/assets/members.svg" },
-    { value: "tagged", label: "Tagged", icon: "/assets/tag.svg" },
+    { value: "threads", label: "Threads", icon: IconMessageCircle },
+    { value: "replies", label: "Replies", icon: IconUsers },
+    { value: "tagged", label: "Tagged", icon: IconTag },
   ];
-  
+
   export const communityTabs = [
-    { value: "threads", label: "Threads", icon: "/assets/reply.svg" },
-    { value: "members", label: "Members", icon: "/assets/members.svg" },
-    { value: "requests", label: "Requests", icon: "/assets/request.svg" },
+    { value: "threads", label: "Threads", icon: IconMessageCircle },
+    { value: "members", label: "Members", icon: IconUsers },
+    { value: "requests", label: "Requests", icon: IconUserPlus },
   ];
   
   export const userProfile = {
-    imgURL: "/assets/user.svg",
+    icon: IconUser,
     route: "/profile",
     label: "Profile",
   };

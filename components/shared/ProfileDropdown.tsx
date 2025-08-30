@@ -11,7 +11,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { User, Settings, LogOut, Moon, Sun, Monitor, Palette, Check } from 'lucide-react';
+import { IconUser, IconSettings, IconLogout, IconMoon, IconSun, IconDeviceDesktop, IconPalette, IconCheck } from '@tabler/icons-react';
 
 interface ProfileDropdownProps {
   user: {
@@ -44,7 +44,7 @@ const ProfileDropdown: React.FC<ProfileDropdownProps> = ({
           <Avatar className="h-10 w-10 border-2 border-glass-border dark:border-glass-border-dark">
             <AvatarImage src={user.image} alt={user.name} />
             <AvatarFallback className="bg-primary-500/20 text-primary-500">
-              <User className="h-5 w-5" />
+              <IconUser className="h-5 w-5" />
             </AvatarFallback>
           </Avatar>
         </Button>
@@ -55,7 +55,7 @@ const ProfileDropdown: React.FC<ProfileDropdownProps> = ({
             <Avatar className="h-12 w-12 border-2 border-glass-border dark:border-glass-border-dark">
               <AvatarImage src={user.image} alt={user.name} />
               <AvatarFallback className="bg-primary-500/20 text-primary-500">
-                <User className="h-6 w-6" />
+                <IconUser className="h-6 w-6" />
               </AvatarFallback>
             </Avatar>
             <div className="flex flex-col space-y-1">
@@ -72,21 +72,21 @@ const ProfileDropdown: React.FC<ProfileDropdownProps> = ({
             onClick={onProfile}
             className="glass-button cursor-pointer p-3 mb-1"
           >
-            <User className="mr-3 h-4 w-4" />
+            <IconUser className="mr-3 h-4 w-4" />
             <span className="font-medium">View Profile</span>
           </DropdownMenuItem>
           <DropdownMenuItem 
             onClick={onSettings}
             className="glass-button cursor-pointer p-3 mb-1"
           >
-            <Settings className="mr-3 h-4 w-4" />
+            <IconSettings className="mr-3 h-4 w-4" />
             <span className="font-medium">Settings</span>
           </DropdownMenuItem>
           
           {/* Theme Section */}
           <div className="glass-card p-2 mt-2 mb-2">
             <div className="flex items-center space-x-2 mb-2">
-              <Palette className="h-4 w-4 text-primary-500" />
+              <IconPalette className="h-4 w-4 text-primary-500" />
               <span className="text-sm font-medium text-black dark:text-white">Theme</span>
             </div>
             <div className="grid grid-cols-3 gap-1">
@@ -100,7 +100,7 @@ const ProfileDropdown: React.FC<ProfileDropdownProps> = ({
                     : 'text-black/60 dark:text-white/60 border border-transparent hover:text-black dark:hover:text-white hover:bg-white/10 dark:hover:bg-white/5'
                 }`}
               >
-                <Sun className="h-4 w-4" />
+                <IconSun className="h-4 w-4" />
                 <span className="text-xs">Light</span>
               </Button>
               <Button
@@ -113,7 +113,7 @@ const ProfileDropdown: React.FC<ProfileDropdownProps> = ({
                     : 'text-black/60 dark:text-white/60 border border-transparent hover:text-black dark:hover:text-white hover:bg-white/10 dark:hover:bg-white/5'
                 }`}
               >
-                <Moon className="h-4 w-4" />
+                <IconMoon className="h-4 w-4" />
                 <span className="text-xs">Dark</span>
               </Button>
               <Button
@@ -126,7 +126,7 @@ const ProfileDropdown: React.FC<ProfileDropdownProps> = ({
                     : 'text-black/60 dark:text-white/60 border border-transparent hover:text-black dark:hover:text-white hover:bg-white/10 dark:hover:bg-white/5'
                 }`}
               >
-                <Monitor className="h-4 w-4" />
+                <IconDeviceDesktop className="h-4 w-4" />
                 <span className="text-xs">System</span>
               </Button>
             </div>
@@ -138,7 +138,7 @@ const ProfileDropdown: React.FC<ProfileDropdownProps> = ({
             onClick={onLogout}
             className="glass-button cursor-pointer p-3 text-red-500 hover:bg-red-50/20 dark:hover:bg-red-950/20 focus:bg-red-50/20 dark:focus:bg-red-950/20"
           >
-            <LogOut className="mr-3 h-4 w-4" />
+            <IconLogout className="mr-3 h-4 w-4" />
             <span className="font-medium">Log out</span>
           </DropdownMenuItem>
         </div>

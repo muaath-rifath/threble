@@ -37,6 +37,7 @@ model User {
   followers          Follow[]          @relation("Follower")
   posts              Post[]
   reactions          Reaction[]
+  bookmarks          Bookmark[]
   profile            UserProfile?
   accounts           Account[]
   sessions           Session[]
@@ -110,6 +111,7 @@ model Post {
   parent           Post?      @relation("PostReplies", fields: [parentId], references: [id], onDelete: Cascade)
   replies          Post[]     @relation("PostReplies")
   reactions        Reaction[]
+  bookmarks        Bookmark[]
   notifications    Notification[] @relation("PostNotifications")
 
   @@index([authorId, createdAt])
@@ -207,6 +209,20 @@ model Connection {
   @@unique([userId, connectedUserId])
   @@index([userId])
   @@index([connectedUserId])
+}
+
+model Bookmark {
+  id        String   @id @default(cuid())
+  userId    String
+  postId    String
+  createdAt DateTime @default(now())
+  
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, postId])
+  @@index([userId, createdAt])
+  @@index([postId])
 }
 
 enum Role {

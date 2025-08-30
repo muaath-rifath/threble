@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
 import { useToast } from '@/hooks/use-toast'
-import { UserCheck, X, Clock } from 'lucide-react'
+import { IconUserCheck, IconX, IconClock } from '@tabler/icons-react'
 import Link from 'next/link'
 
 interface User {
@@ -199,7 +199,7 @@ export function ConnectionRequests({ type = 'all' }: ConnectionRequestsProps) {
         </CardHeader>
         <CardContent>
           <div className="text-center py-8 text-gray-500">
-            <Clock className="w-12 h-12 mx-auto mb-4 opacity-50" />
+            <IconClock className="w-12 h-12 mx-auto mb-4 opacity-50" />
             <p>
               {type === 'all' 
                 ? "No connection requests at the moment" 
@@ -267,7 +267,7 @@ export function ConnectionRequests({ type = 'all' }: ConnectionRequestsProps) {
                     onClick={() => handleConnectionAction(request.id, 'accept', request.user.id)}
                     disabled={actionLoading === request.id}
                   >
-                    <UserCheck className="w-4 h-4 mr-1" />
+                    <IconUserCheck className="w-4 h-4 mr-1" />
                     Accept
                   </Button>
                   <Button
@@ -276,7 +276,7 @@ export function ConnectionRequests({ type = 'all' }: ConnectionRequestsProps) {
                     onClick={() => handleConnectionAction(request.id, 'reject', request.user.id)}
                     disabled={actionLoading === request.id}
                   >
-                    <X className="w-4 h-4 mr-1" />
+                    <IconX className="w-4 h-4 mr-1" />
                     Decline
                   </Button>
                 </div>
@@ -290,11 +290,11 @@ export function ConnectionRequests({ type = 'all' }: ConnectionRequestsProps) {
                     onClick={() => handleWithdraw(request.id, request.user.id)}
                     disabled={actionLoading === request.id}
                   >
-                    <X className="w-4 h-4 mr-1" />
+                    <IconX className="w-4 h-4 mr-1" />
                     Withdraw
                   </Button>
                   <div className="flex items-center text-sm text-gray-500">
-                    <Clock className="w-4 h-4 mr-1" />
+                    <IconClock className="w-4 h-4 mr-1" />
                     Pending
                   </div>
                 </div>

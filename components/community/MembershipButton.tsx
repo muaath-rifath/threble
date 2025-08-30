@@ -5,7 +5,7 @@ import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { useToast } from '@/hooks/use-toast'
-import { UserPlus, UserMinus, Clock, Check } from 'lucide-react'
+import { IconUserPlus, IconUserMinus, IconClock, IconCheck } from '@tabler/icons-react'
 import { CommunityMember } from '@/lib/types'
 import { joinCommunity, leaveCommunity, cancelJoinRequest } from '@/lib/actions/community.actions'
 
@@ -139,7 +139,7 @@ export default function MembershipButton({
         variant={variant}
         onClick={() => router.push('/signin')}
       >
-        <UserPlus className="h-4 w-4 mr-2" />
+        <IconUserPlus className="h-4 w-4 mr-2" />
         Join Community
       </Button>
     )
@@ -158,8 +158,8 @@ export default function MembershipButton({
         disabled={isLoading}
         className="group"
       >
-        <Check className="h-4 w-4 mr-2 group-hover:hidden" />
-        <UserMinus className="h-4 w-4 mr-2 hidden group-hover:block" />
+        <IconCheck className="h-4 w-4 mr-2 group-hover:hidden" />
+        <IconUserMinus className="h-4 w-4 mr-2 hidden group-hover:block" />
         <span className="group-hover:hidden">{roleDisplay}</span>
         <span className="hidden group-hover:block">Leave</span>
       </Button>
@@ -176,8 +176,8 @@ export default function MembershipButton({
         disabled={isLoading}
         className="group"
       >
-        <Clock className="h-4 w-4 mr-2 group-hover:hidden" />
-        <UserMinus className="h-4 w-4 mr-2 hidden group-hover:block" />
+        <IconClock className="h-4 w-4 mr-2 group-hover:hidden" />
+        <IconUserMinus className="h-4 w-4 mr-2 hidden group-hover:block" />
         <span className="group-hover:hidden">Requested</span>
         <span className="hidden group-hover:block">Cancel</span>
       </Button>
@@ -192,7 +192,7 @@ export default function MembershipButton({
       onClick={handleJoinCommunity}
       disabled={isLoading}
     >
-      <UserPlus className="h-4 w-4 mr-2" />
+      <IconUserPlus className="h-4 w-4 mr-2" />
       {isLoading ? 'Loading...' : 
        visibility === 'PRIVATE' ? 'Request to Join' : 'Join Community'}
     </Button>

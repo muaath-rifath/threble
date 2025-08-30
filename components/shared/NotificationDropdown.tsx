@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
-import { Bell, X, Check, Dot } from 'lucide-react'
+import { IconBell, IconX, IconCheck, IconPoint } from '@tabler/icons-react'
 import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -238,7 +238,7 @@ export function NotificationDropdown({ isMobile = false }: NotificationDropdownP
           className="relative h-10 w-10 glass-button p-2"
           onClick={handleBellClick}
         >
-          <Bell className="h-5 w-5" />
+          <IconBell className="h-5 w-5" />
           {unreadCount > 0 && (
             <Badge 
               variant="destructive" 
@@ -263,7 +263,7 @@ export function NotificationDropdown({ isMobile = false }: NotificationDropdownP
                   onClick={markAllAsRead}
                   className="text-xs glass-button"
                 >
-                  <Check className="h-3 w-3 mr-1" />
+                  <IconCheck className="h-3 w-3 mr-1" />
                   Mark all read
                 </Button>
               )}
@@ -322,7 +322,7 @@ export function NotificationDropdown({ isMobile = false }: NotificationDropdownP
                       </div>
                       {!notification.read && (
                         <div className="flex-shrink-0">
-                          <Dot className="h-6 w-6 text-primary-500" />
+                          <IconPoint className="h-6 w-6 text-primary-500" />
                         </div>
                       )}
                     </div>

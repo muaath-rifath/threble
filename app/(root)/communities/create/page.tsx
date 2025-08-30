@@ -3,7 +3,7 @@
 import { useRouter } from 'next/navigation'
 import CommunityForm from '@/components/community/CommunityForm'
 import { Button } from '@/components/ui/button'
-import { ArrowLeft } from 'lucide-react'
+import { IconArrowLeft } from '@tabler/icons-react'
 
 export default function CreateCommunityPage() {
     const router = useRouter()
@@ -25,7 +25,7 @@ export default function CreateCommunityPage() {
                     onClick={() => router.push('/communities')}
                     className="mb-4"
                 >
-                    <ArrowLeft className="h-4 w-4 mr-2" />
+                    <IconArrowLeft className="h-4 w-4 mr-2" />
                     Back to Communities
                 </Button>
                 <h1 className="text-3xl font-bold">Create Community</h1>

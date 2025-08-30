@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { Session } from 'next-auth'
 import { useInView } from '@intersection-observer/next'
 import PostCard, { Post } from '@/components/post/PostCard'
-import { Loader2 } from 'lucide-react'
+import { IconLoader2 } from '@tabler/icons-react'
 
 interface UserPostListProps {
     session: Session
@@ -137,7 +137,7 @@ export default function UserPostList({ session, initialPosts = [] }: UserPostLis
                     {loadingMore && (
                         <div className="flex justify-center">
                             <div className="flex items-center gap-2 text-muted-foreground">
-                                <Loader2 className="h-5 w-5 animate-spin" />
+                                <IconLoader2 className="h-5 w-5 animate-spin" />
                                 Loading more posts...
                             </div>
                         </div>

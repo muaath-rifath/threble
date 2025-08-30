@@ -7,7 +7,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { useToast } from '@/hooks/use-toast'
-import { Users, Lock, Globe, MessageSquare } from 'lucide-react'
+import { IconUsers, IconLock, IconGlobe, IconMessage } from '@tabler/icons-react'
 import { CommunityWithDetails, CommunityMember } from '@/lib/types'
 import { joinCommunity } from '@/lib/actions/community.actions'
 
@@ -83,12 +83,12 @@ export default function CommunityCard({
                 <Badge variant={community.visibility === 'PRIVATE' ? 'secondary' : 'outline'}>
                   {community.visibility === 'PRIVATE' ? (
                     <>
-                      <Lock className="h-3 w-3 mr-1" />
+                      <IconLock className="h-3 w-3 mr-1" />
                       Private
                     </>
                   ) : (
                     <>
-                      <Globe className="h-3 w-3 mr-1" />
+                      <IconGlobe className="h-3 w-3 mr-1" />
                       Public
                     </>
                   )}
@@ -111,11 +111,11 @@ export default function CommunityCard({
         
         <div className="flex items-center gap-4 text-sm text-muted-foreground">
           <div className="flex items-center gap-1">
-            <Users className="h-4 w-4" />
+            <IconUsers className="h-4 w-4" />
             <span>{community._count.members} members</span>
           </div>
           <div className="flex items-center gap-1">
-            <MessageSquare className="h-4 w-4" />
+            <IconMessage className="h-4 w-4" />
             <span>{community._count.posts} posts</span>
           </div>
         </div>

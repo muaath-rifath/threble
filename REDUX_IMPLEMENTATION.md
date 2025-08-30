@@ -54,42 +54,44 @@ function MyComponent() {
 - `removeReaction()` - Remove reaction from post
 - `updatePostReactions()` - Real-time reaction updates
 
-### 3. Notifications Slice (`state.notifications`)
+### 3. Bookmarks Slice (`state.bookmarks`)
+- `bookmarks`: Array of user's bookmarked posts
+- `loading`: Loading state for bookmark operations
+- `error`: Error messages
+- `hasMore`: Pagination state
+- `bookmarkedPostIds`: Set of bookmarked post IDs for quick lookup
+
+**Actions:**
+- `fetchBookmarks()` - Load bookmarks with pagination
+- `addBookmark()` - Bookmark a post
+- `removeBookmark()` - Remove bookmark
+- `checkBookmarkStatus()` - Check bookmark status for posts
+- `optimisticAddBookmark()` - Optimistic bookmark addition
+- `optimisticRemoveBookmark()` - Optimistic bookmark removal
+
+### 4. Notifications Slice (`state.notifications`)
 - `notifications`: Array of user notifications
-- `unreadCount`: Number of unread notifications
+- `unreadCount`: Count of unread notifications
 - `loading`: Loading state
 
 **Actions:**
-- `fetchNotifications()` - Load notifications with pagination
-- `markNotificationRead()` - Mark single notification as read
-- `markAllNotificationsRead()` - Mark all notifications as read
+- `fetchNotifications()` - Load notifications
+- `markAsRead()` - Mark notification as read
+- `markAllAsRead()` - Mark all notifications as read
 - `addNotification()` - Real-time notification addition
 
-### 4. Communities Slice (`state.communities`)
-- `communities`: All available communities
+### 5. Communities Slice (`state.communities`)
+- `communities`: Array of communities
 - `myCommunities`: User's joined communities
-- `currentCommunity`: Currently viewed community
-- `communityMembers`: Members by communityId
+- `loading`: Loading state
 
 **Actions:**
-- `fetchCommunities()` - Load communities with pagination
-- `createCommunity()` - Create new community
+- `fetchCommunities()` - Load communities
 - `joinCommunity()` - Join a community
 - `leaveCommunity()` - Leave a community
-- `fetchCommunityMembers()` - Load community members
+- `createCommunity()` - Create new community
 
-### 5. Events Slice (`state.events`)
-- `events`: All available events
-- `myEvents`: User's events (attending/organizing)
-- `currentEvent`: Currently viewed event
-- `eventAttendees`: Attendees by eventId
-
-**Actions:**
-- `fetchEvents()` - Load events with filters
-- `createEvent()` - Create new event
-- `joinEvent()` - Join an event
-- `leaveEvent()` - Leave an event
-- `fetchEventAttendees()` - Load event attendees
+### 6. Events Slice (`state.events`)
 
 ### 6. UI Slice (`state.ui`)
 - `globalLoading`: Global loading state
@@ -182,10 +184,11 @@ const handleLike = async (postId: string) => {
 
 ✅ **Completed:**
 - Redux Toolkit store configuration
-- All slice implementations (posts, reactions, notifications, communities, events, UI)
+- All slice implementations (posts, reactions, bookmarks, notifications, communities, events, UI)
 - TypeScript integration
 - Redux Provider setup
 - Typed hooks (useAppDispatch, useAppSelector)
+- Bookmarks functionality with AJAX scrolling
 
 🔄 **Next Steps:**
 - Replace existing components with Redux-aware versions

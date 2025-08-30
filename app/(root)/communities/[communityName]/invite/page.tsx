@@ -8,7 +8,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { useToast } from '@/hooks/use-toast'
-import { ArrowLeft, Search, UserPlus, Users, Send, Check } from 'lucide-react'
+import { IconArrowLeft, IconSearch, IconUserPlus, IconUsers, IconSend, IconCheck, IconUsersPlus } from '@tabler/icons-react'
 
 interface Connection {
   id: string
@@ -177,7 +177,7 @@ export default function CommunityInvitePage() {
           onClick={() => router.back()}
           className="mb-4"
         >
-          <ArrowLeft className="h-4 w-4 mr-2" />
+          <IconArrowLeft className="h-4 w-4 mr-2" />
           Back
         </Button>
         <Card>
@@ -203,7 +203,7 @@ export default function CommunityInvitePage() {
           variant="ghost" 
           onClick={() => router.back()}
         >
-          <ArrowLeft className="h-4 w-4 mr-2" />
+          <IconArrowLeft className="h-4 w-4 mr-2" />
           Back
         </Button>
         <div>
@@ -217,12 +217,12 @@ export default function CommunityInvitePage() {
         <CardHeader>
           <div className="flex items-center justify-between">
             <CardTitle className="flex items-center gap-2">
-              <Users className="h-5 w-5" />
+              <IconUsers className="h-5 w-5" />
               Your Connections ({filteredConnections.length} total, {availableToInvite.length} available to invite)
             </CardTitle>
             
             <div className="relative w-64">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <IconSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
                 placeholder="Search connections..."
                 value={searchQuery}
@@ -236,7 +236,7 @@ export default function CommunityInvitePage() {
         <CardContent>
           {filteredConnections.length === 0 ? (
             <div className="text-center py-8">
-              <UserPlus className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+              <IconUsersPlus className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
               <h3 className="text-lg font-medium mb-2">No connections available</h3>
               <p className="text-muted-foreground">
                 {searchQuery 
@@ -279,12 +279,12 @@ export default function CommunityInvitePage() {
                     <div className="flex items-center gap-2">
                       {isAlreadyMember ? (
                         <div className="flex items-center gap-2 text-green-600 dark:text-green-400">
-                          <Check className="h-4 w-4" />
+                          <IconCheck className="h-4 w-4" />
                           <span className="text-sm font-medium">Member</span>
                         </div>
                       ) : isInvited ? (
                         <div className="flex items-center gap-2 text-blue-600 dark:text-blue-400">
-                          <Check className="h-4 w-4" />
+                          <IconCheck className="h-4 w-4" />
                           <span className="text-sm font-medium">Invited</span>
                         </div>
                       ) : (
@@ -301,7 +301,7 @@ export default function CommunityInvitePage() {
                             </>
                           ) : (
                             <>
-                              <Send className="h-4 w-4" />
+                              <IconSend className="h-4 w-4" />
                               Invite
                             </>
                           )}

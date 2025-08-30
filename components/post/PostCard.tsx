@@ -7,15 +7,32 @@ import { Card, CardContent, CardFooter, CardHeader } from '@/components/ui/card'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
 import { useToast } from '@/hooks/use-toast'
-import { MessageSquare, ThumbsUp, Share2, MoreHorizontal, Edit, Trash2, ChevronRight, Image, Video, X } from 'lucide-react'
+import { IconMessage, IconThumbUp, IconShare, IconDots, IconEdit, IconTrash, IconChevronRight, IconPhoto, IconVideo, IconX } from '@tabler/icons-react'
 import { format } from 'date-fns'
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from "@/components/ui/dropdown-menu"
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Textarea } from "@/components/ui/textarea"
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog"
-import { useAppDispatch, useAppSelector } from '@/lib/redux/hooks'
-import { addReaction, removeReaction, updatePostReactions as updateReactionsInSlice } from '@/lib/redux/slices/reactionsSlice'
+import BookmarkButton from '@/components/shared/BookmarkButton'
+
+// Optional Redux integration - only import if Redux is available
+let useAppDispatch: any, useAppSelector: any, addReaction: any, removeReaction: any, updateReactionsInSlice: any, checkBookmarkStatus: any
+try {
+  const reduxHooks = require('@/lib/redux/hooks')
+  const reactionsSlice = require('@/lib/redux/slices/reactionsSlice')
+  const bookmarksSlice = require('@/lib/redux/slices/bookmarksSlice')
+  
+  useAppDispatch = reduxHooks.useAppDispatch
+  useAppSelector = reduxHooks.useAppSelector
+  addReaction = reactionsSlice.addReaction
+  removeReaction = reactionsSlice.removeReaction
+  updateReactionsInSlice = reactionsSlice.updatePostReactions
+  checkBookmarkStatus = bookmarksSlice.checkBookmarkStatus
+} catch (error) {
+  // Redux not available, use fallback
+  console.log('Redux not available, using fallback mode')
+}
 
 export interface Post {
     id: string
@@ -28,7 +45,7 @@ export interface Post {
     }
     createdAt: string
     updatedAt: string
-    reactions: Array<{
+    reactions?: Array<{
         id: string
         type: string
         userId: string
@@ -62,36 +79,52 @@ interface PostCardProps {
     hideRepliedTo?: boolean // New prop to hide "Replied to" indicator
 }
 
-export default function PostCard({ post, session, onUpdate, isReply = false, showFullContent = false, hideRepliedTo = false }: PostCardProps) {
+export default function PostCard({ post: initialPost, session, onUpdate, isReply = false, showFullContent: initialShowFullContent = false, hideRepliedTo = false }: PostCardProps) {
     const router = useRouter()
     const { toast } = useToast()
-    const dispatch = useAppDispatch()
     
-    // Get reactions from Redux store, fallback to post reactions
-    const postReactions = useAppSelector(state => state.reactions.reactions[post.id] || post.reactions)
-    const reactionCounts = useAppSelector(state => state.reactions.reactionCounts[post.id])
-    const isReactionLoading = useAppSelector(state => state.reactions.loading[post.id] || false)
+    // Ensure post has reactions array
+    const safePost = {
+        ...initialPost,
+        reactions: initialPost.reactions || []
+    }
+    const [post, setPost] = useState(safePost)
     
-    // Initialize reactions in Redux store if not already there
+    // Optional Redux integration
+    const dispatch = useAppDispatch?.()
+    const postReactions = useAppSelector ? useAppSelector((state: any) => state.reactions?.reactions[post.id]) : null
+    const reactionCounts = useAppSelector ? useAppSelector((state: any) => state.reactions?.reactionCounts[post.id]) : null
+    const isReactionLoading = useAppSelector ? useAppSelector((state: any) => state.reactions?.loading[post.id] || false) : false
+    
+    // Use Redux reactions if Redux is available and has been initialized, otherwise use local post reactions
+    const useReduxState = dispatch && postReactions !== null
+    const currentReactions = useReduxState ? (postReactions || []) : (post.reactions || [])
+    const currentLikeCount = useReduxState ? (reactionCounts?.LIKE || 0) : (currentReactions || []).filter((r: any) => r && r.type === 'LIKE').length
+    
+    // Initialize Redux store if available
     useEffect(() => {
-        const reduxReactions = postReactions
+        if (!dispatch || !updateReactionsInSlice) return
+        
+        const reduxHasReactions = postReactions && postReactions.length > 0
         const postHasReactions = post.reactions && post.reactions.length > 0
-        const reduxHasReactions = reduxReactions && reduxReactions.length > 0
         
         // Only initialize if Redux doesn't have reactions for this post
         if (!reduxHasReactions && postHasReactions) {
-            // Calculate reaction counts from post reactions
             const counts: Record<string, number> = {}
             post.reactions?.forEach(reaction => {
                 counts[reaction.type] = (counts[reaction.type] || 0) + 1
             })
             
-            // Initialize Redux state with post reactions
             dispatch(updateReactionsInSlice({
                 postId: post.id,
                 reactions: post.reactions || [],
                 reactionCounts: counts
             }))
+        }
+        
+        // Initialize bookmark status if available
+        if (checkBookmarkStatus) {
+            dispatch(checkBookmarkStatus({ postIds: [post.id] }))
         }
     }, [dispatch, post.id, post.reactions, postReactions])
     
@@ -107,8 +140,6 @@ export default function PostCard({ post, session, onUpdate, isReply = false, sho
         image: string | null
     }>>([])
     
-    // Calculate like count from Redux state or post reactions
-    const likeCount = reactionCounts?.LIKE || postReactions?.filter(r => r.type === 'LIKE').length || 0
     const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
     const [editContent, setEditContent] = useState(post.content)
     const [keepMediaUrls, setKeepMediaUrls] = useState<string[]>(post.mediaAttachments || [])
@@ -117,46 +148,95 @@ export default function PostCard({ post, session, onUpdate, isReply = false, sho
     const [replyContent, setReplyContent] = useState('')
     const [replyMediaFiles, setReplyMediaFiles] = useState<File[]>([])
     const [isSubmittingReply, setIsSubmittingReply] = useState(false)
+    const [isLikeLoading, setIsLikeLoading] = useState(false)
     const replyTextareaRef = useRef<HTMLTextAreaElement>(null)
+    
+    // Content display state
+    const [showFullContent, setShowFullContent] = useState(initialShowFullContent)
 
     const isAuthor = session?.user?.id === post.author.id
-    const isLiked = postReactions?.some(r => r.userId === session?.user?.id && r.type === 'LIKE') || false
+    const isLiked = currentReactions?.some((r: any) => r && r.userId === session?.user?.id && r.type === 'LIKE') || false
     const isEdited = new Date(post.updatedAt) > new Date(post.createdAt)
 
     const handleLike = async () => {
-        if (!session?.user?.id || isReactionLoading) return
+        if (!session?.user?.id || isLikeLoading) return
 
+        setIsLikeLoading(true)
         console.log('handleLike called', { 
             isLiked, 
             postId: post.id, 
             userId: session.user.id, 
-            currentReactions: postReactions,
-            isLoading: isReactionLoading 
+            currentReactions,
+            hasRedux: !!dispatch
         })
 
         try {
-            if (isLiked) {
-                console.log('Removing reaction...')
-                const result = await dispatch(removeReaction({ postId: post.id, type: 'LIKE', userId: session.user.id }))
-                console.log('Remove reaction result:', result)
-                if (removeReaction.rejected.match(result)) {
-                    throw new Error(result.error.message || 'Failed to remove reaction')
+            // Use Redux if available
+            if (dispatch && addReaction && removeReaction) {
+                if (isLiked) {
+                    console.log('Removing reaction via Redux...')
+                    const result = await dispatch(removeReaction({ postId: post.id, type: 'LIKE', userId: session.user.id }))
+                    console.log('Remove reaction result:', result)
+                } else {
+                    console.log('Adding reaction via Redux...')
+                    const result = await dispatch(addReaction({ postId: post.id, type: 'LIKE' }))
+                    console.log('Add reaction result:', result)
                 }
             } else {
-                console.log('Adding reaction...')
-                const result = await dispatch(addReaction({ postId: post.id, type: 'LIKE' }))
-                console.log('Add reaction result:', result)
-                if (addReaction.rejected.match(result)) {
-                    throw new Error(result.error.message || 'Failed to add reaction')
+                // Fallback to direct API call and local state update
+                console.log('Using fallback API call...')
+                const response = await fetch(`/api/posts/${post.id}/reactions`, {
+                    method: isLiked ? 'DELETE' : 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ type: 'LIKE' })
+                })
+                
+                if (!response.ok) {
+                    throw new Error('Failed to update reaction')
+                }
+                
+                // Update local state
+                const updatedReactions = isLiked 
+                    ? post.reactions?.filter(r => !(r.userId === session.user.id && r.type === 'LIKE')) || []
+                    : [
+                        ...(post.reactions || []),
+                        {
+                            id: 'temp-' + Date.now(),
+                            type: 'LIKE',
+                            userId: session.user.id,
+                            user: {
+                                id: session.user.id,
+                                name: session.user.name || null,
+                                image: session.user.image || null
+                            }
+                        }
+                    ]
+                
+                setPost(prev => ({
+                    ...prev,
+                    reactions: updatedReactions,
+                    _count: {
+                        ...prev._count,
+                        reactions: updatedReactions.length
+                    }
+                }))
+                
+                if (!isLiked) {
+                    toast({
+                        title: "Post liked!",
+                        description: "Your reaction has been saved.",
+                    })
                 }
             }
-        } catch (error) {
+        } catch (error: any) {
             console.error('Error updating reaction:', error)
             toast({
                 title: "Error",
-                description: "Failed to update reaction. Please try again.",
+                description: error.message || "Failed to update reaction. Please try again.",
                 variant: "destructive",
             })
+        } finally {
+            setIsLikeLoading(false)
         }
     }
 
@@ -431,7 +511,7 @@ export default function PostCard({ post, session, onUpdate, isReply = false, sho
                 {/* Replied to indicator */}
                 {post.parent && !hideRepliedTo && (
                     <div className="text-xs text-gray-500 mb-2 flex items-center gap-1">
-                        <ChevronRight className="h-3 w-3" />
+                        <IconChevronRight className="h-3 w-3" />
                         {buildRepliedToText()}
                     </div>
                 )}
@@ -462,7 +542,7 @@ export default function PostCard({ post, session, onUpdate, isReply = false, sho
                                     size="icon"
                                     className="glass-button h-10 w-10"
                                 >
-                                    <MoreHorizontal className="h-5 w-5 text-black/60 dark:text-white/60" />
+                                    <IconDots className="h-5 w-5 text-black/60 dark:text-white/60" />
                                 </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end" className="w-56 glass-card">
@@ -470,14 +550,14 @@ export default function PostCard({ post, session, onUpdate, isReply = false, sho
                                     onClick={() => setIsEditing(true)}
                                     className="action-dropdown-item"
                                 >
-                                    <Edit className="mr-3 h-5 w-5" />
+                                    <IconEdit className="mr-3 h-5 w-5" />
                                     Edit post
                                 </DropdownMenuItem>
                                 <DropdownMenuItem
                                     onClick={() => setIsDeleteDialogOpen(true)}
                                     className="action-dropdown-item-delete"
                                 >
-                                    <Trash2 className="mr-3 h-5 w-5" />
+                                    <IconTrash className="mr-3 h-5 w-5" />
                                     Delete post
                                 </DropdownMenuItem>
                             </DropdownMenuContent>
@@ -516,7 +596,7 @@ export default function PostCard({ post, session, onUpdate, isReply = false, sho
                                             className="absolute top-2 right-2 h-6 w-6 rounded-full"
                                             onClick={() => setKeepMediaUrls(prev => prev.filter(u => u !== url))}
                                         >
-                                            <X className="h-4 w-4" />
+                                            <IconX className="h-4 w-4" />
                                         </Button>
                                     </div>
                                 ))}
@@ -541,7 +621,7 @@ export default function PostCard({ post, session, onUpdate, isReply = false, sho
                                             className="absolute top-2 right-2 h-6 w-6"
                                             onClick={() => setEditMediaFiles(prev => prev.filter((_, i) => i !== index))}
                                         >
-                                            <X className="h-4 w-4" />
+                                            <IconX className="h-4 w-4" />
                                         </Button>
                                     </div>
                                 ))}
@@ -555,7 +635,7 @@ export default function PostCard({ post, session, onUpdate, isReply = false, sho
                                     className="text-green-500"
                                     onClick={() => handleFileSelect('image/*')}
                                 >
-                                    <Image className="mr-2 h-4 w-4" />
+                                    <IconPhoto className="mr-2 h-4 w-4" />
                                     Photo
                                 </Button>
                                 <Button
@@ -564,7 +644,7 @@ export default function PostCard({ post, session, onUpdate, isReply = false, sho
                                     className="text-blue-500"
                                     onClick={() => handleFileSelect('video/*')}
                                 >
-                                    <Video className="mr-2 h-4 w-4" />
+                                    <IconVideo className="mr-2 h-4 w-4" />
                                     Video
                                 </Button>
                             </div>
@@ -645,22 +725,23 @@ export default function PostCard({ post, session, onUpdate, isReply = false, sho
                         <Button
                             variant="ghost"
                             onClick={handleLike}
+                            disabled={isLikeLoading}
                             className={`glass-button flex items-center space-x-2 transition-all duration-200 ${
-                                post.reactions.some(r => r.userId === session?.user?.id && r.type === 'LIKE') 
+                                isLiked 
                                     ? 'text-primary-500 bg-primary-500/10' 
                                     : 'text-black/60 dark:text-white/60'
-                            }`}
+                            } ${isLikeLoading ? 'opacity-50' : ''}`}
                         >
-                            <ThumbsUp className={`h-5 w-5 ${
-                                post.reactions.some(r => r.userId === session?.user?.id && r.type === 'LIKE') 
+                            <IconThumbUp className={`h-5 w-5 ${
+                                isLiked 
                                     ? 'fill-current' 
                                     : ''
                             }`} />
                             <span>
-                                {post._count.reactions || post.reactions.filter(r => r.type === 'LIKE').length}
+                                {currentLikeCount}
                             </span>
                         </Button>
-                        {(post._count.reactions || post.reactions.filter(r => r.type === 'LIKE').length) > 0 && (
+                        {currentLikeCount > 0 && (
                             <SheetTrigger asChild>
                                 <Button
                                     variant="ghost"
@@ -673,7 +754,7 @@ export default function PostCard({ post, session, onUpdate, isReply = false, sho
                                         }
                                     }}
                                 >
-                                    <ChevronRight className="h-4 w-4" />
+                                    <IconChevronRight className="h-4 w-4" />
                                 </Button>
                             </SheetTrigger>
                         )}
@@ -727,7 +808,7 @@ export default function PostCard({ post, session, onUpdate, isReply = false, sho
                             : 'text-black/60 dark:text-white/60'
                     }`}
                 >
-                    <MessageSquare className={`h-4 w-4 ${isReplying ? 'fill-current' : ''}`} />
+                    <IconMessage className={`h-4 w-4 ${isReplying ? 'fill-current' : ''}`} />
                     <span>{post._count.replies}</span>
                 </Button>
                 <Button
@@ -736,8 +817,15 @@ export default function PostCard({ post, session, onUpdate, isReply = false, sho
                     onClick={handleShare}
                     className="glass-button flex items-center space-x-2 text-black/60 dark:text-white/60"
                 >
-                    <Share2 className="h-4 w-4" />
+                    <IconShare className="h-4 w-4" />
                 </Button>
+                <BookmarkButton 
+                    postId={post.id}
+                    session={session}
+                    size="md"
+                    variant="ghost"
+                    className="glass-button text-black/60 dark:text-white/60"
+                />
             </CardFooter>
             
             {/* Inline Reply Form */}
@@ -794,7 +882,7 @@ export default function PostCard({ post, session, onUpdate, isReply = false, sho
                                                 onClick={() => setReplyMediaFiles(prev => prev.filter((_, i) => i !== index))}
                                                 disabled={isSubmittingReply}
                                             >
-                                                <X className="h-3 w-3" />
+                                                <IconX className="h-3 w-3" />
                                             </Button>
                                         </div>
                                     ))}
@@ -811,7 +899,7 @@ export default function PostCard({ post, session, onUpdate, isReply = false, sho
                                         onClick={() => handleReplyFileSelect('image/*')}
                                         disabled={isSubmittingReply}
                                     >
-                                        <Image className="mr-2 h-4 w-4" />
+                                        <IconPhoto className="mr-2 h-4 w-4" />
                                         Photo
                                     </Button>
                                     <Button
@@ -822,7 +910,7 @@ export default function PostCard({ post, session, onUpdate, isReply = false, sho
                                         onClick={() => handleReplyFileSelect('video/*')}
                                         disabled={isSubmittingReply}
                                     >
-                                        <Video className="mr-2 h-4 w-4" />
+                                        <IconVideo className="mr-2 h-4 w-4" />
                                         Video
                                     </Button>
                                 </div>

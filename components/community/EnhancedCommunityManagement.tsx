@@ -6,15 +6,14 @@ import { Button } from '@/components/ui/button'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Badge } from '@/components/ui/badge'
 import { 
-    Settings, 
-    Users, 
-    BarChart3, 
-    Shield, 
-    UserPlus, 
-    Mail,
-    Crown,
-    AlertTriangle
-} from 'lucide-react'
+    IconSettings, 
+    IconUsersGroup, 
+    IconChartBar, 
+    IconShield, 
+    IconUserPlus, 
+    IconCrown,
+    IconAlertTriangle
+} from '@tabler/icons-react'
 import BulkInviteModal from './BulkInviteModal'
 import ModerationDashboard from './ModerationDashboard'
 import CommunityAnalytics from './CommunityAnalytics'
@@ -52,7 +51,7 @@ export default function EnhancedCommunityManagement({
         return (
             <Card>
                 <CardContent className="p-8 text-center">
-                    <AlertTriangle className="h-8 w-8 text-muted-foreground mx-auto mb-4" />
+                    <IconAlertTriangle className="h-8 w-8 text-muted-foreground mx-auto mb-4" />
                     <h3 className="font-medium mb-2">Access Restricted</h3>
                     <p className="text-muted-foreground">
                         You don't have permission to access community management features.
@@ -76,7 +75,7 @@ export default function EnhancedCommunityManagement({
             <div className="flex items-center justify-between">
                 <div>
                     <h1 className="text-2xl font-bold flex items-center gap-2">
-                        <Settings className="h-6 w-6" />
+                        <IconSettings className="h-6 w-6" />
                         Community Management
                     </h1>
                     <p className="text-muted-foreground">
@@ -88,7 +87,7 @@ export default function EnhancedCommunityManagement({
                         {community.isPrivate ? 'Private' : 'Public'}
                     </Badge>
                     <Badge variant="outline" className="flex items-center gap-1">
-                        <Crown className="h-3 w-3" />
+                        <IconCrown className="h-3 w-3" />
                         {userRole}
                     </Badge>
                 </div>
@@ -165,7 +164,7 @@ export default function EnhancedCommunityManagement({
                                 onClick={() => setShowBulkInvite(true)}
                                 className="flex items-center gap-2"
                             >
-                                <UserPlus className="h-4 w-4" />
+                                <IconUserPlus className="h-4 w-4" />
                                 Bulk Invite Members
                             </Button>
                         )}
@@ -177,7 +176,7 @@ export default function EnhancedCommunityManagement({
                                     onClick={() => setActiveTab('moderation')}
                                     className="flex items-center gap-2"
                                 >
-                                    <Shield className="h-4 w-4" />
+                                    <IconShield className="h-4 w-4" />
                                     Moderation
                                 </Button>
                                 
@@ -186,7 +185,7 @@ export default function EnhancedCommunityManagement({
                                     onClick={() => setActiveTab('analytics')}
                                     className="flex items-center gap-2"
                                 >
-                                    <BarChart3 className="h-4 w-4" />
+                                    <IconChartBar className="h-4 w-4" />
                                     Analytics
                                 </Button>
                             </>
@@ -200,11 +199,11 @@ export default function EnhancedCommunityManagement({
                 <TabsList className="grid w-full grid-cols-3">
                     <TabsTrigger value="overview">Overview</TabsTrigger>
                     <TabsTrigger value="moderation" disabled={!isModerator}>
-                        <Shield className="h-4 w-4 mr-2" />
+                        <IconShield className="h-4 w-4 mr-2" />
                         Moderation
                     </TabsTrigger>
                     <TabsTrigger value="analytics" disabled={!isModerator}>
-                        <BarChart3 className="h-4 w-4 mr-2" />
+                        <IconChartBar className="h-4 w-4 mr-2" />
                         Analytics
                     </TabsTrigger>
                 </TabsList>
@@ -216,7 +215,7 @@ export default function EnhancedCommunityManagement({
                         </CardHeader>
                         <CardContent>
                             <div className="text-center py-8 text-muted-foreground">
-                                <Users className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                                <IconUsersGroup className="h-12 w-12 mx-auto mb-4 opacity-50" />
                                 <p>Select Moderation or Analytics to view detailed information</p>
                             </div>
                         </CardContent>

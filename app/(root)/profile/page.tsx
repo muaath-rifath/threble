@@ -16,7 +16,7 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
-import { Camera, Pencil } from 'lucide-react'
+import { IconCamera, IconPencil } from '@tabler/icons-react'
 import ReactCrop, { Crop } from 'react-image-crop'
 import 'react-image-crop/dist/ReactCrop.css'
 import { uploadFileToBlobStorage } from '@/lib/azure-storage'
@@ -341,7 +341,7 @@ export default function ProfilePage() {
               className="absolute bottom-4 right-4 bg-white/80 hover:bg-white dark:bg-black/80 dark:hover:bg-black dark:text-white z-10 pointer-events-auto"
               onClick={() => handleFileSelect('cover')}
             >
-              <Camera className="mr-2 h-4 w-4" />
+              <IconCamera className="mr-2 h-4 w-4" />
               Change Cover
             </Button>
           </div>
@@ -358,7 +358,7 @@ export default function ProfilePage() {
                 className="absolute bottom-0 right-0 bg-white/80 hover:bg-white dark:bg-black/80 dark:hover:bg-black dark:text-white opacity-0 group-hover:opacity-100 transition-opacity"
                 onClick={() => handleFileSelect('profile')}
               >
-                <Pencil className="h-4 w-4" />
+                <IconPencil className="h-4 w-4" />
               </Button>
             </div>
           </div>

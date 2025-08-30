@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { CalendarDays, MapPin, Link as LinkIcon, Calendar } from 'lucide-react'
+import { IconCalendar, IconMapPin, IconLink, IconCalendarTime } from '@tabler/icons-react'
 import { useSession } from 'next-auth/react'
 import Link from 'next/link'
 import UserPostsByUsername from '@/components/post/UserPostsByUsername'
@@ -204,13 +204,13 @@ export default function UserProfilePage() {
           <div className="flex flex-wrap gap-4 text-sm text-gray-600 mb-4">
             {userProfile.profile?.location && (
               <div className="flex items-center gap-1">
-                <MapPin className="w-4 h-4" />
+                <IconMapPin className="w-4 h-4" />
                 {userProfile.profile.location}
               </div>
             )}
             {userProfile.profile?.website && (
               <div className="flex items-center gap-1">
-                <LinkIcon className="w-4 h-4" />
+                <IconLink className="w-4 h-4" />
                 <a 
                   href={userProfile.profile.website} 
                   target="_blank" 
@@ -222,7 +222,7 @@ export default function UserProfilePage() {
               </div>
             )}
             <div className="flex items-center gap-1">
-              <Calendar className="w-4 h-4" />
+              <IconCalendar className="w-4 h-4" />
               Joined {joinDate}
             </div>
           </div>

@@ -7,7 +7,7 @@ import { Card, CardContent, CardFooter, CardHeader } from '@/components/ui/card'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
 import { useToast } from '@/hooks/use-toast'
-import { MessageSquare, ThumbsUp, Share2, MoreHorizontal, Edit, Trash2, ChevronRight, Image, Video, X, Minus, Plus } from 'lucide-react'
+import { IconMessage, IconThumbUp, IconShare, IconDots, IconEdit, IconTrash, IconChevronRight, IconPhoto, IconVideo, IconX, IconMinus, IconPlus } from '@tabler/icons-react'
 import { format } from 'date-fns'
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from "@/components/ui/dropdown-menu"
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet"
@@ -460,8 +460,8 @@ export default function ThreadReply({
                             className="w-6 h-6 rounded-full glass-button flex items-center justify-center p-0 mt-2 mb-2 border border-glass-border dark:border-glass-border-dark"
                         >
                             {isExpanded ? 
-                                <Minus className="h-3 w-3 text-black/60 dark:text-white/60" /> : 
-                                <Plus className="h-3 w-3 text-black/60 dark:text-white/60" />
+                                <IconMinus className="h-3 w-3 text-black/60 dark:text-white/60" /> : 
+                                <IconPlus className="h-3 w-3 text-black/60 dark:text-white/60" />
                             }
                         </Button>
                     )}
@@ -480,7 +480,7 @@ export default function ThreadReply({
                         {/* Replied to indicator - only show for nested replies */}
                         {reply.parent && depth > 0 && (
                             <div className="text-xs text-gray-500 mb-2 flex items-center gap-1">
-                                <ChevronRight className="h-3 w-3" />
+                                <IconChevronRight className="h-3 w-3" />
                                 {buildRepliedToText()}
                             </div>
                         )}
@@ -519,7 +519,7 @@ export default function ThreadReply({
                                             size="icon"
                                             className="glass-button h-10 w-10"
                                         >
-                                            <MoreHorizontal className="h-5 w-5 text-black/60 dark:text-white/60" />
+                                            <IconDots className="h-5 w-5 text-black/60 dark:text-white/60" />
                                         </Button>
                                     </DropdownMenuTrigger>
                                     <DropdownMenuContent align="end" className="w-56 glass-card">
@@ -527,14 +527,14 @@ export default function ThreadReply({
                                             onClick={() => setIsEditing(true)}
                                             className="action-dropdown-item"
                                         >
-                                            <Edit className="mr-3 h-5 w-5" />
+                                            <IconEdit className="mr-3 h-5 w-5" />
                                             Edit reply
                                         </DropdownMenuItem>
                                         <DropdownMenuItem
                                             onClick={() => setIsDeleteDialogOpen(true)}
                                             className="action-dropdown-item-delete"
                                         >
-                                            <Trash2 className="mr-3 h-5 w-5" />
+                                            <IconTrash className="mr-3 h-5 w-5" />
                                             Delete reply
                                         </DropdownMenuItem>
                                     </DropdownMenuContent>
@@ -573,7 +573,7 @@ export default function ThreadReply({
                                                     className="absolute top-2 right-2 h-6 w-6 rounded-full"
                                                     onClick={() => setKeepMediaUrls(prev => prev.filter(u => u !== url))}
                                                 >
-                                                    <X className="h-4 w-4" />
+                                                    <IconX className="h-4 w-4" />
                                                 </Button>
                                             </div>
                                         ))}
@@ -598,7 +598,7 @@ export default function ThreadReply({
                                                     className="absolute top-2 right-2 h-6 w-6"
                                                     onClick={() => setEditMediaFiles(prev => prev.filter((_, i) => i !== index))}
                                                 >
-                                                    <X className="h-4 w-4" />
+                                                    <IconX className="h-4 w-4" />
                                                 </Button>
                                             </div>
                                         ))}
@@ -612,7 +612,7 @@ export default function ThreadReply({
                                             className="text-green-500"
                                             onClick={() => handleFileSelect('image/*')}
                                         >
-                                            <Image className="mr-2 h-4 w-4" />
+                                            <IconPhoto className="mr-2 h-4 w-4" />
                                             Photo
                                         </Button>
                                         <Button
@@ -621,7 +621,7 @@ export default function ThreadReply({
                                             className="text-blue-500"
                                             onClick={() => handleFileSelect('video/*')}
                                         >
-                                            <Video className="mr-2 h-4 w-4" />
+                                            <IconVideo className="mr-2 h-4 w-4" />
                                             Video
                                         </Button>
                                     </div>
@@ -696,7 +696,7 @@ export default function ThreadReply({
                                             : 'text-black/60 dark:text-white/60'
                                     }`}
                                 >
-                                    <ThumbsUp className={`h-5 w-5 ${isLiked ? 'fill-current' : ''}`} />
+                                    <IconThumbUp className={`h-5 w-5 ${isLiked ? 'fill-current' : ''}`} />
                                     <span>
                                         {likeCount}
                                     </span>
@@ -714,7 +714,7 @@ export default function ThreadReply({
                                                 }
                                             }}
                                         >
-                                            <ChevronRight className="h-4 w-4" />
+                                            <IconChevronRight className="h-4 w-4" />
                                         </Button>
                                     </SheetTrigger>
                                 )}
@@ -768,7 +768,7 @@ export default function ThreadReply({
                                     : 'text-black/60 dark:text-white/60'
                             }`}
                         >
-                            <MessageSquare className={`h-4 w-4 ${isReplying ? 'fill-current' : ''}`} />
+                            <IconMessage className={`h-4 w-4 ${isReplying ? 'fill-current' : ''}`} />
                             <span>{reply._count.replies}</span>
                         </Button>
                         <Button
@@ -777,7 +777,7 @@ export default function ThreadReply({
                             onClick={handleShare}
                             className="glass-button flex items-center space-x-2 text-black/60 dark:text-white/60"
                         >
-                            <Share2 className="h-4 w-4" />
+                            <IconShare className="h-4 w-4" />
                         </Button>
                     </CardFooter>
                 </Card>
@@ -836,7 +836,7 @@ export default function ThreadReply({
                                                     onClick={() => setReplyMediaFiles(prev => prev.filter((_, i) => i !== index))}
                                                     disabled={isSubmittingReply}
                                                 >
-                                                    <X className="h-3 w-3" />
+                                                    <IconX className="h-3 w-3" />
                                                 </Button>
                                             </div>
                                         ))}
@@ -853,7 +853,7 @@ export default function ThreadReply({
                                             onClick={() => handleReplyFileSelect('image/*')}
                                             disabled={isSubmittingReply}
                                         >
-                                            <Image className="mr-2 h-4 w-4" />
+                                            <IconPhoto className="mr-2 h-4 w-4" />
                                             Photo
                                         </Button>
                                         <Button
@@ -864,7 +864,7 @@ export default function ThreadReply({
                                             onClick={() => handleReplyFileSelect('video/*')}
                                             disabled={isSubmittingReply}
                                         >
-                                            <Video className="mr-2 h-4 w-4" />
+                                            <IconVideo className="mr-2 h-4 w-4" />
                                             Video
                                         </Button>
                                     </div>

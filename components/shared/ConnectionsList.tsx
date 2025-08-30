@@ -7,7 +7,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { useToast } from '@/hooks/use-toast'
-import { Search, UserX, Users, Loader2 } from 'lucide-react'
+import { IconSearch, IconUserX, IconUsersGroup, IconLoader2 } from '@tabler/icons-react'
 import Link from 'next/link'
 
 interface User {
@@ -170,7 +170,7 @@ export function ConnectionsList({ showSearch = true }: ConnectionsListProps) {
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <Users className="h-5 w-5" />
+            <IconUsersGroup className="h-5 w-5" />
             Connections
           </CardTitle>
         </CardHeader>
@@ -194,13 +194,13 @@ export function ConnectionsList({ showSearch = true }: ConnectionsListProps) {
       <CardHeader>
         <div className="flex items-center justify-between">
           <CardTitle className="flex items-center gap-2">
-            <Users className="h-5 w-5" />
+            <IconUsersGroup className="h-5 w-5" />
             Connections
           </CardTitle>
           
           {showSearch && (
             <div className="relative w-64">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <IconSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
                 placeholder="Search connections..."
                 value={searchQuery}
@@ -252,9 +252,9 @@ export function ConnectionsList({ showSearch = true }: ConnectionsListProps) {
               disabled={removeLoading === connection.id}
             >
               {removeLoading === connection.id ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
+                <IconLoader2 className="h-4 w-4 animate-spin" />
               ) : (
-                <UserX className="h-4 w-4" />
+                <IconUserX className="h-4 w-4" />
               )}
             </Button>
           </div>
@@ -266,7 +266,7 @@ export function ConnectionsList({ showSearch = true }: ConnectionsListProps) {
             {loadingMore && (
               <div className="flex justify-center">
                 <div className="flex items-center gap-2 text-muted-foreground">
-                  <Loader2 className="h-5 w-5 animate-spin" />
+                  <IconLoader2 className="h-5 w-5 animate-spin" />
                   Loading more connections...
                 </div>
               </div>
@@ -277,7 +277,7 @@ export function ConnectionsList({ showSearch = true }: ConnectionsListProps) {
         {/* Empty state */}
         {connections.length === 0 && !loading && (
           <div className="text-center py-8 text-muted-foreground">
-            <Users className="h-12 w-12 mx-auto mb-4 opacity-50" />
+            <IconUsersGroup className="h-12 w-12 mx-auto mb-4 opacity-50" />
             <p>No connections found.</p>
           </div>
         )}
@@ -285,7 +285,7 @@ export function ConnectionsList({ showSearch = true }: ConnectionsListProps) {
         {/* No search results */}
         {filteredConnections.length === 0 && searchQuery && connections.length > 0 && (
           <div className="text-center py-8 text-muted-foreground">
-            <Search className="h-12 w-12 mx-auto mb-4 opacity-50" />
+            <IconSearch className="h-12 w-12 mx-auto mb-4 opacity-50" />
             <p>No connections match your search.</p>
           </div>
         )}

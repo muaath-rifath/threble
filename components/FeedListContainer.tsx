@@ -7,6 +7,7 @@ import FeedList from './FeedList'
 import PostForm from './PostForm'
 import { useAppDispatch } from '@/lib/redux/hooks'
 import { addPost } from '@/lib/redux/slices/postsSlice'
+import { initializeBookmarkStatus } from '@/lib/redux/slices/bookmarksSlice'
 
 interface FeedListContainerProps {
     session: Session
@@ -16,6 +17,15 @@ interface FeedListContainerProps {
 export default function FeedListContainer({ session, initialPosts }: FeedListContainerProps) {
     const [key, setKey] = useState(0)
     const dispatch = useAppDispatch()
+
+    // Initialize bookmark status for initial posts
+    useEffect(() => {
+        if (session?.user?.id && initialPosts.length > 0) {
+            const postIds = initialPosts.map(post => post.id)
+            console.log('FeedListContainer: Initializing bookmark status for', postIds.length, 'posts')
+            dispatch(initializeBookmarkStatus({ postIds }))
+        }
+    }, [session?.user?.id, initialPosts, dispatch])
 
     const handlePostCreated = (newPost: Post) => {
         // Serialize dates to strings before dispatching to Redux

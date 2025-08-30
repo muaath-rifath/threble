@@ -6,7 +6,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Badge } from '@/components/ui/badge'
 import { ConnectionButton } from './ConnectionButton'
 import { useToast } from '@/hooks/use-toast'
-import { Users, Building } from 'lucide-react'
+import { IconUsers, IconBuilding } from '@tabler/icons-react'
 import Link from 'next/link'
 
 interface User {
@@ -131,7 +131,7 @@ export function ConnectionSuggestions({ limit = 10, showTitle = true }: Connecti
         )}
         <CardContent>
           <div className="text-center py-8 text-gray-500">
-            <Users className="w-12 h-12 mx-auto mb-4 opacity-50" />
+            <IconUsers className="w-12 h-12 mx-auto mb-4 opacity-50" />
             <p>No suggestions available at the moment</p>
             <p className="text-sm">Check back later for new connection suggestions!</p>
           </div>
@@ -181,12 +181,12 @@ export function ConnectionSuggestions({ limit = 10, showTitle = true }: Connecti
                     <Badge variant="secondary" className="text-xs">
                       {suggestion.mutualConnectionsCount > 0 ? (
                         <>
-                          <Users className="w-3 h-3 mr-1" />
+                          <IconUsers className="w-3 h-3 mr-1" />
                           {getSuggestionReason(suggestion)}
                         </>
                       ) : suggestion.mutualCommunities.length > 0 ? (
                         <>
-                          <Building className="w-3 h-3 mr-1" />
+                          <IconBuilding className="w-3 h-3 mr-1" />
                           {getSuggestionReason(suggestion)}
                         </>
                       ) : (

@@ -22,7 +22,7 @@ import {
     DropdownMenuItem,
     DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import { MoreHorizontal, Edit, Trash2, Image, Video, X } from 'lucide-react'
+import { IconDots, IconEdit, IconTrash, IconPhoto, IconVideo, IconX } from '@tabler/icons-react'
 import { ExtendedPost } from '@/lib/types'
 import { deletePost, updatePost } from '@/lib/actions/post.actions'
 
@@ -179,7 +179,7 @@ export default function PostActions({
                     onClick={() => handleFileSelect('image/*')}
                     className="post-media-attachment-btn"
                 >
-                    <Image className="h-4 w-4" />
+                    <IconPhoto className="h-4 w-4" />
                     <span>Photo</span>
                 </Button>
                 <Button
@@ -188,7 +188,7 @@ export default function PostActions({
                     onClick={() => handleFileSelect('video/*')}
                     className="post-media-attachment-btn"
                 >
-                    <Video className="h-4 w-4" />
+                    <IconVideo className="h-4 w-4" />
                     <span>Video</span>
                 </Button>
             </div>
@@ -204,18 +204,18 @@ export default function PostActions({
                         size="icon"
                         className="h-8 w-8 p-0"
                     >
-                        <MoreHorizontal className="h-4 w-4" />
+                        <IconDots className="h-4 w-4" />
                     </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
                     <DropdownMenuItem onClick={onEditStart}>
-                        <Edit className="mr-2 h-4 w-4" /> Edit
+                        <IconEdit className="mr-2 h-4 w-4" /> Edit
                     </DropdownMenuItem>
                     <DropdownMenuItem 
                         onClick={() => setIsDeleting(true)}
                         className="text-red-600 dark:text-red-400"
                     >
-                        <Trash2 className="mr-2 h-4 w-4" /> Delete
+                        <IconTrash className="mr-2 h-4 w-4" /> Delete
                     </DropdownMenuItem>
                 </DropdownMenuContent>
             </DropdownMenu>
@@ -257,7 +257,7 @@ export default function PostActions({
                                 className="post-media-delete"
                                 aria-label="Remove media"
                             >
-                                <X className="h-4 w-4" />
+                                <IconX className="h-4 w-4" />
                             </button>
                         </div>
                     ))}
@@ -286,7 +286,7 @@ export default function PostActions({
                                 className="post-media-delete"
                                 aria-label="Remove media"
                             >
-                                <X className="h-4 w-4" />
+                                <IconX className="h-4 w-4" />
                             </button>
                         </div>
                     ))}

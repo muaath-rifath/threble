@@ -4,7 +4,7 @@ import { useState } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { Search, Compass, Plus, Users } from 'lucide-react'
+import { IconSearch, IconCompass, IconPlus, IconUsers } from '@tabler/icons-react'
 import { useRouter } from 'next/navigation'
 import CommunityDiscovery from './CommunityDiscovery'
 import CommunitySearch from './CommunitySearch'
@@ -30,7 +30,7 @@ export default function CommunityExplorer() {
                         </p>
                     </div>
                     <Button onClick={handleCreateCommunity} className="flex items-center gap-2">
-                        <Plus className="h-4 w-4" />
+                        <IconPlus className="h-4 w-4" />
                         Create Community
                     </Button>
                 </div>
@@ -40,16 +40,16 @@ export default function CommunityExplorer() {
             <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
                 <TabsList className="grid w-full grid-cols-3">
                     <TabsTrigger value="your-communities" className="flex items-center gap-2">
-                        <Users className="h-4 w-4" />
+                        <IconUsers className="h-4 w-4" />
                         <span className="hidden sm:inline">Your Communities</span>
                         <span className="sm:hidden">Your</span>
                     </TabsTrigger>
                     <TabsTrigger value="discover" className="flex items-center gap-2">
-                        <Compass className="h-4 w-4" />
+                        <IconCompass className="h-4 w-4" />
                         Discover
                     </TabsTrigger>
                     <TabsTrigger value="search" className="flex items-center gap-2">
-                        <Search className="h-4 w-4" />
+                        <IconSearch className="h-4 w-4" />
                         Search
                     </TabsTrigger>
                 </TabsList>

@@ -1,6 +1,5 @@
 "use client"
 import{sidebarLinks} from '@/constants/'
-import Image from 'next/image'
 import Link from 'next/link'
 import { usePathname, useRouter } from "next/navigation"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
@@ -23,19 +22,13 @@ function LeftSidebar(){
                                 : 'text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white hover:bg-white/10 dark:hover:bg-white/5 border border-transparent'
                             }`}
                         >
-                            <Image 
-                                src={link.imgURL} 
+                            <link.icon
                                 className={`transition-all duration-200 ${
-                                    isActive 
-                                        ? 'brightness-0 saturate-100' 
-                                        : 'opacity-60 dark:invert group-hover:opacity-100'
+                                    isActive
+                                        ? 'text-green-500'
+                                        : 'opacity-60 group-hover:opacity-100'
                                 }`}
-                                alt={link.label} 
-                                width={20} 
-                                height={20} 
-                                style={{
-                                    filter: isActive ? 'brightness(0) saturate(100%) invert(39%) sepia(96%) saturate(318%) hue-rotate(130deg) brightness(96%) contrast(96%)' : ''
-                                }}
+                                size={20}
                             />
                         </Link>
                     </TooltipTrigger>

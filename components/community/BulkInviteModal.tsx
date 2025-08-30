@@ -8,7 +8,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { Label } from '@/components/ui/label'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent } from '@/components/ui/card'
-import { UserPlus, X, Send, Loader2, CheckCircle, AlertCircle } from 'lucide-react'
+import { IconX, IconSend, IconLoader2, IconCircleCheck, IconAlertCircle } from '@tabler/icons-react'
 import { useToast } from '@/hooks/use-toast'
 
 interface BulkInviteModalProps {
@@ -208,7 +208,7 @@ export default function BulkInviteModal({
                                                 className="h-auto p-0 hover:bg-transparent"
                                                 onClick={() => removeUsername(username)}
                                             >
-                                                <X className="h-3 w-3" />
+                                                <IconX className="h-3 w-3" />
                                             </Button>
                                         </Badge>
                                     ))}
@@ -231,9 +231,9 @@ export default function BulkInviteModal({
                                 className="flex items-center gap-2"
                             >
                                 {isLoading ? (
-                                    <Loader2 className="h-4 w-4 animate-spin" />
+                                    <IconLoader2 className="h-4 w-4 animate-spin" />
                                 ) : (
-                                    <Send className="h-4 w-4" />
+                                    <IconSend className="h-4 w-4" />
                                 )}
                                 Send {usernames.length} Invitations
                             </Button>
@@ -242,7 +242,7 @@ export default function BulkInviteModal({
                 ) : (
                     <div className="space-y-6">
                         <div className="text-center">
-                            <CheckCircle className="h-12 w-12 text-green-500 mx-auto mb-4" />
+                            <IconCircleCheck className="h-12 w-12 text-green-500 mx-auto mb-4" />
                             <h3 className="text-lg font-semibold">Invitations Sent</h3>
                             <p className="text-muted-foreground">
                                 Here are the results of your bulk invitation:
@@ -276,7 +276,7 @@ export default function BulkInviteModal({
                                     <Card className="border-blue-200 bg-blue-50 dark:bg-blue-900/20">
                                         <CardContent className="p-4">
                                             <div className="flex items-center gap-2">
-                                                <AlertCircle className="h-4 w-4 text-blue-600" />
+                                                <IconAlertCircle className="h-4 w-4 text-blue-600" />
                                                 <div>
                                                     <strong>Already members:</strong> {results.alreadyMembers.join(', ')}
                                                 </div>
@@ -289,7 +289,7 @@ export default function BulkInviteModal({
                                     <Card className="border-yellow-200 bg-yellow-50 dark:bg-yellow-900/20">
                                         <CardContent className="p-4">
                                             <div className="flex items-center gap-2">
-                                                <AlertCircle className="h-4 w-4 text-yellow-600" />
+                                                <IconAlertCircle className="h-4 w-4 text-yellow-600" />
                                                 <div>
                                                     <strong>Already invited:</strong> {results.alreadyInvited.join(', ')}
                                                 </div>
@@ -302,7 +302,7 @@ export default function BulkInviteModal({
                                     <Card className="border-red-200 bg-red-50 dark:bg-red-900/20">
                                         <CardContent className="p-4">
                                             <div className="flex items-center gap-2">
-                                                <AlertCircle className="h-4 w-4 text-red-600" />
+                                                <IconAlertCircle className="h-4 w-4 text-red-600" />
                                                 <div>
                                                     <strong>Users not found:</strong> {results.notFound.join(', ')}
                                                 </div>

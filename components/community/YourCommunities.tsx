@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
-import { Loader2, Users, MessageSquare, Search, Settings, Crown, Shield } from 'lucide-react'
+import { IconLoader2, IconUsersGroup, IconMessage, IconSearch, IconSettings, IconCrown, IconShield } from '@tabler/icons-react'
 import Image from 'next/image'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
@@ -91,11 +91,11 @@ export default function YourCommunities() {
     const getRoleIcon = (role: string) => {
         switch (role.toLowerCase()) {
             case 'owner':
-                return <Crown className="h-3 w-3" />
+                return <IconCrown className="h-3 w-3" />
             case 'admin':
-                return <Shield className="h-3 w-3" />
+                return <IconShield className="h-3 w-3" />
             default:
-                return <Users className="h-3 w-3" />
+                return <IconUsersGroup className="h-3 w-3" />
         }
     }
 
@@ -132,7 +132,7 @@ export default function YourCommunities() {
     if (loading) {
         return (
             <div className="flex items-center justify-center py-8">
-                <Loader2 className="h-6 w-6 animate-spin" />
+                <IconLoader2 className="h-6 w-6 animate-spin" />
                 <span className="ml-2">Loading your communities...</span>
             </div>
         )
@@ -159,7 +159,7 @@ export default function YourCommunities() {
             {/* Search Bar */}
             <div className="flex flex-col sm:flex-row gap-4">
                 <div className="relative flex-1">
-                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <IconSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                     <Input
                         placeholder="Search your communities..."
                         value={searchTerm}
@@ -226,7 +226,7 @@ export default function YourCommunities() {
                                                     />
                                                 ) : (
                                                     <div className="w-full h-full flex items-center justify-center bg-primary/10">
-                                                        <Users className="h-5 w-5 md:h-6 md:w-6 text-primary" />
+                                                        <IconUsersGroup className="h-5 w-5 md:h-6 md:w-6 text-primary" />
                                                     </div>
                                                 )}
                                             </div>
@@ -245,7 +245,7 @@ export default function YourCommunities() {
                                         {(userRole === 'owner' || userRole === 'admin') && (
                                             <Link href={`/communities/${community.name}/settings`}>
                                                 <Button variant="ghost" size="sm" className="flex-shrink-0">
-                                                    <Settings className="h-4 w-4" />
+                                                    <IconSettings className="h-4 w-4" />
                                                 </Button>
                                             </Link>
                                         )}
@@ -265,11 +265,11 @@ export default function YourCommunities() {
                                     <div className="flex items-center justify-between text-sm text-muted-foreground">
                                         <div className="flex items-center gap-3">
                                             <div className="flex items-center gap-1">
-                                                <Users className="h-3 w-3 md:h-4 md:w-4" />
+                                                <IconUsersGroup className="h-3 w-3 md:h-4 md:w-4" />
                                                 <span className="text-xs md:text-sm">{community._count.members}</span>
                                             </div>
                                             <div className="flex items-center gap-1">
-                                                <MessageSquare className="h-3 w-3 md:h-4 md:w-4" />
+                                                <IconMessage className="h-3 w-3 md:h-4 md:w-4" />
                                                 <span className="text-xs md:text-sm">{community._count.posts}</span>
                                             </div>
                                         </div>

@@ -11,7 +11,7 @@ import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
 import { Form, FormControl, FormField, FormItem } from "@/components/ui/form"
 import { Separator } from "@/components/ui/separator"
-import { Image, Video, ThumbsUp, MessageSquare, Share2, X, Edit, MoreHorizontal, Trash2, ChevronRight } from 'lucide-react'
+import { IconPhoto, IconVideo, IconThumbUp, IconMessage, IconShare, IconX, IconEdit, IconDots, IconTrash, IconChevronRight } from '@tabler/icons-react'
 import { useToast } from "@/hooks/use-toast"
 import { Session } from 'next-auth'
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from "@/components/ui/dropdown-menu"
@@ -227,7 +227,7 @@ function PostCard({ post, session, onUpdate, isReply = false }: PostCardProps) {
     const handleReaction = async (type: string) => {
         if (!session?.user?.id) return;
 
-        const hasReaction = post.reactions.some(
+        const hasReaction = (post.reactions || []).some(
             r => r.userId === session.user.id && r.type === type
         );
 
@@ -332,7 +332,7 @@ function PostCard({ post, session, onUpdate, isReply = false }: PostCardProps) {
                                     size="icon"
                                     className="hover:bg-slate-100 dark:hover:bg-slate-800 h-10 w-10"
                                 >
-                                    <MoreHorizontal className="h-5 w-5 text-slate-500" />
+                                    <IconDots className="h-5 w-5 text-slate-500" />
                                 </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end" className="w-56">
@@ -340,14 +340,14 @@ function PostCard({ post, session, onUpdate, isReply = false }: PostCardProps) {
                                     onClick={() => setIsEditing(true)}
                                     className="action-dropdown-item"
                                 >
-                                    <Edit className="mr-3 h-5 w-5" />
+                                    <IconEdit className="mr-3 h-5 w-5" />
                                     Edit post
                                 </DropdownMenuItem>
                                 <DropdownMenuItem
                                     onClick={() => setIsDeleting(true)}
                                     className="action-dropdown-item-delete"
                                 >
-                                    <Trash2 className="mr-3 h-5 w-5" />
+                                    <IconTrash className="mr-3 h-5 w-5" />
                                     Delete post
                                 </DropdownMenuItem>
                             </DropdownMenuContent>
@@ -398,7 +398,7 @@ function PostCard({ post, session, onUpdate, isReply = false }: PostCardProps) {
                                             className="absolute top-2 right-2 bg-black/50 hover:bg-black/70 text-white rounded-full"
                                             onClick={() => setKeepMediaUrls(urls => urls.filter(u => u !== url))}
                                         >
-                                            <X className="h-4 w-4" />
+                                            <IconX className="h-4 w-4" />
                                         </Button>
                                     </div>
                                 ))}
@@ -428,7 +428,7 @@ function PostCard({ post, session, onUpdate, isReply = false }: PostCardProps) {
                                             className="absolute top-2 right-2 bg-black/50 hover:bg-black/70 text-white rounded-full"
                                             onClick={() => setEditMediaFiles(files => files.filter((_, i) => i !== index))}
                                         >
-                                            <X className="h-4 w-4" />
+                                            <IconX className="h-4 w-4" />
                                         </Button>
                                     </div>
                                 ))}
@@ -442,7 +442,7 @@ function PostCard({ post, session, onUpdate, isReply = false }: PostCardProps) {
                                     className="text-green-500"
                                     onClick={() => handleFileSelect('image/*')}
                                 >
-                                    <Image className="mr-2 h-4 w-4" />
+                                    <IconPhoto className="mr-2 h-4 w-4" />
                                     Photo
                                 </Button>
                                 <Button
@@ -451,7 +451,7 @@ function PostCard({ post, session, onUpdate, isReply = false }: PostCardProps) {
                                     className="text-blue-500"
                                     onClick={() => handleFileSelect('video/*')}
                                 >
-                                    <Video className="mr-2 h-4 w-4" />
+                                    <IconVideo className="mr-2 h-4 w-4" />
                                     Video
                                 </Button>
                             </div>
@@ -491,14 +491,14 @@ function PostCard({ post, session, onUpdate, isReply = false }: PostCardProps) {
                                 variant="ghost"
                                 onClick={handleLikeClick}
                                 className={`post-action-button ${
-                                    post.reactions.some(r => r.userId === session.user.id && r.type === 'LIKE') 
+                                    (post.reactions || []).some(r => r.userId === session.user.id && r.type === 'LIKE') 
                                         ? 'post-action-button-active' 
                                         : ''
                                 }`}
                             >
-                                <ThumbsUp className="h-5 w-5" />
+                                <IconThumbUp className="h-5 w-5" />
                                 <span className="ml-2">
-                                    {post._count.reactions || post.reactions.filter(r => r.type === 'LIKE').length}
+                                    {post._count.reactions || (post.reactions || []).filter(r => r.type === 'LIKE').length}
                                 </span>
                             </Button>
                         </div>
@@ -509,12 +509,12 @@ function PostCard({ post, session, onUpdate, isReply = false }: PostCardProps) {
                                 className="like-trigger-button"
                                 onClick={(e) => {
                                     e.stopPropagation()
-                                    if (!isLoadingReactions && reactionUsers.length === 0) {
+                                    if (!isLoadingReactions && (reactionUsers?.length || 0) === 0) {
                                         loadReactions()
                                     }
                                 }}
                             >
-                                <ChevronRight className="h-4 w-4" />
+                                <IconChevronRight className="h-4 w-4" />
                             </Button>
                         </SheetTrigger>
                     </div>
@@ -532,8 +532,8 @@ function PostCard({ post, session, onUpdate, isReply = false }: PostCardProps) {
                                     <div className="text-center py-4 text-sm text-slate-500">
                                         Loading...
                                     </div>
-                                ) : reactionUsers.length > 0 ? (
-                                    reactionUsers.map((reaction) => (
+                                ) : (reactionUsers?.length || 0) > 0 ? (
+                                    reactionUsers?.map((reaction) => (
                                         <div key={reaction.id} className="flex items-center space-x-3">
                                             <Avatar>
                                                 <AvatarImage src={reaction.user?.image || undefined} />
@@ -557,7 +557,7 @@ function PostCard({ post, session, onUpdate, isReply = false }: PostCardProps) {
                     variant="ghost"
                     className="post-action-button"
                 >
-                    <MessageSquare className="h-5 w-5" />
+                    <IconMessage className="h-5 w-5" />
                     {post._count.replies}
                 </Button>
                 <Button 
@@ -565,7 +565,7 @@ function PostCard({ post, session, onUpdate, isReply = false }: PostCardProps) {
                     className="post-action-button"
                     onClick={handleShare}
                 >
-                    <Share2 className="h-5 w-5" />
+                    <IconShare className="h-5 w-5" />
                     Share
                 </Button>
             </CardFooter>
@@ -629,7 +629,7 @@ export default function PostDetail({ initialPost, session }: PostDetailProps) {
         const targetPost = postId === post.id ? post : post.replies.find(r => r.id === postId);
         if (!targetPost) return;
 
-        const hasReaction = targetPost.reactions.some(
+        const hasReaction = (targetPost.reactions || []).some(
             r => r.userId === session.user.id && r.type === type
         );
 
@@ -648,8 +648,8 @@ export default function PostDetail({ initialPost, session }: PostDetailProps) {
             setPost({
                 ...post,
                 reactions: hasReaction
-                    ? post.reactions.filter(r => !(r.userId === session.user.id && r.type === type))
-                    : [...post.reactions, tempReaction]
+                    ? (post.reactions || []).filter(r => !(r.userId === session.user.id && r.type === type))
+                    : [...(post.reactions || []), tempReaction]
             });
         } else {
             setPost({
@@ -659,8 +659,8 @@ export default function PostDetail({ initialPost, session }: PostDetailProps) {
                         return {
                             ...reply,
                             reactions: hasReaction
-                                ? reply.reactions.filter(r => !(r.userId === session.user.id && r.type === type))
-                                : [...reply.reactions, tempReaction]
+                                ? (reply.reactions || []).filter(r => !(r.userId === session.user.id && r.type === type))
+                                : [...(reply.reactions || []), tempReaction]
                         };
                     }
                     return reply;
@@ -907,7 +907,7 @@ export default function PostDetail({ initialPost, session }: PostDetailProps) {
                                                 className="absolute top-2 right-2 bg-black/50 hover:bg-black/70 text-white rounded-full"
                                                 onClick={() => setMediaFiles(files => files.filter((_, i) => i !== index))}
                                             >
-                                                <X className="h-4 w-4" />
+                                                <IconX className="h-4 w-4" />
                                             </Button>
                                         </div>
                                     ))}
@@ -921,7 +921,7 @@ export default function PostDetail({ initialPost, session }: PostDetailProps) {
                                         className="text-green-500"
                                         onClick={() => handleFileSelect('image/*')}
                                     >
-                                        <Image className="mr-2 h-4 w-4" />
+                                        <IconPhoto className="mr-2 h-4 w-4" />
                                         Photo
                                     </Button>
                                     <Button
@@ -930,7 +930,7 @@ export default function PostDetail({ initialPost, session }: PostDetailProps) {
                                         className="text-blue-500"
                                         onClick={() => handleFileSelect('video/*')}
                                     >
-                                        <Video className="mr-2 h-4 w-4" />
+                                        <IconVideo className="mr-2 h-4 w-4" />
                                         Video
                                     </Button>
                                 </div>

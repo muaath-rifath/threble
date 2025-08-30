@@ -1,4 +1,4 @@
-import { Moon, Sun, Monitor } from 'lucide-react'
+import { IconMoon, IconSun, IconDeviceDesktop } from '@tabler/icons-react'
 import { Button } from '@/components/ui/button'
 import {
   DropdownMenu,
@@ -15,27 +15,27 @@ const ThemeToggle = () => {
     {
       value: 'light',
       label: 'Light',
-      icon: <Sun className="h-4 w-4" />
+      icon: <IconSun className="h-4 w-4" />
     },
     {
       value: 'dark', 
       label: 'Dark',
-      icon: <Moon className="h-4 w-4" />
+      icon: <IconMoon className="h-4 w-4" />
     },
     {
       value: 'system',
       label: 'System',
-      icon: <Monitor className="h-4 w-4" />
+      icon: <IconDeviceDesktop className="h-4 w-4" />
     }
   ]
 
   const getCurrentIcon = () => {
     if (theme === 'system') {
-      return <Monitor className="h-4 w-4" />
+      return <IconDeviceDesktop className="h-4 w-4" />
     }
     return resolvedTheme === 'dark' 
-      ? <Moon className="h-4 w-4" />
-      : <Sun className="h-4 w-4" />
+      ? <IconMoon className="h-4 w-4" />
+      : <IconSun className="h-4 w-4" />
   }
 
   return (

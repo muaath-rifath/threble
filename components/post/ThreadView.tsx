@@ -6,7 +6,7 @@ import { Session } from 'next-auth'
 import { useToast } from '@/hooks/use-toast'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { MessageSquare, ChevronLeft, Users } from 'lucide-react'
+import { IconMessage, IconChevronLeft } from '@tabler/icons-react'
 import { ExtendedPost } from '@/lib/types'
 
 import PostCard, { Post } from './PostCard'
@@ -25,7 +25,7 @@ const transformExtendedPostToPost = (extendedPost: ExtendedPost): Post => {
         },
         createdAt: extendedPost.createdAt,
         updatedAt: extendedPost.updatedAt,
-        reactions: extendedPost.reactions.map(r => ({
+        reactions: (extendedPost.reactions || []).map(r => ({
             id: r.id,
             type: r.type,
             userId: r.userId,
@@ -92,7 +92,7 @@ export default function ThreadView({ initialPost, session }: ThreadViewProps) {
                         className="p-2 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 transition-colors"
                         aria-label="Go back to previous page"
                     >
-                        <ChevronLeft className="h-5 w-5" />
+                        <IconChevronLeft className="h-5 w-5" />
                     </button>
                 </div>
 
@@ -115,7 +115,7 @@ export default function ThreadView({ initialPost, session }: ThreadViewProps) {
                         <div className="flex items-center justify-between">
                             <div className="flex items-center gap-3">
                                 <div className="flex items-center gap-2">
-                                    <MessageSquare className="h-5 w-5 text-primary-500" />
+                                    <IconMessage className="h-5 w-5 text-primary-500" />
                                     <h2 className="text-xl font-semibold text-black dark:text-white">
                                         Replies
                                     </h2>
@@ -150,7 +150,7 @@ export default function ThreadView({ initialPost, session }: ThreadViewProps) {
                         <CardContent>
                             <div className="flex flex-col items-center gap-4">
                                 <div className="w-16 h-16 glass-card rounded-full flex items-center justify-center">
-                                    <MessageSquare className="h-8 w-8 text-gray-400" />
+                                    <IconMessage className="h-8 w-8 text-gray-400" />
                                 </div>
                                 <div>
                                     <h3 className="text-lg font-medium text-black dark:text-white mb-2">

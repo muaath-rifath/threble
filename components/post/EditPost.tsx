@@ -7,7 +7,7 @@ import { useToast } from '@/hooks/use-toast'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
-import { Image, Video, X } from 'lucide-react'
+import { IconPhoto, IconVideo, IconX } from '@tabler/icons-react'
 import { ExtendedPost } from '@/lib/types'
 
 interface EditPostProps {
@@ -139,7 +139,7 @@ export default function EditPost({ post, session }: EditPostProps) {
                                     className="absolute top-2 right-2 h-6 w-6"
                                     onClick={() => handleRemoveExistingMedia(url)}
                                 >
-                                    <X className="h-4 w-4" />
+                                    <IconX className="h-4 w-4" />
                                 </Button>
                             </div>
                         ))}
@@ -168,7 +168,7 @@ export default function EditPost({ post, session }: EditPostProps) {
                                     className="absolute top-2 right-2 h-6 w-6"
                                     onClick={() => handleRemoveMedia(index)}
                                 >
-                                    <X className="h-4 w-4" />
+                                    <IconX className="h-4 w-4" />
                                 </Button>
                             </div>
                         ))}
@@ -181,7 +181,7 @@ export default function EditPost({ post, session }: EditPostProps) {
                             variant="ghost"
                             onClick={() => handleFileSelect('image/*')}
                         >
-                            <Image className="mr-2 h-4 w-4" />
+                            <IconPhoto className="mr-2 h-4 w-4" />
                             Photo
                         </Button>
                         <Button
@@ -189,7 +189,7 @@ export default function EditPost({ post, session }: EditPostProps) {
                             variant="ghost"
                             onClick={() => handleFileSelect('video/*')}
                         >
-                            <Video className="mr-2 h-4 w-4" />
+                            <IconVideo className="mr-2 h-4 w-4" />
                             Video
                         </Button>
                     </div>

@@ -9,16 +9,15 @@ import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { 
-  Search, 
-  Users, 
-  MessageSquare, 
-  Building, 
-  Loader2,
-  Heart,
-  MessageCircle,
-  User,
-  MapPin
-} from 'lucide-react'
+  IconSearch, 
+  IconUsersGroup, 
+  IconMessage, 
+  IconBuilding, 
+  IconLoader2,
+  IconHeart,
+  IconMessageCircle,
+  IconMapPin
+} from '@tabler/icons-react'
 import Link from 'next/link'
 import { useToast } from '@/hooks/use-toast'
 
@@ -171,11 +170,11 @@ export default function GlobalSearch({ initialQuery = '', onResultClick }: Globa
             <p className="text-sm mb-2 line-clamp-3">{result.content}</p>
             <div className="flex items-center space-x-4 text-muted-foreground text-sm">
               <div className="flex items-center space-x-1">
-                <Heart className="w-4 h-4" />
+                <IconHeart className="w-4 h-4" />
                 <span>{result.reactions?.length || 0}</span>
               </div>
               <div className="flex items-center space-x-1">
-                <MessageCircle className="w-4 h-4" />
+                <IconMessageCircle className="w-4 h-4" />
                 <span>{result.replyCount || 0}</span>
               </div>
             </div>
@@ -210,7 +209,7 @@ export default function GlobalSearch({ initialQuery = '', onResultClick }: Globa
             )}
             {result.profile?.location && (
               <div className="flex items-center mt-1 text-muted-foreground text-sm">
-                <MapPin className="w-3 h-3 mr-1" />
+                <IconMapPin className="w-3 h-3 mr-1" />
                 {result.profile.location}
               </div>
             )}
@@ -229,7 +228,7 @@ export default function GlobalSearch({ initialQuery = '', onResultClick }: Globa
       <CardContent className="pt-4">
         <div className="flex items-start space-x-4">
           <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center">
-            <Building className="w-6 h-6 text-white" />
+            <IconBuilding className="w-6 h-6 text-white" />
           </div>
           <div className="flex-1 min-w-0">
             <div className="flex items-center space-x-2 mb-1">
@@ -246,11 +245,11 @@ export default function GlobalSearch({ initialQuery = '', onResultClick }: Globa
             )}
             <div className="flex items-center space-x-4 text-muted-foreground text-sm">
               <div className="flex items-center space-x-1">
-                <Users className="w-4 h-4" />
+                <IconUsersGroup className="w-4 h-4" />
                 <span>{result.memberCount} members</span>
               </div>
               <div className="flex items-center space-x-1">
-                <MessageSquare className="w-4 h-4" />
+                <IconMessage className="w-4 h-4" />
                 <span>{result.communityPostCount} posts</span>
               </div>
             </div>
@@ -265,11 +264,11 @@ export default function GlobalSearch({ initialQuery = '', onResultClick }: Globa
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <Search className="h-5 w-5" />
+            <IconSearch className="h-5 w-5" />
             Global Search
           </CardTitle>
           <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <IconSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
               placeholder="Search posts, users, and communities..."
               value={query}
@@ -336,7 +335,7 @@ export default function GlobalSearch({ initialQuery = '', onResultClick }: Globa
                     {loadingMore && (
                       <div className="flex justify-center">
                         <div className="flex items-center gap-2 text-muted-foreground">
-                          <Loader2 className="h-5 w-5 animate-spin" />
+                          <IconLoader2 className="h-5 w-5 animate-spin" />
                           Loading more results...
                         </div>
                       </div>
@@ -348,7 +347,7 @@ export default function GlobalSearch({ initialQuery = '', onResultClick }: Globa
                 {results.length === 0 && !loading && (
                   <Card>
                     <CardContent className="text-center py-12">
-                      <Search className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                      <IconSearch className="h-12 w-12 mx-auto mb-4 opacity-50" />
                       <h3 className="text-lg font-medium mb-2">No results found</h3>
                       <p className="text-muted-foreground">
                         Try adjusting your search terms or browse different categories.

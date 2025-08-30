@@ -5,6 +5,7 @@ import notificationsReducer from './slices/notificationsSlice'
 import communitiesReducer from './slices/communitiesSlice'
 import eventsReducer from './slices/eventsSlice'
 import uiReducer from './slices/uiSlice'
+import bookmarksReducer from './slices/bookmarksSlice'
 
 export const store = configureStore({
   reducer: {
@@ -14,6 +15,7 @@ export const store = configureStore({
     communities: communitiesReducer,
     events: eventsReducer,
     ui: uiReducer,
+    bookmarks: bookmarksReducer,
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({
@@ -26,11 +28,15 @@ export const store = configureStore({
           'reactions/addReaction/fulfilled',
           'reactions/removeReaction/fulfilled',
           'reactions/removeReaction/rejected',
+          'bookmarks/fetchBookmarks/fulfilled',
+          'bookmarks/addBookmark/fulfilled',
+          'bookmarks/removeBookmark/fulfilled',
         ],
         ignoredPaths: [
           'ui.postFormData.mediaFiles',
           'posts.posts',
           'reactions.reactions',
+          'bookmarks.bookmarks',
         ],
       },
     }),

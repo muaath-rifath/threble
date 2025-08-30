@@ -10,7 +10,7 @@ import PostForm from '@/components/PostForm'
 import { Card, CardContent } from '@/components/ui/card'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Button } from '@/components/ui/button'
-import { ArrowLeft, Users, FileText, BarChart3, Settings } from 'lucide-react'
+import { IconArrowLeft, IconUsers, IconFileText, IconChartBar, IconSettings } from '@tabler/icons-react'
 import { CommunityWithDetails, CommunityMember, Post } from '@/lib/types'
 import { useAppSelector, useAppDispatch } from '@/lib/redux/hooks'
 import { fetchCommunityMembers } from '@/lib/redux/slices/communitiesSlice'
@@ -170,7 +170,7 @@ export default function CommunityPage() {
           onClick={() => router.push('/communities')}
           className="mb-4"
         >
-          <ArrowLeft className="h-4 w-4 mr-2" />
+          <IconArrowLeft className="h-4 w-4 mr-2" />
           Back to Communities
         </Button>
         <Card>
@@ -199,7 +199,7 @@ export default function CommunityPage() {
         onClick={() => router.push('/communities')}
         className="mb-4"
       >
-        <ArrowLeft className="h-4 w-4 mr-2" />
+        <IconArrowLeft className="h-4 w-4 mr-2" />
         Back to Communities
       </Button>
 
@@ -212,22 +212,22 @@ export default function CommunityPage() {
       <Tabs defaultValue="posts" className="mt-6">
         <TabsList className={`grid w-full ${isManager ? 'grid-cols-4' : 'grid-cols-2'}`}>
           <TabsTrigger value="posts" className="flex items-center gap-2">
-            <FileText className="h-4 w-4" />
+            <IconFileText className="h-4 w-4" />
             Posts
           </TabsTrigger>
           <TabsTrigger value="members" className="flex items-center gap-2">
-            <Users className="h-4 w-4" />
+            <IconUsers className="h-4 w-4" />
             Members
           </TabsTrigger>
           {isManager && (
             <TabsTrigger value="analytics" className="flex items-center gap-2">
-              <BarChart3 className="h-4 w-4" />
+              <IconChartBar className="h-4 w-4" />
               Analytics
             </TabsTrigger>
           )}
           {isManager && (
             <TabsTrigger value="settings" className="flex items-center gap-2">
-              <Settings className="h-4 w-4" />
+              <IconSettings className="h-4 w-4" />
               Settings
             </TabsTrigger>
           )}
@@ -256,7 +256,7 @@ export default function CommunityPage() {
               <Card>
                 <CardContent className="p-6">
                   <div className="text-center">
-                    <FileText className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+                    <IconFileText className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
                     <h3 className="text-lg font-medium mb-2">No posts yet</h3>
                     <p className="text-muted-foreground mb-4">
                       {currentUserMembership ? 

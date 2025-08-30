@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
-import { Search, Users, MessageSquare, Filter, Loader2 } from 'lucide-react'
+import { IconSearch, IconUsers, IconMessage, IconFilter, IconLoader2 } from '@tabler/icons-react'
 import { searchCommunities } from '@/lib/actions/community.actions'
 import { useToast } from '@/hooks/use-toast'
 import { useInView } from '@intersection-observer/next'
@@ -146,7 +146,7 @@ export default function CommunitySearch({ initialQuery = '' }: CommunitySearchPr
             <Card>
                 <CardHeader>
                     <CardTitle className="flex items-center gap-2">
-                        <Search className="h-5 w-5" />
+                        <IconSearch className="h-5 w-5" />
                         Search Communities
                     </CardTitle>
                 </CardHeader>
@@ -163,9 +163,9 @@ export default function CommunitySearch({ initialQuery = '' }: CommunitySearchPr
                         </div>
                         <Button type="submit" disabled={isLoading}>
                             {isLoading ? (
-                                <Loader2 className="h-4 w-4 animate-spin" />
+                                <IconLoader2 className="h-4 w-4 animate-spin" />
                             ) : (
-                                <Search className="h-4 w-4" />
+                                <IconSearch className="h-4 w-4" />
                             )}
                         </Button>
                     </form>
@@ -173,7 +173,7 @@ export default function CommunitySearch({ initialQuery = '' }: CommunitySearchPr
                     {/* Filters */}
                     <div className="flex flex-wrap gap-4">
                         <div className="flex items-center gap-2">
-                            <Filter className="h-4 w-4" />
+                            <IconFilter className="h-4 w-4" />
                             <span className="text-sm font-medium">Sort by:</span>
                             <select 
                                 value={sort} 
@@ -239,7 +239,7 @@ export default function CommunitySearch({ initialQuery = '' }: CommunitySearchPr
                             {isLoadingMore && (
                                 <div className="flex justify-center">
                                     <div className="flex items-center gap-2 text-muted-foreground">
-                                        <Loader2 className="h-5 w-5 animate-spin" />
+                                        <IconLoader2 className="h-5 w-5 animate-spin" />
                                         Loading more results...
                                     </div>
                                 </div>
@@ -254,7 +254,7 @@ export default function CommunitySearch({ initialQuery = '' }: CommunitySearchPr
                 <Card>
                     <CardContent className="text-center py-12">
                         <div className="space-y-2">
-                            <Search className="h-12 w-12 text-muted-foreground mx-auto" />
+                            <IconSearch className="h-12 w-12 text-muted-foreground mx-auto" />
                             <h3 className="text-lg font-medium">No communities found</h3>
                             <p className="text-muted-foreground">
                                 Try adjusting your search terms or filters
@@ -269,7 +269,7 @@ export default function CommunitySearch({ initialQuery = '' }: CommunitySearchPr
                 <Card>
                     <CardContent className="text-center py-12">
                         <div className="space-y-2">
-                            <Search className="h-12 w-12 text-muted-foreground mx-auto" />
+                            <IconSearch className="h-12 w-12 text-muted-foreground mx-auto" />
                             <h3 className="text-lg font-medium">Search for Communities</h3>
                             <p className="text-muted-foreground">
                                 Enter a search term to find communities that interest you

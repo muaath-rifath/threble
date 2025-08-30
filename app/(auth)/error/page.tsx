@@ -5,7 +5,7 @@ import { Suspense } from 'react'
 import Link from 'next/link'
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { AlertCircle, Home, ArrowLeft } from 'lucide-react'
+import { IconAlertCircle, IconHome, IconArrowLeft } from '@tabler/icons-react'
 
 const errorMessages: Record<string, string> = {
   Configuration: 'There is a problem with the server configuration.',
@@ -50,7 +50,7 @@ function AuthError() {
       <Card className="glass-card max-w-md w-full">
         <CardHeader className="text-center">
           <div className="mx-auto mb-4 h-12 w-12 text-red-500">
-            <AlertCircle className="h-12 w-12" />
+            <IconAlertCircle className="h-12 w-12" />
           </div>
           <CardTitle className="text-xl text-black dark:text-white">Authentication Error</CardTitle>
           <CardDescription className="text-black/60 dark:text-white/60">
@@ -66,13 +66,13 @@ function AuthError() {
         <CardFooter className="flex flex-col space-y-2">
           <Button asChild className="w-full primary-button">
             <Link href="/signin">
-              <ArrowLeft className="mr-2 h-4 w-4" />
+              <IconArrowLeft className="mr-2 h-4 w-4" />
               Try Again
             </Link>
           </Button>
           <Button asChild variant="outline" className="w-full glass-button">
             <Link href="/">
-              <Home className="mr-2 h-4 w-4" />
+              <IconHome className="mr-2 h-4 w-4" />
               Go Home
             </Link>
           </Button>

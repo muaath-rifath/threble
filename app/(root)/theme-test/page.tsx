@@ -5,16 +5,16 @@ import { useTheme } from '@/lib/theme'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { Sun, Moon, Monitor, Database, HardDrive } from 'lucide-react'
+import { IconSun, IconMoon, IconDeviceDesktop, IconDatabase, IconDeviceSdCard } from '@tabler/icons-react'
 
 export default function ThemeTestPage() {
   const { data: session, status } = useSession()
   const { theme, setTheme, resolvedTheme } = useTheme()
 
   const themeButtons = [
-    { value: 'light', label: 'Light', icon: Sun },
-    { value: 'dark', label: 'Dark', icon: Moon },
-    { value: 'system', label: 'System', icon: Monitor },
+    { value: 'light', label: 'Light', icon: IconSun },
+    { value: 'dark', label: 'Dark', icon: IconMoon },
+    { value: 'system', label: 'System', icon: IconDeviceDesktop },
   ] as const
 
   return (
@@ -31,7 +31,7 @@ export default function ThemeTestPage() {
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <Database className="h-5 w-5" />
+              <IconDatabase className="h-5 w-5" />
               Theme Controls
             </CardTitle>
             <CardDescription>
@@ -59,7 +59,7 @@ export default function ThemeTestPage() {
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <HardDrive className="h-5 w-5" />
+              <IconDeviceSdCard className="h-5 w-5" />
               Current State
             </CardTitle>
             <CardDescription>

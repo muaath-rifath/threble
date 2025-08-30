@@ -18,7 +18,7 @@ import {
     FormControl,
 } from '@/components/ui/form'
 import { Textarea } from '@/components/ui/textarea'
-import { Image, Video, X } from 'lucide-react'
+import { IconPhoto, IconVideo, IconX } from '@tabler/icons-react'
 import { ExtendedPost } from '@/lib/types'
 
 import PostCard, { Post } from './PostCard'
@@ -210,7 +210,7 @@ export default function PostDetailView({ initialPost, session }: PostDetailViewP
                                                 onClick={() => handleRemoveMedia(index)}
                                             >
                                                 <span className="sr-only">Remove</span>
-                                                <X className="h-4 w-4" />
+                                                <IconX className="h-4 w-4" />
                                             </Button>
                                         </div>
                                     ))}
@@ -223,7 +223,7 @@ export default function PostDetailView({ initialPost, session }: PostDetailViewP
                                         variant="ghost"
                                         onClick={() => handleFileSelect('image/*')}
                                     >
-                                        <Image className="mr-2 h-4 w-4" />
+                                        <IconPhoto className="mr-2 h-4 w-4" />
                                         Photo
                                     </Button>
                                     <Button
@@ -231,7 +231,7 @@ export default function PostDetailView({ initialPost, session }: PostDetailViewP
                                         variant="ghost"
                                         onClick={() => handleFileSelect('video/*')}
                                     >
-                                        <Video className="mr-2 h-4 w-4" />
+                                        <IconVideo className="mr-2 h-4 w-4" />
                                         Video
                                     </Button>
                                 </div>

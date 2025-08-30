@@ -8,15 +8,15 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { useToast } from '@/hooks/use-toast'
 import { 
-  Users, 
-  Lock, 
-  Globe, 
-  Settings, 
-  MessageSquare,
-  MoreHorizontal,
-  UserPlus,
-  ExternalLink
-} from 'lucide-react'
+  IconUsers, 
+  IconLock, 
+  IconGlobe, 
+  IconSettings, 
+  IconMessage,
+  IconDots,
+  IconUserPlus,
+  IconExternalLink
+} from '@tabler/icons-react'
 import { CommunityWithDetails, CommunityMember } from '@/lib/types'
 import { joinCommunity, leaveCommunity } from '@/lib/actions/community.actions'
 import {
@@ -148,12 +148,12 @@ export default function CommunityHeader({
                   <Badge variant={community.visibility === 'PRIVATE' ? 'secondary' : 'outline'}>
                     {community.visibility === 'PRIVATE' ? (
                       <>
-                        <Lock className="h-3 w-3 mr-1" />
+                        <IconLock className="h-3 w-3 mr-1" />
                         Private
                       </>
                     ) : (
                       <>
-                        <Globe className="h-3 w-3 mr-1" />
+                        <IconGlobe className="h-3 w-3 mr-1" />
                         Public
                       </>
                     )}
@@ -162,11 +162,11 @@ export default function CommunityHeader({
                 
                 <div className="flex items-center gap-4 text-sm text-muted-foreground">
                   <div className="flex items-center gap-1">
-                    <Users className="h-4 w-4" />
+                    <IconUsers className="h-4 w-4" />
                     <span>{community._count.members} members</span>
                   </div>
                   <div className="flex items-center gap-1">
-                    <MessageSquare className="h-4 w-4" />
+                    <IconMessage className="h-4 w-4" />
                     <span>{community._count.posts} posts</span>
                   </div>
                   <span>Created by {community.creator.name}</span>
@@ -183,29 +183,29 @@ export default function CommunityHeader({
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
                           <Button variant="outline" size="sm">
-                            <MoreHorizontal className="h-4 w-4" />
+                            <IconDots className="h-4 w-4" />
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
                           {canManage && (
                             <>
                               <DropdownMenuItem onClick={() => router.push(`/communities/${community.name}/settings`)}>
-                                <Settings className="h-4 w-4 mr-2" />
+                                <IconSettings className="h-4 w-4 mr-2" />
                                 Community Settings
                               </DropdownMenuItem>
                               <DropdownMenuItem onClick={() => router.push(`/communities/${community.name}/members`)}>
-                                <Users className="h-4 w-4 mr-2" />
+                                <IconUsers className="h-4 w-4 mr-2" />
                                 Manage Members
                               </DropdownMenuItem>
                               <DropdownMenuItem onClick={() => router.push(`/communities/${community.name}/invites`)}>
-                                <UserPlus className="h-4 w-4 mr-2" />
+                                <IconUserPlus className="h-4 w-4 mr-2" />
                                 Invite Members
                               </DropdownMenuItem>
                               <DropdownMenuSeparator />
                             </>
                           )}
                           <DropdownMenuItem>
-                            <ExternalLink className="h-4 w-4 mr-2" />
+                            <IconExternalLink className="h-4 w-4 mr-2" />
                             Share Community
                           </DropdownMenuItem>
                           <DropdownMenuSeparator />

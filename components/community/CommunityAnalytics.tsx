@@ -5,16 +5,13 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { 
-    BarChart3, 
-    TrendingUp, 
-    Users, 
-    MessageSquare, 
-    Calendar,
-    RefreshCw,
-    Activity,
-    Globe,
-    Clock
-} from 'lucide-react'
+    IconChartBar, 
+    IconTrendingUp, 
+    IconUsersGroup, 
+    IconMessage, 
+    IconRefresh,
+    IconActivity
+} from '@tabler/icons-react'
 import { useToast } from '@/hooks/use-toast'
 
 interface CommunityAnalyticsProps {
@@ -199,7 +196,7 @@ export default function CommunityAnalytics({
         return (
             <Card>
                 <CardContent className="p-8 text-center">
-                    <BarChart3 className="h-8 w-8 text-muted-foreground mx-auto mb-4" />
+                    <IconChartBar className="h-8 w-8 text-muted-foreground mx-auto mb-4" />
                     <p>Failed to load analytics data</p>
                     <Button onClick={loadAnalytics} className="mt-4">
                         Try Again
@@ -215,7 +212,7 @@ export default function CommunityAnalytics({
             <div className="flex items-center justify-between">
                 <div>
                     <h1 className="text-2xl font-bold flex items-center gap-2">
-                        <BarChart3 className="h-6 w-6" />
+                        <IconChartBar className="h-6 w-6" />
                         Community Analytics
                     </h1>
                     <p className="text-muted-foreground">
@@ -234,7 +231,7 @@ export default function CommunityAnalytics({
                         <option value="all">All time</option>
                     </select>
                     <Button onClick={loadAnalytics} variant="outline" size="sm">
-                        <RefreshCw className="h-4 w-4" />
+                        <IconRefresh className="h-4 w-4" />
                     </Button>
                 </div>
             </div>
@@ -249,7 +246,7 @@ export default function CommunityAnalytics({
                                 <p className="text-2xl font-bold">{data.demographics.totalMembers}</p>
                                 <p className="text-sm text-green-600">+{data.demographics.newMembersThisWeek} this week</p>
                             </div>
-                            <Users className="h-8 w-8 text-blue-500" />
+                            <IconUsersGroup className="h-8 w-8 text-blue-500" />
                         </div>
                     </CardContent>
                 </Card>
@@ -264,7 +261,7 @@ export default function CommunityAnalytics({
                                     {Math.round((data.demographics.activeMembers / data.demographics.totalMembers) * 100)}% of total
                                 </p>
                             </div>
-                            <Activity className="h-8 w-8 text-green-500" />
+                            <IconActivity className="h-8 w-8 text-green-500" />
                         </div>
                     </CardContent>
                 </Card>
@@ -279,7 +276,7 @@ export default function CommunityAnalytics({
                                     {data.engagement.avgReactionsPerPost.toFixed(1)} avg reactions
                                 </p>
                             </div>
-                            <MessageSquare className="h-8 w-8 text-purple-500" />
+                            <IconMessage className="h-8 w-8 text-purple-500" />
                         </div>
                     </CardContent>
                 </Card>
@@ -294,7 +291,7 @@ export default function CommunityAnalytics({
                                     {data.retention.activeMembersThisPeriod} active
                                 </p>
                             </div>
-                            <TrendingUp className="h-8 w-8 text-orange-500" />
+                            <IconTrendingUp className="h-8 w-8 text-orange-500" />
                         </div>
                     </CardContent>
                 </Card>
@@ -487,7 +484,7 @@ export default function CommunityAnalytics({
                                 <div className="flex items-center justify-between">
                                     <span className="text-sm">Growth Trend</span>
                                     <div className="flex items-center gap-2">
-                                        <TrendingUp className="w-4 h-4 text-green-500" />
+                                        <IconTrendingUp className="w-4 h-4 text-green-500" />
                                         <span className="font-medium text-green-600">Growing</span>
                                     </div>
                                 </div>

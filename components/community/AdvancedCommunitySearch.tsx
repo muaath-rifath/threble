@@ -7,16 +7,14 @@ import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { 
-    Search, 
-    Filter, 
-    Users, 
-    TrendingUp, 
-    Clock,
-    MapPin,
-    Star,
-    ChevronDown,
-    X
-} from 'lucide-react'
+    IconSearch, 
+    IconFilter, 
+    IconUsersGroup, 
+    IconTrendingUp, 
+    IconStar,
+    IconChevronDown,
+    IconX
+} from '@tabler/icons-react'
 import { useToast } from '@/hooks/use-toast'
 
 interface AdvancedSearchProps {
@@ -244,12 +242,12 @@ export default function AdvancedCommunitySearch({
                         
                         <div className="flex items-center gap-4 text-sm text-muted-foreground">
                             <div className="flex items-center gap-1">
-                                <Users className="h-4 w-4" />
+                                <IconUsersGroup className="h-4 w-4" />
                                 <span>{formatMemberCount(community.memberCount)} members</span>
                             </div>
                             
                             <div className="flex items-center gap-1">
-                                <TrendingUp className="h-4 w-4" />
+                                <IconTrendingUp className="h-4 w-4" />
                                 <span>{community._count.posts} posts</span>
                             </div>
                             
@@ -277,7 +275,7 @@ export default function AdvancedCommunitySearch({
             <div className="flex items-center justify-between">
                 <div>
                     <h2 className="text-2xl font-bold flex items-center gap-2">
-                        <Search className="h-6 w-6" />
+                        <IconSearch className="h-6 w-6" />
                         Discover Communities
                     </h2>
                     <p className="text-muted-foreground">Find communities that match your interests</p>
@@ -292,7 +290,7 @@ export default function AdvancedCommunitySearch({
                         onClick={() => setActiveTab('search')}
                         size="sm"
                     >
-                        <Search className="h-4 w-4 mr-2" />
+                        <IconSearch className="h-4 w-4 mr-2" />
                         Search
                     </Button>
                     <Button
@@ -300,7 +298,7 @@ export default function AdvancedCommunitySearch({
                         onClick={() => setActiveTab('personalized')}
                         size="sm"
                     >
-                        <Star className="h-4 w-4 mr-2" />
+                        <IconStar className="h-4 w-4 mr-2" />
                         For You
                     </Button>
                 </div>
@@ -323,9 +321,9 @@ export default function AdvancedCommunitySearch({
                             onClick={() => setShowFilters(!showFilters)}
                             className="h-12"
                         >
-                            <Filter className="h-4 w-4 mr-2" />
+                            <IconFilter className="h-4 w-4 mr-2" />
                             Filters
-                            <ChevronDown className={`h-4 w-4 ml-2 transition-transform ${showFilters ? 'rotate-180' : ''}`} />
+                            <IconChevronDown className={`h-4 w-4 ml-2 transition-transform ${showFilters ? 'rotate-180' : ''}`} />
                         </Button>
                     </div>
 
@@ -354,7 +352,7 @@ export default function AdvancedCommunitySearch({
                                             >
                                                 {category}
                                                 {filters.categories.includes(category) && (
-                                                    <X className="h-3 w-3 ml-1" />
+                                                    <IconX className="h-3 w-3 ml-1" />
                                                 )}
                                             </Badge>
                                         ))}
@@ -462,7 +460,7 @@ export default function AdvancedCommunitySearch({
                                 {searchQuery && communities.length === 0 && (
                                     <Card>
                                         <CardContent className="p-8 text-center">
-                                            <Search className="h-8 w-8 text-muted-foreground mx-auto mb-4" />
+                                            <IconSearch className="h-8 w-8 text-muted-foreground mx-auto mb-4" />
                                             <h3 className="font-medium mb-2">No communities found</h3>
                                             <p className="text-muted-foreground">
                                                 Try adjusting your search terms or filters
@@ -476,7 +474,7 @@ export default function AdvancedCommunitySearch({
                         {activeTab === 'personalized' && (
                             <>
                                 <h3 className="font-medium flex items-center gap-2">
-                                    <Star className="h-4 w-4" />
+                                    <IconStar className="h-4 w-4" />
                                     Recommended for you
                                 </h3>
                                 
@@ -487,7 +485,7 @@ export default function AdvancedCommunitySearch({
                                 {personalizedCommunities.length === 0 && !isLoading && (
                                     <Card>
                                         <CardContent className="p-8 text-center">
-                                            <Star className="h-8 w-8 text-muted-foreground mx-auto mb-4" />
+                                            <IconStar className="h-8 w-8 text-muted-foreground mx-auto mb-4" />
                                             <h3 className="font-medium mb-2">No recommendations yet</h3>
                                             <p className="text-muted-foreground">
                                                 Join some communities and interact to get personalized recommendations

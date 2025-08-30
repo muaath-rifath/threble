@@ -10,7 +10,7 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Form, FormControl, FormField, FormItem } from '@/components/ui/form';
 import { useToast } from '@/hooks/use-toast';
-import { Image, Video, X } from 'lucide-react';
+import { IconPhoto, IconVideo, IconX } from '@tabler/icons-react';
 import { Post } from '@/lib/types';
 import { useAppDispatch } from '@/lib/redux/hooks';
 import { createPost } from '@/lib/redux/slices/postsSlice';
@@ -156,7 +156,7 @@ export default function PostForm({ onPostCreated, communityId }: PostFormProps) 
                       onClick={() => handleRemoveMedia(index)}
                     >
                       <span className="sr-only">Remove</span>
-                      <X className="h-4 w-4" />
+                      <IconX className="h-4 w-4" />
                     </Button>
                   </div>
                 ))}
@@ -170,7 +170,7 @@ export default function PostForm({ onPostCreated, communityId }: PostFormProps) 
                   onClick={() => handleFileSelect('image/*')}
                   className="glass-button text-black/60 dark:text-white/60"
                 >
-                  <Image className="mr-2 h-4 w-4" />
+                  <IconPhoto className="mr-2 h-4 w-4" />
                   Photo
                 </Button>
                 <Button
@@ -179,7 +179,7 @@ export default function PostForm({ onPostCreated, communityId }: PostFormProps) 
                   onClick={() => handleFileSelect('video/*')}
                   className="glass-button text-black/60 dark:text-white/60"
                 >
-                  <Video className="mr-2 h-4 w-4" />
+                  <IconVideo className="mr-2 h-4 w-4" />
                   Video
                 </Button>
               </div>

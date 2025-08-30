@@ -7,17 +7,15 @@ import { Badge } from '@/components/ui/badge'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { 
-    Shield, 
-    Users, 
-    MessageSquare, 
-    TrendingUp, 
-    AlertTriangle, 
-    Clock, 
-    Trash2,
-    UserMinus,
-    RefreshCw,
-    BarChart3
-} from 'lucide-react'
+    IconShield, 
+    IconUsersGroup, 
+    IconMessage, 
+    IconTrendingUp, 
+    IconAlertTriangle, 
+    IconClock, 
+    IconTrash,
+    IconRefresh
+} from '@tabler/icons-react'
 import { useToast } from '@/hooks/use-toast'
 
 interface ModerationDashboardProps {
@@ -142,7 +140,7 @@ export default function ModerationDashboard({
         return (
             <Card>
                 <CardContent className="p-8 text-center">
-                    <AlertTriangle className="h-8 w-8 text-muted-foreground mx-auto mb-4" />
+                    <IconAlertTriangle className="h-8 w-8 text-muted-foreground mx-auto mb-4" />
                     <p>Failed to load moderation data</p>
                     <Button onClick={loadData} className="mt-4">
                         Try Again
@@ -158,7 +156,7 @@ export default function ModerationDashboard({
             <div className="flex items-center justify-between">
                 <div>
                     <h1 className="text-2xl font-bold flex items-center gap-2">
-                        <Shield className="h-6 w-6" />
+                        <IconShield className="h-6 w-6" />
                         Moderation Dashboard
                     </h1>
                     <p className="text-muted-foreground">
@@ -177,7 +175,7 @@ export default function ModerationDashboard({
                         <option value="all">All time</option>
                     </select>
                     <Button onClick={loadData} variant="outline" size="sm">
-                        <RefreshCw className="h-4 w-4" />
+                        <IconRefresh className="h-4 w-4" />
                     </Button>
                 </div>
             </div>
@@ -192,7 +190,7 @@ export default function ModerationDashboard({
                                 <p className="text-2xl font-bold">{data.stats.members.new}</p>
                                 {formatGrowth(data.stats.members.growth)}
                             </div>
-                            <Users className="h-8 w-8 text-blue-500" />
+                            <IconUsersGroup className="h-8 w-8 text-blue-500" />
                         </div>
                     </CardContent>
                 </Card>
@@ -205,7 +203,7 @@ export default function ModerationDashboard({
                                 <p className="text-2xl font-bold">{data.stats.posts.new}</p>
                                 {formatGrowth(data.stats.posts.growth)}
                             </div>
-                            <MessageSquare className="h-8 w-8 text-green-500" />
+                            <IconMessage className="h-8 w-8 text-green-500" />
                         </div>
                     </CardContent>
                 </Card>
@@ -218,7 +216,7 @@ export default function ModerationDashboard({
                                 <p className="text-2xl font-bold">{data.stats.pendingRequests}</p>
                                 <p className="text-sm text-muted-foreground">Pending</p>
                             </div>
-                            <Clock className="h-8 w-8 text-yellow-500" />
+                            <IconClock className="h-8 w-8 text-yellow-500" />
                         </div>
                     </CardContent>
                 </Card>
@@ -231,7 +229,7 @@ export default function ModerationDashboard({
                                 <p className="text-2xl font-bold">{data.stats.pendingInvitations}</p>
                                 <p className="text-sm text-muted-foreground">Pending</p>
                             </div>
-                            <TrendingUp className="h-8 w-8 text-purple-500" />
+                            <IconTrendingUp className="h-8 w-8 text-purple-500" />
                         </div>
                     </CardContent>
                 </Card>
@@ -280,7 +278,7 @@ export default function ModerationDashboard({
                                                 size="sm"
                                                 onClick={() => performModerationAction('delete_post', 'post', post.id)}
                                             >
-                                                <Trash2 className="h-4 w-4" />
+                                                <IconTrash className="h-4 w-4" />
                                             </Button>
                                         </div>
                                     ))}
@@ -398,7 +396,7 @@ export default function ModerationDashboard({
                                                 size="sm"
                                                 onClick={() => performModerationAction('delete_post', 'post', post.id)}
                                             >
-                                                <Trash2 className="h-4 w-4" />
+                                                <IconTrash className="h-4 w-4" />
                                             </Button>
                                         </div>
                                     ))}

@@ -11,7 +11,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { FileUpload } from '@/components/ui/file-upload'
 import { useToast } from '@/hooks/use-toast'
 import { createCommunity } from '@/lib/actions/community.actions'
-import { Globe, Lock, Upload } from 'lucide-react'
+import { IconGlobe, IconLock, IconUpload } from '@tabler/icons-react'
 
 interface CommunityFormProps {
   onSuccess?: (communityName: string) => void
@@ -134,7 +134,7 @@ export default function CommunityForm({ onSuccess, onCancel }: CommunityFormProp
               <Avatar className="h-16 w-16">
                 <AvatarImage src={imagePreview} alt="Community" />
                 <AvatarFallback className="bg-muted">
-                  {formData.name ? formData.name.charAt(0).toUpperCase() : <Upload className="h-6 w-6" />}
+                  {formData.name ? formData.name.charAt(0).toUpperCase() : <IconUpload className="h-6 w-6" />}
                 </AvatarFallback>
               </Avatar>
               <FileUpload onChange={handleImageUpload} accept="image/*" maxFiles={1}>
@@ -186,7 +186,7 @@ export default function CommunityForm({ onSuccess, onCancel }: CommunityFormProp
                   className="h-4 w-4 text-primary border-gray-300 focus:ring-primary"
                 />
                 <Label htmlFor="public" className="flex items-center space-x-2 cursor-pointer">
-                  <Globe className="h-4 w-4" />
+                  <IconGlobe className="h-4 w-4" />
                   <div>
                     <div className="font-medium">Public</div>
                     <div className="text-sm text-muted-foreground">Anyone can see and join this community</div>
@@ -204,7 +204,7 @@ export default function CommunityForm({ onSuccess, onCancel }: CommunityFormProp
                   className="h-4 w-4 text-primary border-gray-300 focus:ring-primary"
                 />
                 <Label htmlFor="private" className="flex items-center space-x-2 cursor-pointer">
-                  <Lock className="h-4 w-4" />
+                  <IconLock className="h-4 w-4" />
                   <div>
                     <div className="font-medium">Private</div>
                     <div className="text-sm text-muted-foreground">Only members can see posts and content</div>

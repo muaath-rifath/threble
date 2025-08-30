@@ -1,7 +1,7 @@
 import { cn } from "@/lib/utils";
 import React, { useRef, useState, ChangeEvent } from "react";
 import { Label } from './label'
-import { X } from 'lucide-react'
+import { IconX } from '@tabler/icons-react'
 
 interface FileUploadProps {
   onChange: (files: File[]) => void;
@@ -158,7 +158,7 @@ export function FileUpload({
                 className="absolute -top-2 -right-2 bg-red-500/20 dark:bg-red-500/20 backdrop-blur-xl border border-red-500/30 dark:border-red-500/30 text-red-600 dark:text-red-400 rounded-full p-1.5 opacity-0 group-hover:opacity-100 transition-all duration-200 hover:bg-red-500/30 dark:hover:bg-red-500/30"
                 title="Remove file"
               >
-                <X className="w-4 h-4" />
+                <IconX className="w-4 h-4" />
               </button>
               <p className="mt-2 text-xs text-black/60 dark:text-white/60 truncate font-medium">
                 {file.name}

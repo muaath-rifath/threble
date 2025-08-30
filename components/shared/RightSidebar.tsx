@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react'
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { Users, Plus, UserPlus, RefreshCw } from 'lucide-react'
+import { IconUsers, IconPlus, IconUserPlus, IconRefresh } from '@tabler/icons-react'
 import Link from 'next/link'
 
 interface Community {
@@ -151,7 +151,7 @@ function RightSidebar(){
             <div className="bg-glassmorphism dark:bg-glassmorphism-dark backdrop-blur-xl border border-glass-border dark:border-glass-border-dark rounded-2xl p-6 shadow-xl mb-6 mx-6">
                     <div className="flex items-center justify-between mb-6">
                         <h3 className="text-heading4-medium text-black dark:text-white flex items-center gap-2">
-                            <Users className="w-5 h-5 text-primary-500" />
+                            <IconUsers className="w-5 h-5 text-primary-500" />
                             Suggested Communities
                         </h3>
                         <Button
@@ -161,7 +161,7 @@ function RightSidebar(){
                             disabled={communitiesLoading}
                             className="h-8 w-8 p-0 hover:bg-primary-500/10 rounded-full"
                         >
-                            <RefreshCw className={`h-4 w-4 ${communitiesLoading ? 'animate-spin' : ''} text-primary-500`} />
+                            <IconRefresh className={`h-4 w-4 ${communitiesLoading ? 'animate-spin' : ''} text-primary-500`} />
                         </Button>
                     </div>
                     
@@ -181,7 +181,7 @@ function RightSidebar(){
                                         <Avatar className="h-10 w-10 ring-2 ring-transparent group-hover:ring-primary-500/30 transition-all duration-200">
                                             <AvatarImage src={community.image || undefined} />
                                             <AvatarFallback>
-                                                <Users className="h-5 w-5" />
+                                                <IconUsers className="h-5 w-5" />
                                             </AvatarFallback>
                                         </Avatar>
                                         <div className="flex-1 min-w-0">
@@ -212,7 +212,7 @@ function RightSidebar(){
                                             onClick={() => handleJoinCommunity(community.id)}
                                             className="h-8 px-3 text-xs bg-primary-500 hover:bg-primary-600 text-white rounded-lg transition-all duration-200 hover:scale-105"
                                         >
-                                            <Plus className="h-3 w-3 mr-1" />
+                                            <IconPlus className="h-3 w-3 mr-1" />
                                             Join
                                         </Button>
                                     </div>
@@ -221,7 +221,7 @@ function RightSidebar(){
                         ) : (
                             <div className="p-4 bg-white/10 dark:bg-white/5 rounded-lg border border-black/10 dark:border-white/10">
                                 <div className="text-center">
-                                    <Users className="h-10 w-10 text-black/40 dark:text-white/40 mx-auto mb-3" />
+                                    <IconUsers className="h-10 w-10 text-black/40 dark:text-white/40 mx-auto mb-3" />
                                     <p className="text-sm text-black/60 dark:text-white/60">
                                         {communitiesMessage || "No community suggestions available"}
                                     </p>
@@ -250,7 +250,7 @@ function RightSidebar(){
                 <div className="bg-glassmorphism dark:bg-glassmorphism-dark backdrop-blur-xl border border-glass-border dark:border-glass-border-dark rounded-2xl p-6 shadow-xl mx-6">
                     <div className="flex items-center justify-between mb-6">
                         <h3 className="text-heading4-medium text-black dark:text-white flex items-center gap-2">
-                            <UserPlus className="w-5 h-5 text-primary-500" />
+                            <IconUserPlus className="w-5 h-5 text-primary-500" />
                             People You May Know
                         </h3>
                         <Button
@@ -260,7 +260,7 @@ function RightSidebar(){
                             disabled={peopleLoading}
                             className="h-8 w-8 p-0 hover:bg-primary-500/10 rounded-full"
                         >
-                            <RefreshCw className={`h-4 w-4 ${peopleLoading ? 'animate-spin' : ''} text-primary-500`} />
+                            <IconRefresh className={`h-4 w-4 ${peopleLoading ? 'animate-spin' : ''} text-primary-500`} />
                         </Button>
                     </div>
                     
@@ -322,7 +322,7 @@ function RightSidebar(){
                                             onClick={() => handleConnectUser(person.id)}
                                             className="flex-1 h-8 text-xs bg-primary-500 hover:bg-primary-600 text-white rounded-lg transition-all duration-200 hover:scale-105"
                                         >
-                                            <UserPlus className="h-3 w-3 mr-1" />
+                                            <IconUserPlus className="h-3 w-3 mr-1" />
                                             Connect
                                         </Button>
                                         <Link href={`/${person.username}`}>
@@ -340,7 +340,7 @@ function RightSidebar(){
                         ) : (
                             <div className="p-4 bg-white/10 dark:bg-white/5 rounded-lg border border-black/10 dark:border-white/10">
                                 <div className="text-center">
-                                    <UserPlus className="h-10 w-10 text-black/40 dark:text-white/40 mx-auto mb-3" />
+                                    <IconUserPlus className="h-10 w-10 text-black/40 dark:text-white/40 mx-auto mb-3" />
                                     <p className="text-sm text-black/60 dark:text-white/60">
                                         {peopleMessage || "No people suggestions available"}
                                     </p>

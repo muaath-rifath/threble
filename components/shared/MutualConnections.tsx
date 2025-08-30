@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Badge } from '@/components/ui/badge'
-import { Users } from 'lucide-react'
+import { IconUsers } from '@tabler/icons-react'
 import Link from 'next/link'
 
 interface MutualConnection {
@@ -66,7 +66,7 @@ export function MutualConnections({ userId, limit = 3, showCount = true }: Mutua
       
       {showCount && (
         <Badge variant="secondary" className="text-xs">
-          <Users className="w-3 h-3 mr-1" />
+          <IconUsers className="w-3 h-3 mr-1" />
           {totalCount} mutual connection{totalCount !== 1 ? 's' : ''}
         </Badge>
       )}

@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { ArrowLeft, Bell, Check, X, RefreshCw } from 'lucide-react'
+import { IconArrowLeft, IconBell, IconCheck, IconX, IconRefresh } from '@tabler/icons-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -348,10 +348,10 @@ export default function NotificationsPage() {
             onClick={() => router.back()}
             className="p-2"
           >
-            <ArrowLeft className="h-5 w-5" />
+            <IconArrowLeft className="h-5 w-5" />
           </Button>
           <div className="flex items-center gap-2">
-            <Bell className="h-6 w-6" />
+            <IconBell className="h-6 w-6" />
             <h1 className="text-2xl font-bold">Notifications</h1>
             {unreadCount > 0 && (
               <Badge variant="destructive" className="ml-2">
@@ -368,7 +368,7 @@ export default function NotificationsPage() {
             disabled={refreshing}
             className="p-2"
           >
-            <RefreshCw className={`h-4 w-4 ${refreshing ? 'animate-spin' : ''}`} />
+            <IconRefresh className={`h-4 w-4 ${refreshing ? 'animate-spin' : ''}`} />
           </Button>
           {unreadCount > 0 && (
             <Button
@@ -376,7 +376,7 @@ export default function NotificationsPage() {
               size="sm"
               onClick={markAllAsRead}
             >
-              <Check className="h-4 w-4 mr-1" />
+              <IconCheck className="h-4 w-4 mr-1" />
               Mark all read
             </Button>
           )}
@@ -414,7 +414,7 @@ export default function NotificationsPage() {
           ) : allNotifications.length === 0 ? (
             <Card>
               <CardContent className="p-8 text-center">
-                <Bell className="h-12 w-12 mx-auto mb-4 text-gray-400" />
+                <IconBell className="h-12 w-12 mx-auto mb-4 text-gray-400" />
                 <p className="text-gray-500">No notifications yet</p>
               </CardContent>
             </Card>
@@ -443,7 +443,7 @@ export default function NotificationsPage() {
           ) : unreadNotifications.length === 0 ? (
             <Card>
               <CardContent className="p-8 text-center">
-                <Check className="h-12 w-12 mx-auto mb-4 text-green-500" />
+                <IconCheck className="h-12 w-12 mx-auto mb-4 text-green-500" />
                 <p className="text-gray-500">You're all caught up!</p>
                 <p className="text-sm text-gray-400 mt-1">No unread notifications</p>
               </CardContent>

@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { Loader2, Users, MessageSquare } from 'lucide-react'
+import { IconLoader2, IconUsersGroup, IconMessage } from '@tabler/icons-react'
 import { useToast } from '@/hooks/use-toast'
 import { useInView } from '@intersection-observer/next'
 import CommunityCard from './CommunityCard'
@@ -115,7 +115,7 @@ export default function CommunityDiscovery() {
         return (
             <div className="flex items-center justify-center min-h-[300px]">
                 <div className="flex items-center gap-2 text-muted-foreground">
-                    <Loader2 className="h-5 w-5 animate-spin" />
+                    <IconLoader2 className="h-5 w-5 animate-spin" />
                     Loading communities...
                 </div>
             </div>
@@ -129,7 +129,7 @@ export default function CommunityDiscovery() {
                 <CardHeader className="flex flex-row items-center justify-between space-y-0">
                     <div>
                         <CardTitle className="flex items-center gap-2">
-                            <Users className="h-5 w-5" />
+                            <IconUsersGroup className="h-5 w-5" />
                             All Communities
                         </CardTitle>
                         <p className="text-sm text-muted-foreground mt-1">
@@ -162,7 +162,7 @@ export default function CommunityDiscovery() {
                             {isLoadingMore && (
                                 <div className="flex justify-center">
                                     <div className="flex items-center gap-2 text-muted-foreground">
-                                        <Loader2 className="h-5 w-5 animate-spin" />
+                                        <IconLoader2 className="h-5 w-5 animate-spin" />
                                         Loading more communities...
                                     </div>
                                 </div>
@@ -173,7 +173,7 @@ export default function CommunityDiscovery() {
             ) : (
                 <Card>
                     <CardContent className="flex flex-col items-center justify-center py-12">
-                        <MessageSquare className="h-12 w-12 text-muted-foreground mb-4" />
+                        <IconMessage className="h-12 w-12 text-muted-foreground mb-4" />
                         <h3 className="text-lg font-semibold mb-2">No Communities Found</h3>
                         <p className="text-muted-foreground text-center mb-4">
                             There are no communities to display at the moment.
