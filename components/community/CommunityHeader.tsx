@@ -50,7 +50,7 @@ export default function CommunityHeader({
 
   const handleJoinCommunity = async () => {
     if (!session) {
-      router.push('/signin')
+      router.push('/auth')
       return
     }
 

@@ -190,7 +190,7 @@ export const authOptions: NextAuthOptions = {
 
   // Define custom pages
   pages: {
-    signIn: "/signin",
+    signIn: "/auth",
     error: "/auth/error",
   },
 

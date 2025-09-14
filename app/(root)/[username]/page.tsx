@@ -84,7 +84,7 @@ export default function UserProfilePage() {
 
   const handleFollow = async () => {
     if (!session) {
-      router.push('/signin')
+      router.push('/auth')
       return
     }
 

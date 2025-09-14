@@ -13,7 +13,7 @@ export default async function BookmarksPage() {
   const session = await getServerSession(authOptions)
 
   if (!session) {
-    redirect('/signin')
+    redirect('/auth')
   }
 
   return (

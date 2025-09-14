@@ -11,6 +11,7 @@ import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
 import { FileUpload } from '@/components/ui/file-upload'
+import { DatePicker } from '@/components/ui/calendar'
 import { onboardingSchema, type OnboardingInput } from '@/lib/validations/username'
 
 export default function OnboardingPage() {
@@ -19,10 +20,11 @@ export default function OnboardingPage() {
   const { data: session, status, update } = useSession()
   const [profileFile, setProfileFile] = useState<File[]>([])
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [birthDate, setBirthDate] = useState<Date | undefined>()
 
   useEffect(() => {
     if (status === 'unauthenticated') {
-      router.push('/signin')
+      router.push('/auth')
     } else if (status === 'authenticated' && session?.user.hasProfile) {
       router.push('/')
     }
@@ -56,7 +58,7 @@ export default function OnboardingPage() {
       if (data.bio) formData.append('bio', data.bio.trim())
       if (data.location) formData.append('location', data.location.trim())
       if (data.website) formData.append('website', data.website.trim())
-      if (data.birthDate) formData.append('birthDate', data.birthDate)
+      if (birthDate) formData.append('birthDate', birthDate.toISOString().split('T')[0])
       if (profileFile.length > 0) formData.append('image', profileFile[0])
 
       const response = await fetch('/api/user/onboarding', {
@@ -103,7 +105,8 @@ export default function OnboardingPage() {
   }
 
   return (
-    <Card className="w-[450px]">
+    <div className="flex items-center justify-center w-full">
+      <Card className="w-full max-w-lg mx-auto">
       <CardHeader>
         <CardTitle>Complete Your Profile</CardTitle>
         <CardDescription>We need a few more details to set up your account</CardDescription>
@@ -137,7 +140,14 @@ export default function OnboardingPage() {
               <Label htmlFor="birthDate">
                 Birth Date <span className="text-red-500">*</span>
               </Label>
-              <Input id="birthDate" type="date" {...register('birthDate')} />
+              <DatePicker
+                value={birthDate}
+                onChange={(date) => {
+                  setBirthDate(date)
+                  setValue('birthDate', date ? date.toISOString().split('T')[0] : '')
+                }}
+                placeholder="Select your birth date"
+              />
               {errors.birthDate && (
                 <p className="text-sm text-red-500">{errors.birthDate.message}</p>
               )}
@@ -196,5 +206,6 @@ export default function OnboardingPage() {
         {error && <p className="text-sm text-red-500">{error}</p>}
       </CardFooter>
     </Card>
+    </div>
   )
 }

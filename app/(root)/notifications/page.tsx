@@ -57,11 +57,11 @@ export default function NotificationsPage() {
     threshold: 0
   })
 
-  // Redirect to signin if not authenticated
+  // Redirect to auth if not authenticated
   useEffect(() => {
     if (status === 'loading') return
     if (status === 'unauthenticated') {
-      router.push('/signin')
+      router.push('/auth')
       return
     }
   }, [status, router])

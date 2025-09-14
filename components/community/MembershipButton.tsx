@@ -39,7 +39,7 @@ export default function MembershipButton({
 
   const handleJoinCommunity = async () => {
     if (!session) {
-      router.push('/signin')
+      router.push('/auth')
       return
     }
 
@@ -137,7 +137,7 @@ export default function MembershipButton({
       <Button 
         size={size} 
         variant={variant}
-        onClick={() => router.push('/signin')}
+        onClick={() => router.push('/auth')}
       >
         <IconUserPlus className="h-4 w-4 mr-2" />
         Join Community

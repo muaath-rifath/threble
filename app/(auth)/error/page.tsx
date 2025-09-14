@@ -46,8 +46,8 @@ function AuthError() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4">
-      <Card className="glass-card max-w-md w-full">
+    <div className="flex items-center justify-center w-full">
+      <Card className="glass-card max-w-lg w-full mx-auto">
         <CardHeader className="text-center">
           <div className="mx-auto mb-4 h-12 w-12 text-red-500">
             <IconAlertCircle className="h-12 w-12" />
@@ -65,7 +65,7 @@ function AuthError() {
         </CardContent>
         <CardFooter className="flex flex-col space-y-2">
           <Button asChild className="w-full primary-button">
-            <Link href="/signin">
+            <Link href="/auth">
               <IconArrowLeft className="mr-2 h-4 w-4" />
               Try Again
             </Link>
@@ -85,8 +85,8 @@ function AuthError() {
 // Loading fallback component
 function AuthErrorFallback() {
   return (
-    <div className="flex items-center justify-center min-h-screen">
-      <Card className="glass-card max-w-md w-full">
+    <div className="flex items-center justify-center w-full">
+      <Card className="glass-card max-w-lg w-full mx-auto">
         <CardHeader className="text-center">
           <CardTitle className="text-xl text-black dark:text-white">Loading...</CardTitle>
         </CardHeader>

@@ -31,7 +31,7 @@ const ProfileMenu = () => {
       });
       
       await signOut({ 
-        callbackUrl: '/signin',
+        callbackUrl: '/auth',
         redirect: true 
       });
     } catch (error) {
@@ -41,8 +41,8 @@ const ProfileMenu = () => {
         description: "Failed to sign out. Please try again.",
         variant: "destructive",
       });
-      // Fallback: force redirect to signin page
-      window.location.href = '/signin';
+      // Fallback: force redirect to auth page
+      window.location.href = '/auth';
     } finally {
       setShowLogoutDialog(false);
     }

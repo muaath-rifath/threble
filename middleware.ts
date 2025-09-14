@@ -45,8 +45,7 @@ export async function middleware(request: NextRequest) {
   }
 
   // Allow access to auth-related pages
-  if (request.nextUrl.pathname.startsWith('/signin') || 
-      request.nextUrl.pathname.startsWith('/auth/error')) {
+  if (request.nextUrl.pathname.startsWith('/auth')) {
     return NextResponse.next();
   }
 
@@ -79,7 +78,7 @@ export async function middleware(request: NextRequest) {
   } else {
     // Not authenticated
     if (!request.nextUrl.pathname.startsWith('/api/')) {
-      return NextResponse.redirect(new URL("/signin", request.url));
+      return NextResponse.redirect(new URL("/auth", request.url));
     }
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }

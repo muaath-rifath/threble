@@ -25,7 +25,15 @@ export const onboardingSchema = z.object({
   username: usernameSchema,
   bio: z.string().max(160, 'Bio must be 160 characters or less').optional(),
   location: z.string().max(100, 'Location must be 100 characters or less').optional(),
-  website: z.string().url('Invalid URL').optional(),
+  website: z.string().optional().refine((value) => {
+    if (!value || value.trim() === '') return true;
+    try {
+      new URL(value);
+      return true;
+    } catch {
+      return false;
+    }
+  }, { message: 'Invalid URL' }),
   birthDate: z.string()
     .min(1, "Birth date is required")
     .refine((date) => {
@@ -49,7 +57,15 @@ export const profileUpdateSchema = z.object({
   email: z.string().email("Please enter a valid email"),
   bio: z.string().max(160, 'Bio must be 160 characters or less').optional(),
   location: z.string().max(100, 'Location must be 100 characters or less').optional(),
-  website: z.string().url('Invalid URL').optional(),
+  website: z.string().optional().refine((value) => {
+    if (!value || value.trim() === '') return true;
+    try {
+      new URL(value);
+      return true;
+    } catch {
+      return false;
+    }
+  }, { message: 'Invalid URL' }),
   birthDate: z.string()
     .optional()
     .refine((date) => {

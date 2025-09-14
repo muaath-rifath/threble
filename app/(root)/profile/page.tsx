@@ -78,7 +78,7 @@ export default function ProfilePage() {
 
   useEffect(() => {
     if (status === 'unauthenticated') {
-      router.push('/signin')
+      router.push('/auth')
     } else if (status === 'authenticated' && session?.user) {
       fetchProfile()
       fetchPosts()
