@@ -69,54 +69,71 @@ export default function CommunityCard({
       onClick={handleCardClick}
     >
       <CardHeader className="pb-2">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-3">
-            <Avatar className="h-12 w-12">
+        <div className="space-y-3">
+          {/* Profile image and name in one row */}
+          <div className="flex items-center gap-3">
+            <Avatar className="h-10 w-10">
               <AvatarImage src={community.image || ''} alt={community.name} />
               <AvatarFallback className="bg-primary text-primary-foreground">
                 {community.name.charAt(0).toUpperCase()}
               </AvatarFallback>
             </Avatar>
             <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-2">
-                <h3 className="font-semibold text-lg truncate">{community.name}</h3>
-                <Badge variant={community.visibility === 'PRIVATE' ? 'secondary' : 'outline'}>
-                  {community.visibility === 'PRIVATE' ? (
-                    <>
-                      <IconLock className="h-3 w-3 mr-1" />
-                      Private
-                    </>
-                  ) : (
-                    <>
-                      <IconGlobe className="h-3 w-3 mr-1" />
-                      Public
-                    </>
-                  )}
-                </Badge>
-              </div>
-              <p className="text-sm text-muted-foreground">
-                Created by {community.creator.name}
-              </p>
+              <h3 className="font-semibold text-lg truncate">{community.name}</h3>
+            </div>
+          </div>
+          
+          {/* Remaining content below */}
+          <div className="space-y-2">
+            <div className="flex items-center gap-2">
+              <Badge variant={community.visibility === 'PRIVATE' ? 'secondary' : 'outline'}>
+                {community.visibility === 'PRIVATE' ? (
+                  <>
+                    <IconLock className="h-3 w-3 mr-1" />
+                    Private
+                  </>
+                ) : (
+                  <>
+                    <IconGlobe className="h-3 w-3 mr-1" />
+                    Public
+                  </>
+                )}
+              </Badge>
             </div>
           </div>
         </div>
       </CardHeader>
 
-      <CardContent className="pb-2">
+      <CardContent className="pb-3 space-y-3">
         {community.description && (
-          <p className="text-sm text-muted-foreground line-clamp-2 mb-3">
+          <p className="text-sm text-muted-foreground line-clamp-3 leading-relaxed">
             {community.description}
           </p>
         )}
         
-        <div className="flex items-center gap-4 text-sm text-muted-foreground">
-          <div className="flex items-center gap-1">
-            <IconUsers className="h-4 w-4" />
-            <span>{community._count.members} members</span>
+        {/* Enhanced stats section */}
+        <div className="grid grid-cols-2 gap-4 text-sm">
+          <div className="flex items-center gap-2 text-muted-foreground">
+            <IconUsers className="h-4 w-4 text-blue-500" />
+            <div>
+              <span className="font-medium text-foreground">{community._count.members}</span>
+              <span className="text-muted-foreground ml-1">members</span>
+            </div>
           </div>
+          <div className="flex items-center gap-2 text-muted-foreground">
+            <IconMessage className="h-4 w-4 text-green-500" />
+            <div>
+              <span className="font-medium text-foreground">{community._count.posts}</span>
+              <span className="text-muted-foreground ml-1">posts</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Activity indicator */}
+        <div className="flex items-center justify-end pt-2 border-t border-border/50">
           <div className="flex items-center gap-1">
-            <IconMessage className="h-4 w-4" />
-            <span>{community._count.posts} posts</span>
+            <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+            <span className="text-xs text-muted-foreground">Active</span>
           </div>
         </div>
       </CardContent>

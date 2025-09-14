@@ -48,6 +48,7 @@ export default function CommunitySearch({ initialQuery = '' }: CommunitySearchPr
     const [isLoading, setIsLoading] = useState(false)
     const [isLoadingMore, setIsLoadingMore] = useState(false)
     const [totalCount, setTotalCount] = useState(0)
+    const [hasSearched, setHasSearched] = useState(false)
     const [currentPage, setCurrentPage] = useState(1)
     const [hasMore, setHasMore] = useState(false)
     
@@ -109,21 +110,7 @@ export default function CommunitySearch({ initialQuery = '' }: CommunitySearchPr
         }
     }, [toast]) // Only depend on toast which is stable
 
-    // Search when query, sort, or visibility changes
-    useEffect(() => {
-        const timer = setTimeout(() => {
-            if (query.trim() || sort !== 'relevant' || visibility !== 'all') {
-                setCurrentPage(1)
-                performSearch(query, 1)
-            } else {
-                setResults([])
-                setTotalCount(0)
-                setHasMore(false)
-            }
-        }, 500)
-
-        return () => clearTimeout(timer)
-    }, [query, sort, visibility]) // Remove performSearch from dependencies
+    // No automatic search - only search when user clicks search button
 
     // Load more when scrolling to bottom
     useEffect(() => {
@@ -137,6 +124,7 @@ export default function CommunitySearch({ initialQuery = '' }: CommunitySearchPr
     const handleSearchSubmit = (e: React.FormEvent) => {
         e.preventDefault()
         setCurrentPage(1)
+        setHasSearched(true)
         performSearch(query, 1)
     }
 
@@ -202,7 +190,7 @@ export default function CommunitySearch({ initialQuery = '' }: CommunitySearchPr
                     </div>
 
                     {/* Results Summary */}
-                    {(query.trim() || sort !== 'relevant' || visibility !== 'all') && (
+                    {hasSearched && (
                         <div className="text-sm text-muted-foreground">
                             {isLoading ? (
                                 "Searching..."
@@ -217,7 +205,7 @@ export default function CommunitySearch({ initialQuery = '' }: CommunitySearchPr
             {/* Search Results */}
             {results.length > 0 && (
                 <div className="space-y-4">
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                         {results.map((community) => (
                             <CommunityCard
                                 key={community.id}
@@ -249,8 +237,8 @@ export default function CommunitySearch({ initialQuery = '' }: CommunitySearchPr
                 </div>
             )}
 
-            {/* No Results */}
-            {!isLoading && results.length === 0 && (query.trim() || sort !== 'relevant' || visibility !== 'all') && (
+            {/* No Results - only show after search */}
+            {!isLoading && hasSearched && results.length === 0 && (
                 <Card>
                     <CardContent className="text-center py-12">
                         <div className="space-y-2">
@@ -264,15 +252,15 @@ export default function CommunitySearch({ initialQuery = '' }: CommunitySearchPr
                 </Card>
             )}
 
-            {/* Empty State */}
-            {!isLoading && results.length === 0 && !query.trim() && sort === 'relevant' && visibility === 'all' && (
+            {/* Empty State - show before any search */}
+            {!isLoading && !hasSearched && (
                 <Card>
                     <CardContent className="text-center py-12">
                         <div className="space-y-2">
                             <IconSearch className="h-12 w-12 text-muted-foreground mx-auto" />
                             <h3 className="text-lg font-medium">Search for Communities</h3>
                             <p className="text-muted-foreground">
-                                Enter a search term to find communities that interest you
+                                Enter a search term and click the search button to find communities that interest you
                             </p>
                         </div>
                     </CardContent>

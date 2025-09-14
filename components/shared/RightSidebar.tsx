@@ -177,20 +177,35 @@ function RightSidebar(){
                         ) : suggestedCommunities.length > 0 ? (
                             suggestedCommunities.map(community => (
                                 <div key={community.id} className="p-3 bg-white/10 dark:bg-white/5 rounded-lg border border-black/10 dark:border-white/10 hover:border-primary-500/50 hover:bg-white/20 dark:hover:bg-white/10 transition-all duration-200 group">
-                                    <div className="flex items-center gap-3 flex-1">
-                                        <Avatar className="h-10 w-10 ring-2 ring-transparent group-hover:ring-primary-500/30 transition-all duration-200">
-                                            <AvatarImage src={community.image || undefined} />
-                                            <AvatarFallback>
-                                                <IconUsers className="h-5 w-5" />
-                                            </AvatarFallback>
-                                        </Avatar>
-                                        <div className="flex-1 min-w-0">
-                                            <Link href={`/communities/${community.id}`}>
-                                                <h4 className="font-medium text-sm text-black dark:text-white group-hover:text-primary-500 cursor-pointer truncate transition-colors duration-200">
-                                                    {community.name}
-                                                </h4>
-                                            </Link>
-                                            <div className="flex items-center space-x-2 mt-1">
+                                    <div className="space-y-2">
+                                        {/* Profile image and name in one row */}
+                                        <div className="flex items-center justify-between">
+                                            <div className="flex items-center gap-2">
+                                                <Avatar className="h-8 w-8 ring-2 ring-transparent group-hover:ring-primary-500/30 transition-all duration-200">
+                                                    <AvatarImage src={community.image || undefined} />
+                                                    <AvatarFallback>
+                                                        <IconUsers className="h-4 w-4" />
+                                                    </AvatarFallback>
+                                                </Avatar>
+                                                <Link href={`/communities/${community.id}`}>
+                                                    <h4 className="font-medium text-sm text-black dark:text-white group-hover:text-primary-500 cursor-pointer truncate transition-colors duration-200">
+                                                        {community.name}
+                                                    </h4>
+                                                </Link>
+                                            </div>
+                                            <Button 
+                                                size="sm" 
+                                                onClick={() => handleJoinCommunity(community.id)}
+                                                className="h-7 px-2 text-xs bg-primary-500 hover:bg-primary-600 text-white rounded-lg transition-all duration-200 hover:scale-105"
+                                            >
+                                                <IconPlus className="h-3 w-3 mr-1" />
+                                                Join
+                                            </Button>
+                                        </div>
+                                        
+                                        {/* Remaining content below */}
+                                        <div className="space-y-1">
+                                            <div className="flex items-center space-x-2">
                                                 <Badge variant="secondary" className="text-xs">
                                                     {community._count.members} members
                                                 </Badge>
@@ -200,21 +215,13 @@ function RightSidebar(){
                                                     </Badge>
                                                 )}
                                             </div>
-                                            <p className="text-xs text-primary-500 mt-1">
+                                            <p className="text-xs text-primary-500">
                                                 {community.suggestion.reason === 'popular' 
                                                     ? 'Popular community'
                                                     : `${community.suggestion.totalCount} ${community.suggestion.reason === 'connections' ? 'connections' : 'following'} are here`
                                                 }
                                             </p>
                                         </div>
-                                        <Button 
-                                            size="sm" 
-                                            onClick={() => handleJoinCommunity(community.id)}
-                                            className="h-8 px-3 text-xs bg-primary-500 hover:bg-primary-600 text-white rounded-lg transition-all duration-200 hover:scale-105"
-                                        >
-                                            <IconPlus className="h-3 w-3 mr-1" />
-                                            Join
-                                        </Button>
                                     </div>
                                 </div>
                             ))

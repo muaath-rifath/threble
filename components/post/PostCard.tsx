@@ -154,7 +154,7 @@ export default function PostCard({ post: initialPost, session, onUpdate, isReply
     // Content display state
     const [showFullContent, setShowFullContent] = useState(initialShowFullContent)
 
-    const isAuthor = session?.user?.id === post.author.id
+    const isAuthor = session?.user?.id === post.author?.id
     const isLiked = currentReactions?.some((r: any) => r && r.userId === session?.user?.id && r.type === 'LIKE') || false
     const isEdited = new Date(post.updatedAt) > new Date(post.createdAt)
 
@@ -422,7 +422,7 @@ export default function PostCard({ post: initialPost, session, onUpdate, isReply
 
     // Build the "Replied to" text as JSX with clickable username
     const buildRepliedToText = () => {
-        if (!post.parent) return null
+        if (!post.parent || !post.parent.author) return null
         
         const parentUsername = post.parent.author.username || post.parent.author.name || 'unknown'
         
@@ -518,13 +518,13 @@ export default function PostCard({ post: initialPost, session, onUpdate, isReply
                 
                 <div className="flex items-center justify-between">
                     <div className="flex items-center space-x-4">
-                        <Avatar className="h-10 w-10 cursor-pointer border-2 border-glass-border dark:border-glass-border-dark" onClick={() => router.push(`/profile/${post.author.id}`)}>
-                            <AvatarImage src={post.author.image || undefined} alt={post.author.name || 'User'} />
-                            <AvatarFallback className="bg-primary-500/20 text-primary-500">{post.author.name?.[0]}</AvatarFallback>
+                        <Avatar className="h-10 w-10 cursor-pointer border-2 border-glass-border dark:border-glass-border-dark" onClick={() => post.author?.id && router.push(`/profile/${post.author.id}`)}>
+                            <AvatarImage src={post.author?.image || undefined} alt={post.author?.name || 'User'} />
+                            <AvatarFallback className="bg-primary-500/20 text-primary-500">{post.author?.name?.[0]}</AvatarFallback>
                         </Avatar>
                         <div className="flex-1 space-y-1">
                             <div className="flex items-center gap-2">
-                                <p className="text-sm font-medium cursor-pointer text-black dark:text-white hover:text-primary-500 transition-colors" onClick={() => router.push(`/profile/${post.author.id}`)}>{post.author.name}</p>
+                                <p className="text-sm font-medium cursor-pointer text-black dark:text-white hover:text-primary-500 transition-colors" onClick={() => post.author?.id && router.push(`/profile/${post.author.id}`)}>{post.author?.name}</p>
                                 {isEdited && (
                                     <span className="text-xs text-gray-500 bg-gray-100 dark:bg-gray-800 px-2 py-1 rounded-full">
                                         edited

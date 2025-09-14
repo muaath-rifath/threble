@@ -22,6 +22,7 @@ import 'react-image-crop/dist/ReactCrop.css'
 import { uploadFileToBlobStorage } from '@/lib/azure-storage'
 import { profileUpdateSchema, type ProfileUpdateInput } from '@/lib/validations/username'
 import UserPostList from '@/components/post/UserPostList'
+import { DatePicker } from '@/components/ui/calendar'
 
 interface ProfileData {
   name?: string;
@@ -60,6 +61,7 @@ export default function ProfilePage() {
   const [isLoadingPosts, setIsLoadingPosts] = useState(false)
   const [selectedProfileImage, setSelectedProfileImage] = useState<string | null>(null)
   const [selectedCoverImage, setSelectedCoverImage] = useState<string | null>(null)
+  const [birthDate, setBirthDate] = useState<Date | undefined>()
   const fileInputRef = useRef<HTMLInputElement>(null)
   const coverFileInputRef = useRef<HTMLInputElement>(null)
 
@@ -92,6 +94,10 @@ export default function ProfilePage() {
             if (response.ok) {
                 const data: ProfileData = await response.json()
                 setProfileData(data)
+                // Set birthDate state for DatePicker
+                if (data.profile?.birthDate) {
+                    setBirthDate(new Date(data.profile.birthDate))
+                }
                  form.reset({
                     name: data.name || '',
                     email: data.email || '',
@@ -287,8 +293,8 @@ export default function ProfilePage() {
                 formData.append('website', values.website)
             }
 
-            if(values.birthDate){
-                formData.append('birthDate', values.birthDate)
+            if(birthDate){
+                formData.append('birthDate', birthDate.toISOString().split('T')[0])
             }
 
         const response = await fetch('/api/user/profile', {
@@ -582,7 +588,14 @@ export default function ProfilePage() {
                       <FormItem>
                         <FormLabel>Birth Date</FormLabel>
                         <FormControl>
-                          <Input {...field} type="date" />
+                          <DatePicker
+                            value={birthDate}
+                            onChange={(date) => {
+                              setBirthDate(date)
+                              field.onChange(date ? date.toISOString().split('T')[0] : '')
+                            }}
+                            placeholder="Select your birth date"
+                          />
                         </FormControl>
                         <FormMessage />
                       </FormItem>

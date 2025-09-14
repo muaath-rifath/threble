@@ -145,7 +145,7 @@ export default function CommunityDiscovery() {
             {/* Communities List */}
             {communities.length > 0 ? (
                 <div className="space-y-4">
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                         {communities.map((community) => (
                             <CommunityCard 
                                 key={community.id} 

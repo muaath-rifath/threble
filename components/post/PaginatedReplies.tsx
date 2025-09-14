@@ -4,7 +4,7 @@ import { useState, useCallback } from 'react'
 import { Session } from 'next-auth'
 import { useInfiniteScroll } from '@/hooks/use-infinite-scroll'
 import { Button } from '@/components/ui/button'
-import { IconLoader2, IconMessage } from '@tabler/icons-react'
+import { IconLoader2, IconMessage, IconPlus, IconMinus } from '@tabler/icons-react'
 import ThreadReply from './ThreadReply'
 
 interface PaginatedRepliesProps {
@@ -15,6 +15,7 @@ interface PaginatedRepliesProps {
   maxDepth: number
   parentAuthors: string[]
   initialRepliesCount?: number
+  expandedByDefault?: boolean
 }
 
 interface Reply {
@@ -54,9 +55,10 @@ export default function PaginatedReplies({
   depth,
   maxDepth,
   parentAuthors,
-  initialRepliesCount = 0
+  initialRepliesCount = 0,
+  expandedByDefault = false
 }: PaginatedRepliesProps) {
-  const [isExpanded, setIsExpanded] = useState(false)
+  const [isExpanded, setIsExpanded] = useState(expandedByDefault)
 
   const fetchReplies = useCallback(async (cursor: string | null) => {
     const params = new URLSearchParams({
@@ -106,10 +108,10 @@ export default function PaginatedReplies({
           variant="ghost"
           size="sm"
           onClick={() => setIsExpanded(true)}
-          className="text-primary-500 hover:text-primary-600 hover:bg-primary-500/10 glass-button text-sm"
+          className="w-8 h-8 p-0 rounded-full text-primary-500 hover:text-primary-600 hover:bg-primary-500/10 glass-button border border-glass-border dark:border-glass-border-dark"
+          title={`Show ${initialRepliesCount} ${initialRepliesCount === 1 ? 'reply' : 'replies'}`}
         >
-          <IconMessage className="h-4 w-4 mr-2" />
-          Show {initialRepliesCount} {initialRepliesCount === 1 ? 'reply' : 'replies'}
+          <IconPlus className="h-4 w-4" />
         </Button>
       </div>
     )
@@ -133,14 +135,18 @@ export default function PaginatedReplies({
 
   return (
     <div className="mt-3 space-y-3">
-      <Button
-        variant="ghost"
-        size="sm"
-        onClick={() => setIsExpanded(false)}
-        className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300 glass-button text-sm mb-2"
-      >
-        Hide replies
-      </Button>
+      {/* Only show Hide replies button for nested replies (depth > 0), not for the main thread */}
+      {depth > 0 && (
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => setIsExpanded(false)}
+          className="w-8 h-8 p-0 rounded-full text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300 glass-button border border-glass-border dark:border-glass-border-dark mb-2"
+          title="Hide replies"
+        >
+          <IconMinus className="h-4 w-4" />
+        </Button>
+      )}
       
       {replies.map((reply, index) => (
         <div key={reply.id} className={`${index === replies.length - 1 ? 'mb-0' : 'mb-3'}`}>
@@ -167,6 +173,7 @@ export default function PaginatedReplies({
                 maxDepth={maxDepth}
                 parentAuthors={[...parentAuthors, reply.author.username || reply.author.name || 'unknown']}
                 initialRepliesCount={reply._count.replies}
+                expandedByDefault={false}
               />
             </div>
           )}

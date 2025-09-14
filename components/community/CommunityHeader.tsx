@@ -169,7 +169,6 @@ export default function CommunityHeader({
                     <IconMessage className="h-4 w-4" />
                     <span>{community._count.posts} posts</span>
                   </div>
-                  <span>Created by {community.creator.name}</span>
                 </div>
               </div>
             </div>

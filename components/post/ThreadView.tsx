@@ -142,6 +142,7 @@ export default function ThreadView({ initialPost, session }: ThreadViewProps) {
                             maxDepth={4}
                             parentAuthors={[post.author.username || post.author.name || 'unknown']}
                             initialRepliesCount={totalReplies}
+                            expandedByDefault={true}
                         />
                     </div>
                 ) : (

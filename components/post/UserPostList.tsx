@@ -121,7 +121,12 @@ export default function UserPostList({ session, initialPosts = [] }: UserPostLis
 
     return (
         <div className="space-y-6">
-            {posts.map((post) => (
+            {/* Deduplicate posts by ID to prevent duplicate key errors */}
+            {posts
+                .filter((post, index, arr) => 
+                    arr.findIndex(p => p.id === post.id) === index
+                )
+                .map((post) => (
                 <PostCard
                     key={post.id}
                     post={post}

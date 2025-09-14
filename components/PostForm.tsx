@@ -12,8 +12,7 @@ import { Form, FormControl, FormField, FormItem } from '@/components/ui/form';
 import { useToast } from '@/hooks/use-toast';
 import { IconPhoto, IconVideo, IconX } from '@tabler/icons-react';
 import { Post } from '@/lib/types';
-import { useAppDispatch } from '@/lib/redux/hooks';
-import { createPost } from '@/lib/redux/slices/postsSlice';
+
 
 const postFormSchema = z.object({
   content: z.string().min(1, "Post content cannot be empty"),
@@ -27,7 +26,6 @@ interface PostFormProps {
 export default function PostForm({ onPostCreated, communityId }: PostFormProps) {
   const router = useRouter();
   const { toast } = useToast();
-  const dispatch = useAppDispatch();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [mediaFiles, setMediaFiles] = useState<File[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -86,17 +84,16 @@ export default function PostForm({ onPostCreated, communityId }: PostFormProps) 
       if (response.ok) {
         const responseData = await response.json();
         
-        // Add the new post to Redux store immediately
-        dispatch(createPost.fulfilled(responseData, '', { content: values.content }));
-        
         toast({ 
           title: "Success", 
           description: "Your post has been created successfully." 
         });
         form.reset();
         setMediaFiles([]);
-        // Remove router.refresh() since Redux handles the update
-        onPostCreated?.(responseData);  // Call the callback with the created post
+        
+        // Handle different response formats: community posts return {post: ..., message: ...}, regular posts return the post directly
+        const postData = responseData.post || responseData;
+        onPostCreated?.(postData);
       } else {
         throw new Error('Failed to create post');
       }

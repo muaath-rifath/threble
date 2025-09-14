@@ -1,9 +1,9 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
-import { useInView } from '@intersection-observer/next'
+import { useInfiniteScroll } from '@/hooks/use-infinite-scroll'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
@@ -61,102 +61,74 @@ export default function CommunityMemberList({
   const dispatch = useAppDispatch()
   const router = useRouter()
   
-  // Infinite scroll state
-  const [members, setMembers] = useState<CommunityMember[]>([])
-  const [loading, setLoading] = useState(true)
-  const [loadingMore, setLoadingMore] = useState(false)
-  const [hasMore, setHasMore] = useState(true)
-  const [cursor, setCursor] = useState<string | null>(null)
-  const [error, setError] = useState<string | null>(null)
-  
   // UI state
   const [searchQuery, setSearchQuery] = useState('')
   const [selectedMember, setSelectedMember] = useState<CommunityMember | null>(null)
   const [actionLoading, setActionLoading] = useState<string | null>(null)
   const [showRemoveDialog, setShowRemoveDialog] = useState(false)
+
+    // Use ref to store current search query
+  const searchQueryRef = useRef(searchQuery)
   
-  // Intersection observer for infinite scroll
-  const { ref, inView } = useInView({
-    threshold: 0
+  // Update ref when search query changes
+  useEffect(() => {
+    searchQueryRef.current = searchQuery
+  }, [searchQuery])
+
+  // Stable fetch function that uses ref for current search query
+  const fetchMembersForInfiniteScroll = useCallback(async (cursor: string | null) => {
+    const params = new URLSearchParams({
+      limit: '20',
+      ...(searchQueryRef.current && { search: searchQueryRef.current }),
+      ...(cursor && { cursor })
+    })
+
+    const response = await fetch(`/api/communities/${communityId}/members?${params}`)
+    if (!response.ok) throw new Error('Failed to fetch members')
+    
+    const result = await response.json()
+    
+    return {
+      data: result.data,
+      nextCursor: result.nextCursor,
+      hasMore: result.hasMore
+    }
+  }, [communityId])
+
+  // Use infinite scroll hook
+  const {
+    data: members,
+    loading,
+    hasMore,
+    error,
+    ref: loadMoreRef,
+    refresh: refreshMembers,
+    reset: resetMembers
+  } = useInfiniteScroll<CommunityMember>({
+    fetchFunction: fetchMembersForInfiniteScroll,
+    enabled: true
   })
+
+
+
+  // Store refresh function in ref to avoid effect re-runs
+  const refreshMembersRef = useRef(refreshMembers)
+  refreshMembersRef.current = refreshMembers
 
   const isCurrentUserAdmin = currentUserMembership?.role === 'ADMIN'
   const isCurrentUserModerator = currentUserMembership?.role === 'MODERATOR'
   const canManageMembers = isCurrentUserAdmin || isCurrentUserModerator
 
-  // Fetch members function
-  const fetchMembers = useCallback(async (isLoadMore = false, searchTerm = '') => {
-    try {
-      if (!isLoadMore) {
-        setLoading(true)
-        setError(null)
-      } else {
-        setLoadingMore(true)
-      }
-
-      const params = new URLSearchParams({
-        limit: '20',
-        ...(searchTerm && { search: searchTerm }),
-        ...(isLoadMore && cursor && { cursor })
-      })
-
-      const response = await fetch(`/api/communities/${communityId}/members?${params}`)
-      if (!response.ok) throw new Error('Failed to fetch members')
-      
-      const result = await response.json()
-      
-      if (!isLoadMore) {
-        setMembers(result.data)
-      } else {
-        setMembers(prev => [...prev, ...result.data])
-      }
-      
-      setCursor(result.nextCursor)
-      setHasMore(result.hasMore)
-    } catch (error) {
-      console.error('Error fetching members:', error)
-      setError('Failed to load members')
-      toast({
-        title: "Error",
-        description: "Failed to load community members",
-        variant: "destructive",
-      })
-    } finally {
-      setLoading(false)
-      setLoadingMore(false)
-    }
-  }, [communityId, cursor, toast])
-
-  // Search-specific fetch with debounce
-  const searchMembers = useCallback(async (searchTerm: string) => {
-    // Reset pagination for search
-    setCursor(null)
-    setHasMore(true)
-    await fetchMembers(false, searchTerm)
-  }, [fetchMembers])
-
-  // Initial load
-  useEffect(() => {
-    fetchMembers()
-  }, [])
-
-  // Search effect with debounce
+  // Handle search with debounce - refresh when search changes (refresh automatically resets)
   useEffect(() => {
     const timeoutId = setTimeout(() => {
-      searchMembers(searchQuery)
+      refreshMembersRef.current() // Use ref to get current refresh function
     }, 300)
 
     return () => clearTimeout(timeoutId)
-  }, [searchQuery, searchMembers])
+  }, [searchQuery]) // Stable dependency array
 
-  // Infinite scroll effect
-  useEffect(() => {
-    if (inView && hasMore && !loading && !loadingMore) {
-      fetchMembers(true, searchQuery)
-    }
-  }, [inView, hasMore, loading, loadingMore, fetchMembers, searchQuery])
 
-  const filteredMembers = members // No client-side filtering since server handles search
 
   const handleUpdateRole = async (memberId: string, newRole: 'USER' | 'MODERATOR' | 'ADMIN') => {
     setActionLoading(memberId)
@@ -315,7 +287,12 @@ export default function CommunityMemberList({
         {/* Members list */}
         {!loading || members.length > 0 ? (
           <>
-            {members.map((member) => (
+            {/* Deduplicate members by ID to prevent duplicate key errors */}
+            {members
+              .filter((member, index, arr) => 
+                arr.findIndex(m => m.id === member.id) === index
+              )
+              .map((member) => (
               <div
                 key={member.id}
                 className="flex items-center justify-between p-4 border rounded-lg hover:bg-muted/50"
@@ -402,8 +379,8 @@ export default function CommunityMemberList({
 
             {/* Infinite scroll trigger */}
             {hasMore && (
-              <div ref={ref as any} className="py-4">
-                {loadingMore && (
+              <div ref={loadMoreRef as any} className="py-4">
+                {loading && members.length > 0 && (
                   <div className="flex justify-center">
                     <div className="flex items-center gap-2 text-muted-foreground">
                       <IconLoader2 className="h-5 w-5 animate-spin" />

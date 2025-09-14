@@ -207,75 +207,87 @@ export default function YourCommunities() {
                             </Button>
                         </div>
                     )}
-                    <div className="grid gap-4 md:gap-6" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))' }}>
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                         {filteredCommunities.map((community) => {
                         const userRole = getUserRole(community)
                         
                         return (
-                            <Card key={community.id} className="hover:shadow-lg transition-all duration-200 hover:scale-105" style={{ minWidth: '280px', maxWidth: '400px' }}>
-                                <CardHeader className="space-y-3 pb-4">
-                                    <div className="flex items-start justify-between">
-                                        <div className="flex items-center gap-3 flex-1 min-w-0">
-                                            <div className="relative w-10 h-10 md:w-12 md:h-12 rounded-full overflow-hidden bg-muted flex-shrink-0">
-                                                {community.image ? (
-                                                    <Image
-                                                        src={community.image}
-                                                        alt={community.name}
-                                                        fill
-                                                        className="object-cover"
-                                                    />
-                                                ) : (
-                                                    <div className="w-full h-full flex items-center justify-center bg-primary/10">
-                                                        <IconUsersGroup className="h-5 w-5 md:h-6 md:w-6 text-primary" />
-                                                    </div>
-                                                )}
-                                            </div>
-                                            <div className="min-w-0 flex-1">
-                                                <h3 className="font-semibold text-base md:text-lg truncate">{community.name}</h3>
-                                                <div className="flex flex-col gap-1 mt-1">
-                                                    <Badge variant={getRoleBadgeVariant(userRole)} className="text-xs w-fit">
-                                                        <span className="flex items-center gap-1">
-                                                            {getRoleIcon(userRole)}
-                                                            {userRole}
-                                                        </span>
-                                                    </Badge>
+                            <Card key={community.id} className="hover:shadow-lg transition-all duration-200 hover:scale-[1.02]">
+                                <CardHeader className="pb-3">
+                                    <div className="space-y-3">
+                                        {/* Profile image and name in one row */}
+                                        <div className="flex items-center justify-between">
+                                            <div className="flex items-center gap-3">
+                                                <div className="relative w-10 h-10 rounded-full overflow-hidden bg-muted flex-shrink-0">
+                                                    {community.image ? (
+                                                        <Image
+                                                            src={community.image}
+                                                            alt={community.name}
+                                                            fill
+                                                            className="object-cover"
+                                                        />
+                                                    ) : (
+                                                        <div className="w-full h-full flex items-center justify-center bg-primary/10">
+                                                            <IconUsersGroup className="h-5 w-5 text-primary" />
+                                                        </div>
+                                                    )}
+                                                </div>
+                                                <div className="min-w-0 flex-1">
+                                                    <h3 className="font-semibold text-lg truncate">{community.name}</h3>
                                                 </div>
                                             </div>
+                                            {(userRole === 'owner' || userRole === 'admin') && (
+                                                <Link href={`/communities/${community.name}/settings`}>
+                                                    <Button variant="ghost" size="sm" className="flex-shrink-0">
+                                                        <IconSettings className="h-4 w-4" />
+                                                    </Button>
+                                                </Link>
+                                            )}
                                         </div>
-                                        {(userRole === 'owner' || userRole === 'admin') && (
-                                            <Link href={`/communities/${community.name}/settings`}>
-                                                <Button variant="ghost" size="sm" className="flex-shrink-0">
-                                                    <IconSettings className="h-4 w-4" />
-                                                </Button>
-                                            </Link>
-                                        )}
+                                        
+                                        {/* Role and visibility badges */}
+                                        <div className="flex items-center gap-2">
+                                            <Badge variant={getRoleBadgeVariant(userRole)} className="text-xs">
+                                                <span className="flex items-center gap-1">
+                                                    {getRoleIcon(userRole)}
+                                                    {userRole}
+                                                </span>
+                                            </Badge>
+                                            <Badge variant="outline" className="text-xs">
+                                                {community.visibility.toLowerCase()}
+                                            </Badge>
+                                        </div>
                                     </div>
                                 </CardHeader>
+                                
                                 <CardContent className="space-y-4 pt-0">
-                                    <div className="flex items-center gap-2">
-                                        <Badge variant="outline" className="text-xs">
-                                            {community.visibility.toLowerCase()}
-                                        </Badge>
-                                    </div>
+                                    {/* Description */}
+                                    {community.description && (
+                                        <p className="text-muted-foreground text-sm leading-relaxed line-clamp-3">
+                                            {community.description}
+                                        </p>
+                                    )}
                                     
-                                    <p className="text-muted-foreground text-sm leading-relaxed overflow-hidden" style={{ minWidth: '200px' }}>
-                                        {community.description}
-                                    </p>
-                                    
-                                    <div className="flex items-center justify-between text-sm text-muted-foreground">
-                                        <div className="flex items-center gap-3">
-                                            <div className="flex items-center gap-1">
-                                                <IconUsersGroup className="h-3 w-3 md:h-4 md:w-4" />
-                                                <span className="text-xs md:text-sm">{community._count.members}</span>
+                                    {/* Enhanced stats section */}
+                                    <div className="grid grid-cols-2 gap-4 text-sm">
+                                        <div className="flex items-center gap-2 text-muted-foreground">
+                                            <IconUsersGroup className="h-4 w-4 text-blue-500" />
+                                            <div>
+                                                <span className="font-medium text-foreground">{community._count.members}</span>
+                                                <span className="text-muted-foreground ml-1">members</span>
                                             </div>
-                                            <div className="flex items-center gap-1">
-                                                <IconMessage className="h-3 w-3 md:h-4 md:w-4" />
-                                                <span className="text-xs md:text-sm">{community._count.posts}</span>
+                                        </div>
+                                        <div className="flex items-center gap-2 text-muted-foreground">
+                                            <IconMessage className="h-4 w-4 text-green-500" />
+                                            <div>
+                                                <span className="font-medium text-foreground">{community._count.posts}</span>
+                                                <span className="text-muted-foreground ml-1">posts</span>
                                             </div>
                                         </div>
                                     </div>
 
-                                    <div className="pt-3 border-t">
+                                    {/* Action button */}
+                                    <div className="pt-3 border-t border-border/50">
                                         <Link href={`/communities/${community.name}`}>
                                             <Button className="w-full text-sm">
                                                 View Community

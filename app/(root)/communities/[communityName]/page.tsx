@@ -14,6 +14,7 @@ import { IconArrowLeft, IconUsers, IconFileText, IconChartBar, IconSettings } fr
 import { CommunityWithDetails, CommunityMember, Post } from '@/lib/types'
 import { useAppSelector, useAppDispatch } from '@/lib/redux/hooks'
 import { fetchCommunityMembers } from '@/lib/redux/slices/communitiesSlice'
+import { useInfiniteScroll } from '@/hooks/use-infinite-scroll'
 
 export default function CommunityPage() {
   const params = useParams()
@@ -22,12 +23,55 @@ export default function CommunityPage() {
   const dispatch = useAppDispatch()
   const [community, setCommunity] = useState<CommunityWithDetails | null>(null)
   const [currentUserMembership, setCurrentUserMembership] = useState<CommunityMember | null>(null)
-  const [posts, setPosts] = useState<Post[]>([])
   const [loading, setLoading] = useState(true)
-  const [postsLoading, setPostsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
   const communityName = params.communityName as string
+
+  // Fetch function for infinite scroll
+  const fetchCommunityPosts = async (cursor: string | null) => {
+    if (!community?.id) {
+      throw new Error('Community not loaded')
+    }
+
+    const url = new URL(`/api/communities/${community.id}/posts`, window.location.origin)
+    if (cursor) {
+      url.searchParams.set('cursor', cursor)
+    }
+
+    const response = await fetch(url.toString())
+    
+    if (!response.ok) {
+      throw new Error('Failed to fetch community posts')
+    }
+
+    const data = await response.json()
+    
+    // Filter out posts with missing author data to prevent runtime errors
+    const validPosts = (data.posts || []).filter((post: any) => 
+      post && post.id && post.author && post.author.id
+    )
+
+    return {
+      data: validPosts,
+      nextCursor: data.nextCursor,
+      hasMore: data.hasNextPage || false
+    }
+  }
+
+  // Initialize infinite scroll for posts
+  const {
+    data: posts,
+    loading: postsLoading,
+    hasMore: hasMorePosts,
+    error: postsError,
+    ref: loadMoreRef,
+    refresh: refreshPosts,
+    reset: resetPosts
+  } = useInfiniteScroll<Post>({
+    fetchFunction: fetchCommunityPosts,
+    enabled: !!community?.id && (!!currentUserMembership || community?.visibility === 'PUBLIC')
+  })
   
   // Get reactions from Redux store to sync with local posts state
   const allReactions = useAppSelector(state => state.reactions.reactions)
@@ -42,10 +86,11 @@ export default function CommunityPage() {
   )
   
   // Transform Redux members to match lib/types.ts CommunityMember interface
-  const members = reduxMembers.map(member => ({
+  // Ensure reduxMembers is an array before calling map
+  const members = Array.isArray(reduxMembers) ? reduxMembers.map(member => ({
     ...member,
     joinedAt: new Date(member.joinedAt) // Convert string to Date
-  }))
+  })) : []
 
   useEffect(() => {
     const fetchCommunity = async () => {
@@ -61,10 +106,8 @@ export default function CommunityPage() {
         setCommunity(data.community)
         setCurrentUserMembership(data.userMembership || null)
         
-        // Fetch community posts if user is a member or community is public
-        if (data.userMembership || data.community.visibility === 'PUBLIC') {
-          fetchCommunityPosts(data.community.id)
-        }
+        // Posts will be loaded automatically by the infinite scroll hook
+        // when community and membership data is available
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Failed to load community')
       } finally {
@@ -77,41 +120,8 @@ export default function CommunityPage() {
     }
   }, [communityName])
 
-  // Sync reactions from Redux store to local posts state
-  useEffect(() => {
-    if (posts.length > 0) {
-      setPosts(prevPosts => prevPosts.map(post => {
-        const reduxReactions = allReactions[post.id]
-        if (reduxReactions) {
-          return {
-            ...post,
-            reactions: reduxReactions,
-            _count: {
-              ...post._count,
-              reactions: reduxReactions.filter(r => r.type === 'LIKE').length
-            }
-          }
-        }
-        return post
-      }))
-    }
-  }, [allReactions, reactionCounts])
-
-  const fetchCommunityPosts = async (communityId: string) => {
-    try {
-      setPostsLoading(true)
-      const response = await fetch(`/api/communities/${communityId}/posts`)
-      
-      if (response.ok) {
-        const postsData = await response.json()
-        setPosts(postsData.posts || [])
-      }
-    } catch (err) {
-      console.error('Failed to fetch community posts:', err)
-    } finally {
-      setPostsLoading(false)
-    }
-  }
+  // Note: Redux sync for reactions will be handled differently with infinite scroll
+  // We'll refresh the posts when reactions change instead of modifying them directly
 
   const handleMembershipChange = () => {
     // Refetch community data when membership changes
@@ -123,9 +133,9 @@ export default function CommunityPage() {
           setCommunity(data.community)
           setCurrentUserMembership(data.userMembership || null)
           
-          // Refresh posts as well
+          // Refresh posts with infinite scroll
           if (data.userMembership || data.community.visibility === 'PUBLIC') {
-            fetchCommunityPosts(data.community.id)
+            refreshPosts()
           }
         }
       } catch (err) {
@@ -136,8 +146,15 @@ export default function CommunityPage() {
   }
 
   const handlePostCreated = (newPost: any) => {
-    // Add the new post to the beginning of the posts array
-    setPosts(prevPosts => [newPost, ...prevPosts])
+    // Validate the post data
+    if (!newPost || !newPost.id || !newPost.author) {
+      console.error('Invalid post data received:', newPost)
+      return
+    }
+    
+    // Refresh the posts to include the new post
+    // This ensures proper ordering and prevents any issues with manual array manipulation
+    refreshPosts()
   }
 
   const handleMembersChange = () => {
@@ -244,7 +261,7 @@ export default function CommunityPage() {
             )}
             
             {/* Posts List */}
-            {postsLoading ? (
+            {postsLoading && posts.length === 0 ? (
               <Card>
                 <CardContent className="p-6">
                   <div className="flex items-center justify-center">
@@ -252,7 +269,7 @@ export default function CommunityPage() {
                   </div>
                 </CardContent>
               </Card>
-            ) : posts.length === 0 ? (
+            ) : posts.length === 0 && !postsLoading ? (
               <Card>
                 <CardContent className="p-6">
                   <div className="text-center">
@@ -268,14 +285,51 @@ export default function CommunityPage() {
                 </CardContent>
               </Card>
             ) : (
-              posts.map((post) => (
-                <PostCard
-                  key={post.id}
-                  post={post}
-                  session={session!}
-                  onUpdate={() => fetchCommunityPosts(community?.id || '')}
-                />
-              ))
+              <div key="posts-list">
+                {posts.map((post) => (
+                  <PostCard
+                    key={post.id}
+                    post={post}
+                    session={session!}
+                    onUpdate={refreshPosts}
+                  />
+                ))}
+                
+                {/* Loading indicator and scroll trigger */}
+                {hasMorePosts && (
+                  <div ref={loadMoreRef as any} className="flex justify-center py-8">
+                    {postsLoading && (
+                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+                    )}
+                  </div>
+                )}
+
+                {/* Show error if there is one */}
+                {postsError && (
+                  <Card className="mt-4">
+                    <CardContent className="p-6">
+                      <div className="text-center text-red-500">
+                        <p>Error loading posts: {postsError}</p>
+                        <Button 
+                          variant="outline" 
+                          size="sm" 
+                          onClick={refreshPosts}
+                          className="mt-2"
+                        >
+                          Try Again
+                        </Button>
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
+
+                {/* Show end message when no more posts */}
+                {!hasMorePosts && posts.length > 0 && (
+                  <div className="text-center py-8 text-muted-foreground">
+                    <p>You've reached the end of the posts</p>
+                  </div>
+                )}
+              </div>
             )}
           </div>
         </TabsContent>
