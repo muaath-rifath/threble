@@ -34,6 +34,10 @@ interface Notification {
   actor: NotificationActor | null
   community: NotificationCommunity | null
   postId: string | null
+  data?: {
+    invitationId?: string
+    [key: string]: any
+  }
 }
 
 export default function NotificationsPage() {
@@ -203,6 +207,46 @@ export default function NotificationsPage() {
     }
   }
 
+  const handleModerationInvitation = async (notificationId: string, invitationId: string, communityId: string, action: 'accept' | 'decline') => {
+    try {
+      const response = await fetch(`/api/communities/${communityId}/moderation-invitations/${invitationId}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ action })
+      })
+
+      if (response.ok) {
+        const result = await response.json()
+        toast({
+          title: "Success",
+          description: result.message,
+        })
+
+        // Mark notification as read and remove it from the list
+        await markAsRead(notificationId)
+        setAllNotifications(prev => prev.filter(n => n.id !== notificationId))
+        setUnreadNotifications(prev => prev.filter(n => n.id !== notificationId))
+        setUnreadCount(prev => Math.max(0, prev - 1))
+      } else {
+        const error = await response.json()
+        toast({
+          title: "Error",
+          description: error.error || 'Failed to respond to invitation',
+          variant: "destructive",
+        })
+      }
+    } catch (error) {
+      console.error('Failed to respond to invitation:', error)
+      toast({
+        title: "Error",
+        description: "Failed to respond to invitation",
+        variant: "destructive",
+      })
+    }
+  }
+
   const handleNotificationClick = (notification: Notification) => {
     if (!notification.read) {
       markAsRead(notification.id)
@@ -229,9 +273,15 @@ export default function NotificationsPage() {
         break
       case 'COMMUNITY_INVITATION':
       case 'COMMUNITY_NEW_MEMBER':
+      case 'COMMUNITY_ROLE_CHANGED':
+      case 'COMMUNITY_MODERATION_ACCEPTED':
+      case 'COMMUNITY_MODERATION_DECLINED':
         if (notification.community?.slug) {
           router.push(`/communities/${notification.community.slug}`)
         }
+        break
+      case 'COMMUNITY_MODERATION_INVITATION':
+        // Don't navigate automatically for moderation invitations
         break
       default:
         break
@@ -254,6 +304,14 @@ export default function NotificationsPage() {
       case 'COMMUNITY_INVITATION':
       case 'COMMUNITY_NEW_MEMBER':
         return '🏠'
+      case 'COMMUNITY_ROLE_CHANGED':
+        return '👑'
+      case 'COMMUNITY_MODERATION_INVITATION':
+        return '🛡️'
+      case 'COMMUNITY_MODERATION_ACCEPTED':
+        return '✅'
+      case 'COMMUNITY_MODERATION_DECLINED':
+        return '❌'
       default:
         return '🔔'
     }
@@ -302,9 +360,55 @@ export default function NotificationsPage() {
                 <p className="text-sm text-gray-900 dark:text-gray-100 mb-1">
                   {notification.message}
                 </p>
-                <p className="text-xs text-gray-500">
+                <p className="text-xs text-gray-500 mb-2">
                   {formatTimeAgo(notification.createdAt)}
                 </p>
+                
+                {/* Show action buttons for moderation invitations */}
+                {notification.type === 'COMMUNITY_MODERATION_INVITATION' && !notification.read && (
+                  <div className="flex gap-2 mt-2">
+                    <Button
+                      size="sm"
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        const invitationId = notification.data?.invitationId
+                        const communityId = notification.community?.id
+                        console.log('Accept clicked:', { invitationId, communityId, notificationData: notification.data, community: notification.community })
+                        if (invitationId && communityId) {
+                          handleModerationInvitation(notification.id, invitationId, communityId, 'accept')
+                        }
+                      }}
+                      className="bg-green-600 hover:bg-green-700 text-white text-xs px-3 py-1 h-auto"
+                    >
+                      Accept
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        const invitationId = notification.data?.invitationId
+                        const communityId = notification.community?.id
+                        console.log('Decline clicked:', { invitationId, communityId, notificationData: notification.data, community: notification.community })
+                        if (invitationId && communityId) {
+                          handleModerationInvitation(notification.id, invitationId, communityId, 'decline')
+                        }
+                      }}
+                      className="text-red-600 border-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 text-xs px-3 py-1 h-auto"
+                    >
+                      Decline
+                    </Button>
+                  </div>
+                )}
+                
+                {/* Debug info for moderation invitations */}
+                {notification.type === 'COMMUNITY_MODERATION_INVITATION' && (
+                  <div className="text-xs text-gray-500 mt-1 p-2 bg-gray-100 dark:bg-gray-800 rounded">
+                    Debug: Type={notification.type}, Read={notification.read ? 'true' : 'false'}, 
+                    InvitationId={notification.data?.invitationId || 'missing'}, 
+                    CommunityId={notification.community?.id || 'missing'}
+                  </div>
+                )}
               </div>
               {!notification.read && (
                 <div className="flex-shrink-0">

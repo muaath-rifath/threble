@@ -208,12 +208,20 @@ export async function leaveCommunity(communityId: string) {
 // Update member role (admin/moderator only)
 export async function updateMemberRole(communityId: string, memberId: string, newRole: 'USER' | 'MODERATOR' | 'ADMIN') {
     try {
+        console.log('updateMemberRole called:', { communityId, memberId, newRole })
+        
+        // Temporary test - return early to see if function is called
+        return { success: true, message: 'TEST: Function was called successfully' }
+        
         const session = await getServerSession(authOptions)
         if (!session) {
+            console.log('updateMemberRole: Not authenticated')
             return { success: false, error: 'Not authenticated' }
         }
+        
+        console.log('updateMemberRole: Session user:', session.user.id)
 
-        // Check if current user has permission to change roles
+        // Check if current user has permission to change roles (only admins)
         const currentUserMembership = await prisma.communityMember.findUnique({
             where: {
                 userId_communityId: {
@@ -230,7 +238,22 @@ export async function updateMemberRole(communityId: string, memberId: string, ne
         // Get target member
         const targetMember = await prisma.communityMember.findUnique({
             where: { id: memberId },
-            include: { community: true }
+            include: { 
+                user: {
+                    select: {
+                        id: true,
+                        name: true,
+                        username: true,
+                        image: true
+                    }
+                },
+                community: {
+                    select: {
+                        id: true,
+                        name: true
+                    }
+                }
+            }
         })
 
         if (!targetMember || targetMember.communityId !== communityId) {
@@ -251,14 +274,109 @@ export async function updateMemberRole(communityId: string, memberId: string, ne
             }
         }
 
-        // Update role
-        await prisma.communityMember.update({
-            where: { id: memberId },
-            data: { role: newRole }
-        })
+        // Check if this is a promotion to moderator/admin that requires invitation
+        if (newRole === 'MODERATOR' || newRole === 'ADMIN') {
+            // Check if there's already a pending invitation
+            const existingInvitation = await prisma.moderationInvitation.findFirst({
+                where: {
+                    communityId,
+                    inviteeId: targetMember.userId,
+                    role: newRole,
+                    status: 'PENDING'
+                }
+            })
 
-        revalidatePath(`/communities/${targetMember.community.name}/members`)
-        return { success: true, message: 'Member role updated successfully' }
+            if (existingInvitation) {
+                return { success: false, error: 'A moderation invitation is already pending for this user' }
+            }
+
+            // Create moderation invitation instead of directly assigning role
+            const invitation = await prisma.moderationInvitation.create({
+                data: {
+                    communityId,
+                    inviterId: session.user.id,
+                    inviteeId: targetMember.userId,
+                    role: newRole,
+                    message: `You have been invited to become a ${newRole.toLowerCase()} of ${targetMember.community.name}`
+                }
+            })
+
+            // Create notification for the invitation
+            try {
+                const roleDisplayNames: Record<string, string> = {
+                    'MODERATOR': 'moderator',
+                    'ADMIN': 'admin'
+                }
+
+                const currentUserName = session.user.name || session.user.email || 'Someone'
+                const roleDisplay = roleDisplayNames[newRole] || newRole.toLowerCase()
+                
+                console.log('Creating moderation invitation notification:', {
+                    userId: targetMember.userId,
+                    type: 'COMMUNITY_MODERATION_INVITATION',
+                    invitationId: invitation.id,
+                    communityId,
+                    role: newRole
+                })
+
+                const notification = await prisma.notification.create({
+                    data: {
+                        userId: targetMember.userId,
+                        type: 'COMMUNITY_MODERATION_INVITATION',
+                        message: `${currentUserName} has invited you to become a ${roleDisplay} of ${targetMember.community.name}`,
+                        actorId: session.user.id,
+                        communityId: communityId,
+                        read: false,
+                        data: {
+                            invitationId: invitation.id,
+                            role: newRole,
+                            communityName: targetMember.community.name
+                        }
+                    }
+                })
+                
+                console.log('Moderation invitation notification created successfully:', notification.id)
+            } catch (notificationError) {
+                console.error('Failed to create moderation invitation notification:', notificationError)
+            }
+
+            revalidatePath(`/communities/${targetMember.community.name}/members`)
+            return { success: true, message: 'Moderation invitation sent successfully' }
+        } else {
+            // For demotion to USER, directly update the role
+            const updatedMember = await prisma.communityMember.update({
+                where: { id: memberId },
+                data: { role: newRole }
+            })
+
+            // Create notification for role change
+            if (targetMember.role !== newRole) {
+                try {
+                    const currentUserName = session.user.name || session.user.email || 'Someone'
+                    
+                    await prisma.notification.create({
+                        data: {
+                            userId: targetMember.userId,
+                            type: 'COMMUNITY_ROLE_CHANGED',
+                            message: `${currentUserName} has changed your role to member in ${targetMember.community.name}`,
+                            actorId: session.user.id,
+                            communityId: communityId,
+                            read: false,
+                            data: {
+                                previousRole: targetMember.role,
+                                newRole: newRole,
+                                communityName: targetMember.community.name
+                            }
+                        }
+                    })
+                } catch (notificationError) {
+                    console.error('Failed to create role change notification:', notificationError)
+                }
+            }
+
+            revalidatePath(`/communities/${targetMember.community.name}/members`)
+            return { success: true, message: 'Member role updated successfully' }
+        }
     } catch (error) {
         console.error('Error updating member role:', error)
         return { success: false, error: 'Failed to update member role' }

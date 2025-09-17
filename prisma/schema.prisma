@@ -31,6 +31,8 @@ model User {
   createdEvents         CommunityEvent[] @relation("CreatedEvents")
   eventAttendances      EventAttendee[] @relation("EventAttendances")
   moderationActions     ModerationAction[] @relation("ModeratorActions")
+  sentModerationInvitations ModerationInvitation[] @relation("SentModerationInvitations")
+  receivedModerationInvitations ModerationInvitation[] @relation("ReceivedModerationInvitations")
   connectedTo        Connection[]      @relation("Connections")
   connections        Connection[]
   following          Follow[]          @relation("Following")
@@ -137,6 +139,7 @@ model Community {
   notifications Notification[] @relation("CommunityNotifications")
   events       CommunityEvent[] @relation("CommunityEvents")
   moderations  ModerationAction[] @relation("CommunityModerations")
+  moderationInvitations ModerationInvitation[] @relation("CommunityModerationInvitations")
 
   @@index([name])
   @@index([creatorId])
@@ -269,6 +272,9 @@ enum NotificationType {
   COMMUNITY_NEW_MEMBER
   COMMUNITY_POST
   COMMUNITY_ROLE_CHANGED
+  COMMUNITY_MODERATION_INVITATION
+  COMMUNITY_MODERATION_ACCEPTED
+  COMMUNITY_MODERATION_DECLINED
   COMMUNITY_EVENT_CREATED
   COMMUNITY_EVENT_UPDATED
   COMMUNITY_EVENT_CANCELLED
@@ -401,6 +407,33 @@ model ModerationAction {
   @@index([contentType])
   @@index([action])
   @@index([createdAt])
+}
+
+model ModerationInvitation {
+  id          String   @id @default(cuid())
+  communityId String
+  inviterId   String   // Admin who sent the invitation
+  inviteeId   String   // User being invited to be moderator
+  role        Role     @default(MODERATOR) // Role being offered (MODERATOR or ADMIN)
+  status      InvitationStatus @default(PENDING)
+  message     String?  @db.Text
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  respondedAt DateTime?
+
+  community   Community @relation("CommunityModerationInvitations", fields: [communityId], references: [id], onDelete: Cascade)
+  inviter     User      @relation("SentModerationInvitations", fields: [inviterId], references: [id], onDelete: Cascade)
+  invitee     User      @relation("ReceivedModerationInvitations", fields: [inviteeId], references: [id], onDelete: Cascade)
+
+  @@unique([communityId, inviteeId, role]) // Prevent duplicate invitations
+  @@index([inviteeId, status])
+  @@index([communityId, status])
+}
+
+enum InvitationStatus {
+  PENDING
+  ACCEPTED
+  DECLINED
 }
 
 enum AttendeeStatus {

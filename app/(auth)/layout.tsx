@@ -7,7 +7,7 @@ export default function AuthLayout({
 }) {
   return (
     <Providers>
-      <div className="min-h-screen bg-white dark:bg-black relative overflow-hidden">
+      <div className="min-h-screen bg-background dark:bg-black relative overflow-hidden">
         {/* Animated geometric pattern background */}
         <div className="absolute inset-0">
           <svg className="absolute inset-0 w-full h-full" xmlns="http://www.w3.org/2000/svg">

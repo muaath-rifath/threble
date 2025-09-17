@@ -186,9 +186,16 @@ export function NotificationDropdown({ isMobile = false }: NotificationDropdownP
         break
       case 'COMMUNITY_INVITATION':
       case 'COMMUNITY_NEW_MEMBER':
+      case 'COMMUNITY_ROLE_CHANGED':
+      case 'COMMUNITY_MODERATION_ACCEPTED':
+      case 'COMMUNITY_MODERATION_DECLINED':
         if (notification.community?.name) {
           router.push(`/communities/${encodeURIComponent(notification.community.name)}`)
         }
+        break
+      case 'COMMUNITY_MODERATION_INVITATION':
+        // For moderation invitations, don't navigate automatically
+        // The user should use the accept/decline buttons
         break
       default:
         break
@@ -213,6 +220,14 @@ export function NotificationDropdown({ isMobile = false }: NotificationDropdownP
       case 'COMMUNITY_INVITATION':
       case 'COMMUNITY_NEW_MEMBER':
         return '🏠'
+      case 'COMMUNITY_ROLE_CHANGED':
+        return '👑'
+      case 'COMMUNITY_MODERATION_INVITATION':
+        return '🛡️'
+      case 'COMMUNITY_MODERATION_ACCEPTED':
+        return '✅'
+      case 'COMMUNITY_MODERATION_DECLINED':
+        return '❌'
       default:
         return '🔔'
     }

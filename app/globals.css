@@ -4,32 +4,32 @@
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
+    --background: 0 0% 95%;
     --foreground: 0 0% 0%;
 
-    --card: 0 0% 100%;
+    --card: 0 0% 95%;
     --card-foreground: 0 0% 0%;
 
-    --popover: 0 0% 100%;
+    --popover: 0 0% 95%;
     --popover-foreground: 0 0% 0%;
 
     --primary: 158 64% 52%;
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 0 0% 96%;
+    --secondary: 0 0% 92%;
     --secondary-foreground: 0 0% 9%;
 
-    --muted: 0 0% 96%;
+    --muted: 0 0% 92%;
     --muted-foreground: 0 0% 45%;
 
-    --accent: 0 0% 96%;
+    --accent: 0 0% 92%;
     --accent-foreground: 0 0% 9%;
 
     --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 98%;
 
-    --border: 0 0% 89%;
-    --input: 0 0% 89%;
+    --border: 0 0% 86%;
+    --input: 0 0% 86%;
     --ring: 158 64% 52%;
 
     --radius: 16px;
@@ -79,7 +79,7 @@
 @layer components {
   /* main */
   .main-container {
-    @apply flex min-h-screen flex-1 flex-col items-center bg-white dark:bg-black px-6 pb-10 pt-24 max-md:pb-32 sm:px-10;
+    @apply flex min-h-screen flex-1 flex-col items-center bg-background dark:bg-black px-6 pb-10 pt-24 max-md:pb-32 sm:px-10;
   }
 
   /* Head Text */
@@ -369,7 +369,7 @@
 
 /* Custom focus styles */
 .focus-ring {
-  @apply focus:outline-none focus:ring-2 focus:ring-primary-500/50 focus:ring-offset-2 focus:ring-offset-white dark:focus:ring-offset-black;
+  @apply focus:outline-none focus:ring-2 focus:ring-primary-500/50 focus:ring-offset-2 focus:ring-offset-background dark:focus:ring-offset-black;
 }
 
 /* Backdrop filter support */
