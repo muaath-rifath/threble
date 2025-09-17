@@ -164,46 +164,37 @@ export async function PUT(
     }
 }
 
-// DELETE - Delete community (admin only)
+// DELETE - Delete community (owner only)
 export async function DELETE(
     req: NextRequest,
     { params }: { params: Promise<{ communityId: string }> }
 ) {
     try {
-        const session = await getServerSession(authOptions)
         const { communityId } = await params
+        
+        // Import the delete function to ensure consistency
+        const { deleteCommunity } = await import('@/lib/actions/community.actions')
+        
+        const result = await deleteCommunity(communityId)
 
-        if (!session) {
-            return NextResponse.json({ error: 'Not authenticated' }, { status: 401 })
+        if (!result.success) {
+            return NextResponse.json(
+                { error: result.error },
+                { status: result.error === 'Not authenticated' ? 401 : 
+                         result.error === 'Community not found' ? 404 :
+                         result.error === 'Only the community owner can delete the community' ? 403 : 500 }
+            )
         }
-
-        // Check if user is admin of the community
-        const membership = await prisma.communityMember.findUnique({
-            where: {
-                userId_communityId: {
-                    userId: session.user.id,
-                    communityId
-                }
-            }
-        })
-
-        if (!membership || membership.role !== 'ADMIN') {
-            return NextResponse.json({ error: 'Not authorized to delete community' }, { status: 403 })
-        }
-
-        // Delete community (cascade will handle related records)
-        await prisma.community.delete({
-            where: { id: communityId }
-        })
 
         return NextResponse.json({
-            message: 'Community deleted successfully'
+            success: true,
+            message: result.message,
+            communityName: result.communityName
         })
-
     } catch (error) {
-        console.error('Error deleting community:', error)
+        console.error('Error in DELETE /api/communities/[communityId]:', error)
         return NextResponse.json(
-            { error: 'Failed to delete community' },
+            { error: 'Internal server error' },
             { status: 500 }
         )
     }

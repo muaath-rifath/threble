@@ -63,7 +63,6 @@ export default function CommunityInvitePage() {
         let connectionsData: Connection[] = []
         if (connectionsResponse.ok) {
           const data = await connectionsResponse.json()
-          console.log('Connections API response:', data) // Debug log
           // Transform the API response to match our expected format
           connectionsData = (data.connections || []).map((conn: any) => ({
             id: conn.user.id,
@@ -71,7 +70,6 @@ export default function CommunityInvitePage() {
             username: conn.user.username,
             image: conn.user.image
           }))
-          console.log('Transformed connections:', connectionsData) // Debug log
         } else {
           console.error('Failed to fetch connections:', connectionsResponse.status)
         }
@@ -81,13 +79,11 @@ export default function CommunityInvitePage() {
         let membersData: CommunityMember[] = []
         if (membersResponse.ok) {
           const membersResponseData = await membersResponse.json()
-          console.log('Members API response:', membersResponseData) // Debug log
           // The API returns { data: [...], nextCursor, hasMore }
           const members = membersResponseData.data || []
           membersData = members.map((member: any) => ({
             userId: member.userId
           }))
-          console.log('Transformed members:', membersData) // Debug log
           setCommunityMembers(membersData)
         } else {
           console.error('Failed to fetch members:', membersResponse.status)
@@ -126,13 +122,7 @@ export default function CommunityInvitePage() {
     !connection.isCommunityMember && !invitedUsers.includes(connection.id)
   )
 
-  console.log('Debug info:', {
-    connections: connections.length,
-    filteredConnections: filteredConnections.length,
-    availableToInvite: availableToInvite.length,
-    communityMembers: communityMembers.length,
-    loading
-  })
+
 
   const handleInvite = async (userId: string, username: string | null) => {
     if (!community || !username) {

@@ -364,51 +364,7 @@ export default function NotificationsPage() {
                   {formatTimeAgo(notification.createdAt)}
                 </p>
                 
-                {/* Show action buttons for moderation invitations */}
-                {notification.type === 'COMMUNITY_MODERATION_INVITATION' && !notification.read && (
-                  <div className="flex gap-2 mt-2">
-                    <Button
-                      size="sm"
-                      onClick={(e) => {
-                        e.stopPropagation()
-                        const invitationId = notification.data?.invitationId
-                        const communityId = notification.community?.id
-                        console.log('Accept clicked:', { invitationId, communityId, notificationData: notification.data, community: notification.community })
-                        if (invitationId && communityId) {
-                          handleModerationInvitation(notification.id, invitationId, communityId, 'accept')
-                        }
-                      }}
-                      className="bg-green-600 hover:bg-green-700 text-white text-xs px-3 py-1 h-auto"
-                    >
-                      Accept
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={(e) => {
-                        e.stopPropagation()
-                        const invitationId = notification.data?.invitationId
-                        const communityId = notification.community?.id
-                        console.log('Decline clicked:', { invitationId, communityId, notificationData: notification.data, community: notification.community })
-                        if (invitationId && communityId) {
-                          handleModerationInvitation(notification.id, invitationId, communityId, 'decline')
-                        }
-                      }}
-                      className="text-red-600 border-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 text-xs px-3 py-1 h-auto"
-                    >
-                      Decline
-                    </Button>
-                  </div>
-                )}
-                
-                {/* Debug info for moderation invitations */}
-                {notification.type === 'COMMUNITY_MODERATION_INVITATION' && (
-                  <div className="text-xs text-gray-500 mt-1 p-2 bg-gray-100 dark:bg-gray-800 rounded">
-                    Debug: Type={notification.type}, Read={notification.read ? 'true' : 'false'}, 
-                    InvitationId={notification.data?.invitationId || 'missing'}, 
-                    CommunityId={notification.community?.id || 'missing'}
-                  </div>
-                )}
+
               </div>
               {!notification.read && (
                 <div className="flex-shrink-0">

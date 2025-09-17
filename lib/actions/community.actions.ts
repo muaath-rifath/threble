@@ -173,7 +173,12 @@ export async function leaveCommunity(communityId: string) {
             return { success: false, error: 'Not a member of this community' }
         }
 
-        // Check if user is the only admin
+        // Check if user is the owner - owners must transfer ownership before leaving
+        if (membership.community.creatorId === session.user.id) {
+            return { success: false, error: 'Cannot leave: You are the community owner. Please transfer ownership first.' }
+        }
+
+        // Check if user is the only admin (and not the owner)
         if (membership.role === 'ADMIN') {
             const adminCount = await prisma.communityMember.count({
                 where: {
@@ -208,18 +213,10 @@ export async function leaveCommunity(communityId: string) {
 // Update member role (admin/moderator only)
 export async function updateMemberRole(communityId: string, memberId: string, newRole: 'USER' | 'MODERATOR' | 'ADMIN') {
     try {
-        console.log('updateMemberRole called:', { communityId, memberId, newRole })
-        
-        // Temporary test - return early to see if function is called
-        return { success: true, message: 'TEST: Function was called successfully' }
-        
         const session = await getServerSession(authOptions)
-        if (!session) {
-            console.log('updateMemberRole: Not authenticated')
+        if (!session?.user?.id) {
             return { success: false, error: 'Not authenticated' }
         }
-        
-        console.log('updateMemberRole: Session user:', session.user.id)
 
         // Check if current user has permission to change roles (only admins)
         const currentUserMembership = await prisma.communityMember.findUnique({
@@ -274,109 +271,45 @@ export async function updateMemberRole(communityId: string, memberId: string, ne
             }
         }
 
-        // Check if this is a promotion to moderator/admin that requires invitation
-        if (newRole === 'MODERATOR' || newRole === 'ADMIN') {
-            // Check if there's already a pending invitation
-            const existingInvitation = await prisma.moderationInvitation.findFirst({
-                where: {
-                    communityId,
-                    inviteeId: targetMember.userId,
-                    role: newRole,
-                    status: 'PENDING'
-                }
-            })
+        // Update the member role directly
+        await prisma.communityMember.update({
+            where: { id: memberId },
+            data: { role: newRole }
+        })
 
-            if (existingInvitation) {
-                return { success: false, error: 'A moderation invitation is already pending for this user' }
-            }
-
-            // Create moderation invitation instead of directly assigning role
-            const invitation = await prisma.moderationInvitation.create({
-                data: {
-                    communityId,
-                    inviterId: session.user.id,
-                    inviteeId: targetMember.userId,
-                    role: newRole,
-                    message: `You have been invited to become a ${newRole.toLowerCase()} of ${targetMember.community.name}`
-                }
-            })
-
-            // Create notification for the invitation
+        // Create notification for role change
+        if (targetMember.role !== newRole) {
             try {
+                const currentUserName = session.user.name || session.user.email || 'Someone'
                 const roleDisplayNames: Record<string, string> = {
+                    'USER': 'member',
                     'MODERATOR': 'moderator',
                     'ADMIN': 'admin'
                 }
-
-                const currentUserName = session.user.name || session.user.email || 'Someone'
                 const roleDisplay = roleDisplayNames[newRole] || newRole.toLowerCase()
                 
-                console.log('Creating moderation invitation notification:', {
-                    userId: targetMember.userId,
-                    type: 'COMMUNITY_MODERATION_INVITATION',
-                    invitationId: invitation.id,
-                    communityId,
-                    role: newRole
-                })
-
-                const notification = await prisma.notification.create({
+                await prisma.notification.create({
                     data: {
                         userId: targetMember.userId,
-                        type: 'COMMUNITY_MODERATION_INVITATION',
-                        message: `${currentUserName} has invited you to become a ${roleDisplay} of ${targetMember.community.name}`,
+                        type: 'COMMUNITY_ROLE_CHANGED',
+                        message: `${currentUserName} has made you a ${roleDisplay} of ${targetMember.community.name}`,
                         actorId: session.user.id,
                         communityId: communityId,
                         read: false,
                         data: {
-                            invitationId: invitation.id,
-                            role: newRole,
+                            previousRole: targetMember.role,
+                            newRole: newRole,
                             communityName: targetMember.community.name
                         }
                     }
                 })
-                
-                console.log('Moderation invitation notification created successfully:', notification.id)
             } catch (notificationError) {
-                console.error('Failed to create moderation invitation notification:', notificationError)
+                console.error('Failed to create role change notification:', notificationError)
             }
-
-            revalidatePath(`/communities/${targetMember.community.name}/members`)
-            return { success: true, message: 'Moderation invitation sent successfully' }
-        } else {
-            // For demotion to USER, directly update the role
-            const updatedMember = await prisma.communityMember.update({
-                where: { id: memberId },
-                data: { role: newRole }
-            })
-
-            // Create notification for role change
-            if (targetMember.role !== newRole) {
-                try {
-                    const currentUserName = session.user.name || session.user.email || 'Someone'
-                    
-                    await prisma.notification.create({
-                        data: {
-                            userId: targetMember.userId,
-                            type: 'COMMUNITY_ROLE_CHANGED',
-                            message: `${currentUserName} has changed your role to member in ${targetMember.community.name}`,
-                            actorId: session.user.id,
-                            communityId: communityId,
-                            read: false,
-                            data: {
-                                previousRole: targetMember.role,
-                                newRole: newRole,
-                                communityName: targetMember.community.name
-                            }
-                        }
-                    })
-                } catch (notificationError) {
-                    console.error('Failed to create role change notification:', notificationError)
-                }
-            }
-
-            revalidatePath(`/communities/${targetMember.community.name}/members`)
-            return { success: true, message: 'Member role updated successfully' }
         }
+
+        revalidatePath(`/communities/${targetMember.community.name}/members`)
+        return { success: true, message: 'Member role updated successfully' }
     } catch (error) {
         console.error('Error updating member role:', error)
         return { success: false, error: 'Failed to update member role' }
@@ -1111,5 +1044,436 @@ export async function discoverCommunities(type: 'trending' | 'suggested' | 'new'
     } catch (error) {
         console.error('Error discovering communities:', error)
         return { success: false, error: 'Failed to discover communities', communities: [] }
+    }
+}
+
+// Transfer community ownership to another member (they become the new admin)
+export async function transferCommunityOwnership(communityId: string, newOwnerId: string) {
+    try {
+        const session = await getServerSession(authOptions)
+        if (!session?.user?.id) {
+            return { success: false, error: 'Not authenticated' }
+        }
+
+        // Get community and verify current user is the owner
+        const community = await prisma.community.findUnique({
+            where: { id: communityId },
+            include: {
+                creator: {
+                    select: {
+                        id: true,
+                        name: true,
+                        username: true,
+                        image: true
+                    }
+                }
+            }
+        })
+
+        if (!community) {
+            return { success: false, error: 'Community not found' }
+        }
+
+        // Only the current owner can transfer ownership
+        if (community.creatorId !== session.user.id) {
+            return { success: false, error: 'Only the community owner can transfer ownership' }
+        }
+
+        // Prevent transferring to self
+        if (newOwnerId === session.user.id) {
+            return { success: false, error: 'Cannot transfer ownership to yourself' }
+        }
+
+        // Get target user and verify they are a member
+        const targetMember = await prisma.communityMember.findUnique({
+            where: {
+                userId_communityId: {
+                    userId: newOwnerId,
+                    communityId
+                }
+            },
+            include: {
+                user: {
+                    select: {
+                        id: true,
+                        name: true,
+                        username: true,
+                        image: true
+                    }
+                }
+            }
+        })
+
+        if (!targetMember) {
+            return { success: false, error: 'Target user is not a member of this community' }
+        }
+
+        // Perform the ownership transfer in a transaction
+        const result = await prisma.$transaction(async (tx) => {
+            // Update community owner
+            const updatedCommunity = await tx.community.update({
+                where: { id: communityId },
+                data: { 
+                    creatorId: newOwnerId,
+                    updatedAt: new Date()
+                },
+                include: {
+                    creator: {
+                        select: {
+                            id: true,
+                            name: true,
+                            username: true,
+                            image: true
+                        }
+                    }
+                }
+            })
+
+            // Update the new owner's role to ADMIN
+            await tx.communityMember.update({
+                where: {
+                    userId_communityId: {
+                        userId: newOwnerId,
+                        communityId: communityId
+                    }
+                },
+                data: { role: 'ADMIN' }
+            })
+
+            // Update the previous owner's role to USER (they lose admin privileges)
+            await tx.communityMember.update({
+                where: {
+                    userId_communityId: {
+                        userId: session.user.id,
+                        communityId: communityId
+                    }
+                },
+                data: { role: 'USER' }
+            })
+
+            // Create notifications for both users
+            const currentOwnerName = session.user?.name || session.user?.email || 'Someone'
+            const newOwnerName = targetMember.user.name || targetMember.user.username || 'Someone'
+
+            // Notification for the new owner
+            await tx.notification.create({
+                data: {
+                    userId: newOwnerId,
+                    type: 'COMMUNITY_OWNERSHIP_RECEIVED',
+                    message: `You are now the owner of ${community.name}`,
+                    actorId: session.user.id,
+                    communityId: communityId,
+                    read: false,
+                    data: {
+                        previousOwnerId: session.user.id,
+                        previousOwnerName: currentOwnerName,
+                        communityName: community.name,
+                        transferDate: new Date().toISOString()
+                    }
+                }
+            })
+
+            // Notification for the previous owner
+            await tx.notification.create({
+                data: {
+                    userId: session.user.id,
+                    type: 'COMMUNITY_OWNERSHIP_TRANSFERRED',
+                    message: `You have successfully transferred ownership of ${community.name} to ${newOwnerName}`,
+                    actorId: newOwnerId,
+                    communityId: communityId,
+                    read: false,
+                    data: {
+                        newOwnerId: newOwnerId,
+                        newOwnerName: newOwnerName,
+                        communityName: community.name,
+                        transferDate: new Date().toISOString()
+                    }
+                }
+            })
+
+            // Log the ownership transfer activity
+            await tx.activity.create({
+                data: {
+                    userId: session.user.id,
+                    type: 'COMMUNITY_OWNERSHIP_TRANSFERRED',
+                    targetId: communityId
+                }
+            })
+
+            return updatedCommunity
+        })
+
+        // Revalidate relevant paths
+        revalidatePath(`/communities/${community.name}`)
+        revalidatePath(`/communities/${community.name}/settings`)
+        revalidatePath('/communities')
+
+        return { 
+            success: true, 
+            message: `Successfully transferred ownership of ${community.name} to ${targetMember.user.name || targetMember.user.username}`,
+            community: result
+        }
+    } catch (error) {
+        console.error('Error transferring community ownership:', error)
+        return { success: false, error: 'Failed to transfer community ownership' }
+    }
+}
+
+// Get eligible members for ownership transfer (all members excluding current owner)
+export async function getEligibleOwnershipTransferMembers(communityId: string) {
+    try {
+        const session = await getServerSession(authOptions)
+        if (!session?.user?.id) {
+            return { success: false, error: 'Not authenticated', members: [] }
+        }
+
+        // Get community and verify current user is the owner
+        const community = await prisma.community.findUnique({
+            where: { id: communityId },
+            select: {
+                id: true,
+                name: true,
+                creatorId: true
+            }
+        })
+
+        if (!community) {
+            return { success: false, error: 'Community not found', members: [] }
+        }
+
+        // Only the current owner can view eligible members for transfer
+        if (community.creatorId !== session.user.id) {
+            return { success: false, error: 'Only the community owner can view eligible transfer recipients', members: [] }
+        }
+
+        // Get all members excluding the current owner
+        const allMembers = await prisma.communityMember.findMany({
+            where: {
+                communityId,
+                userId: {
+                    not: session.user.id // Exclude current owner
+                }
+            },
+            include: {
+                user: {
+                    select: {
+                        id: true,
+                        name: true,
+                        username: true,
+                        image: true,
+                        email: true
+                    }
+                }
+            },
+            orderBy: {
+                joinedAt: 'asc' // Show longest-serving members first
+            }
+        })
+
+        return {
+            success: true,
+            members: allMembers.map(member => ({
+                id: member.id,
+                userId: member.user.id,
+                name: member.user.name,
+                username: member.user.username,
+                image: member.user.image,
+                email: member.user.email,
+                joinedAt: member.joinedAt,
+                role: member.role
+            }))
+        }
+    } catch (error) {
+        console.error('Error getting eligible ownership transfer members:', error)
+        return { success: false, error: 'Failed to get eligible members', members: [] }
+    }
+}
+
+// Check if current user can transfer ownership (is the owner)
+export async function canTransferCommunityOwnership(communityId: string) {
+    try {
+        const session = await getServerSession(authOptions)
+        if (!session?.user?.id) {
+            return { canTransfer: false, error: 'Not authenticated' }
+        }
+
+        const community = await prisma.community.findUnique({
+            where: { id: communityId },
+            select: {
+                id: true,
+                creatorId: true,
+                name: true
+            }
+        })
+
+        if (!community) {
+            return { canTransfer: false, error: 'Community not found' }
+        }
+
+        const isOwner = community.creatorId === session.user.id
+
+        // Also check if there are any eligible members (any member except owner)
+        if (isOwner) {
+            const eligibleCount = await prisma.communityMember.count({
+                where: {
+                    communityId,
+                    userId: {
+                        not: session.user.id
+                    }
+                }
+            })
+
+            return {
+                canTransfer: eligibleCount > 0,
+                isOwner: true,
+                eligibleMembersCount: eligibleCount,
+                error: eligibleCount === 0 ? 'No other members in the community to transfer ownership to' : undefined
+            }
+        }
+
+        return {
+            canTransfer: false,
+            isOwner: false,
+            error: 'Only the community owner can transfer ownership'
+        }
+    } catch (error) {
+        console.error('Error checking ownership transfer permissions:', error)
+        return { canTransfer: false, error: 'Failed to check permissions' }
+    }
+}
+
+// Delete a community (owner only)
+export async function deleteCommunity(communityId: string) {
+    try {
+        const session = await getServerSession(authOptions)
+        if (!session?.user?.id) {
+            return { success: false, error: 'Not authenticated' }
+        }
+
+        // Get community and verify current user is the owner
+        const community = await prisma.community.findUnique({
+            where: { id: communityId },
+            include: {
+                creator: {
+                    select: {
+                        id: true,
+                        name: true,
+                        username: true
+                    }
+                },
+                _count: {
+                    select: {
+                        members: true,
+                        posts: true
+                    }
+                }
+            }
+        })
+
+        if (!community) {
+            return { success: false, error: 'Community not found' }
+        }
+
+        // Only the community owner can delete the community
+        if (community.creatorId !== session.user.id) {
+            return { success: false, error: 'Only the community owner can delete the community' }
+        }
+
+        // Perform the deletion in a transaction to ensure data consistency
+        await prisma.$transaction(async (tx) => {
+            // Delete all notifications related to this community
+            await tx.notification.deleteMany({
+                where: { communityId }
+            })
+
+            // Delete all join requests
+            await tx.joinRequest.deleteMany({
+                where: { communityId }
+            })
+
+            // Delete all community invitations
+            await tx.communityInvitation.deleteMany({
+                where: { communityId }
+            })
+
+            // Delete all moderation invitations
+            await tx.moderationInvitation.deleteMany({
+                where: { communityId }
+            })
+
+            // Delete all moderation actions
+            await tx.moderationAction.deleteMany({
+                where: { communityId }
+            })
+
+            // Delete all community events and their attendees
+            const communityEvents = await tx.communityEvent.findMany({
+                where: { communityId },
+                select: { id: true }
+            })
+
+            for (const event of communityEvents) {
+                await tx.eventAttendee.deleteMany({
+                    where: { eventId: event.id }
+                })
+            }
+
+            await tx.communityEvent.deleteMany({
+                where: { communityId }
+            })
+
+            // Delete all reactions to posts in this community
+            const communityPosts = await tx.post.findMany({
+                where: { communityId },
+                select: { id: true }
+            })
+
+            for (const post of communityPosts) {
+                await tx.reaction.deleteMany({
+                    where: { postId: post.id }
+                })
+
+                await tx.bookmark.deleteMany({
+                    where: { postId: post.id }
+                })
+            }
+
+            // Delete all posts in the community (including replies)
+            await tx.post.deleteMany({
+                where: { communityId }
+            })
+
+            // Delete all community members
+            await tx.communityMember.deleteMany({
+                where: { communityId }
+            })
+
+            // Finally, delete the community itself
+            await tx.community.delete({
+                where: { id: communityId }
+            })
+
+            // Log the community deletion activity
+            await tx.activity.create({
+                data: {
+                    userId: session.user.id,
+                    type: 'COMMUNITY_DELETED',
+                    targetId: communityId
+                }
+            })
+        })
+
+        // Revalidate relevant paths
+        revalidatePath('/communities')
+        revalidatePath(`/communities/${community.name}`)
+
+        return { 
+            success: true, 
+            message: `Successfully deleted community "${community.name}"`,
+            communityName: community.name
+        }
+    } catch (error) {
+        console.error('Error deleting community:', error)
+        return { success: false, error: 'Failed to delete community' }
     }
 }

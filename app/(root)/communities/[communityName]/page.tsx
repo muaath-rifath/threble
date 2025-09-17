@@ -5,6 +5,8 @@ import { useParams, useRouter } from 'next/navigation'
 import { useSession } from 'next-auth/react'
 import CommunityHeader from '@/components/community/CommunityHeader'
 import CommunityMemberList from '@/components/community/CommunityMemberList'
+import { OwnershipTransferSection } from '@/components/community/OwnershipTransferSection'
+import { DeleteCommunityDialog } from '@/components/community/DeleteCommunityDialog'
 import PostCard from '@/components/post/PostCard'
 import PostForm from '@/components/PostForm'
 import { Card, CardContent } from '@/components/ui/card'
@@ -15,16 +17,19 @@ import { CommunityWithDetails, CommunityMember, Post } from '@/lib/types'
 import { useAppSelector, useAppDispatch } from '@/lib/redux/hooks'
 import { fetchCommunityMembers } from '@/lib/redux/slices/communitiesSlice'
 import { useInfiniteScroll } from '@/hooks/use-infinite-scroll'
+import { useToast } from '@/hooks/use-toast'
 
 export default function CommunityPage() {
   const params = useParams()
   const router = useRouter()
   const { data: session } = useSession()
   const dispatch = useAppDispatch()
+  const { toast } = useToast()
   const [community, setCommunity] = useState<CommunityWithDetails | null>(null)
   const [currentUserMembership, setCurrentUserMembership] = useState<CommunityMember | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [isDeleting, setIsDeleting] = useState(false)
 
   const communityName = params.communityName as string
 
@@ -161,6 +166,40 @@ export default function CommunityPage() {
     // Refetch members when membership changes (role updates, removals, etc.)
     if (community?.id) {
       dispatch(fetchCommunityMembers(community.id))
+    }
+  }
+
+  const handleDeleteCommunity = async (communityId: string) => {
+    try {
+      setIsDeleting(true)
+      
+      const response = await fetch(`/api/communities/${communityId}`, {
+        method: 'DELETE',
+      })
+      
+      const data = await response.json()
+      
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to delete community')
+      }
+      
+      // Show success message
+      toast({
+        title: "Community deleted",
+        description: `Successfully deleted "${data.communityName}"`,
+      })
+      
+      // Redirect to communities page after successful deletion
+      router.push('/communities')
+    } catch (error) {
+      console.error('Error deleting community:', error)
+      toast({
+        title: "Error",
+        description: error instanceof Error ? error.message : 'Failed to delete community',
+        variant: "destructive",
+      })
+    } finally {
+      setIsDeleting(false)
     }
   }
 
@@ -353,11 +392,38 @@ export default function CommunityPage() {
 
         {isManager && (
           <TabsContent value="settings" className="mt-6">
-            <Card>
-              <CardContent className="p-6">
-                <p className="text-muted-foreground">Community settings will be displayed here.</p>
-              </CardContent>
-            </Card>
+            <div className="space-y-6">
+              {/* Ownership Transfer - Only show for community creator/owner */}
+              {community?.creatorId === session?.user?.id && (
+                <OwnershipTransferSection 
+                  communityId={community.id} 
+                  communityName={community.name} 
+                />
+              )}
+
+              {/* Danger Zone Settings - Only show for community owner */}
+              {community?.creatorId === session?.user?.id && (
+                <Card className="border-destructive/20">
+                  <CardContent className="p-6">
+                    <h3 className="text-lg font-semibold text-destructive mb-4">Danger Zone</h3>
+                    <div className="space-y-4">
+                      <div className="p-4 bg-destructive/10 border border-destructive/20 rounded-lg">
+                        <h4 className="font-medium text-destructive mb-2">Delete Community</h4>
+                        <p className="text-sm text-muted-foreground mb-3">
+                          Permanently delete this community and all its content. This action cannot be undone.
+                        </p>
+                        <DeleteCommunityDialog
+                          communityName={community.name}
+                          communityId={community.id}
+                          onDelete={handleDeleteCommunity}
+                          isDeleting={isDeleting}
+                        />
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+            </div>
           </TabsContent>
         )}
       </Tabs>
