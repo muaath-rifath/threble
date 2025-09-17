@@ -263,7 +263,7 @@ export default function CommunityMemberList({
         {error && (
           <div className="text-center py-8">
             <p className="text-destructive mb-4">{error}</p>
-            <Button onClick={() => fetchMembers()} variant="outline">
+            <Button onClick={() => refreshMembers()} variant="outline">
               Try Again
             </Button>
           </div>

@@ -56,11 +56,6 @@ export const sidebarLinks = [
       label: "Bookmarks",
     },
     {
-      icon: IconHeart,
-      route: "/activity",
-      label: "Activity",
-    },
-    {
       icon: IconUsers,
       route: "/connections",
       label: "Connections",
